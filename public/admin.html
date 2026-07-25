@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <!-- Favicon for Browser Tabs & Mobile Home Screens -->
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>আস্বাদন Admin Panel - Password Protected</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="padding: 20px;">
+
+  <div class="ambient-glow"></div>
+
+  <!-- Admin Login Screen -->
+  <div id="admin-login-screen" class="admin-login-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <a href="index.html" class="back-home-btn">← Home Page</a>
+      <a href="index.html" class="close-btn" style="text-decoration: none;" title="Go to Main Website">&times;</a>
+    </div>
+
+    <h2 style="color:var(--gold-primary); margin-bottom: 8px; text-align: center;">🔐 Admin Access</h2>
+    <p style="color:#aaa; font-size:0.88rem; margin-bottom:18px; text-align: center;">এডমিন প্যানেলে প্রবেশ করতে পাসওয়ার্ড দিন:</p>
+    
+    <!-- Password Form with Enter Key Support -->
+    <form onsubmit="event.preventDefault(); loginAdmin();">
+      <input type="password" 
+             id="admin-pass-input" 
+             class="input-field" 
+             placeholder="Enter Admin Password" 
+             onkeydown="if(event.key === 'Enter') loginAdmin();"
+             autofocus>
+      <button type="button" class="btn-primary" onclick="loginAdmin()">Login to Dashboard</button>
+    </form>
+  </div>
+
+  <!-- Protected Admin Dashboard -->
+  <div id="admin-dashboard" class="container" style="display:none;">
+    <div class="admin-dashboard-wrapper">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border-gold); padding-bottom: 15px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <a href="index.html" class="back-home-btn">← Home Page</a>
+          <h2 style="color:var(--gold-primary); font-size: 1.5rem;">আস্বাদন Dashboard</h2>
+        </div>
+        <button onclick="logoutAdmin()" style="background:var(--red-accent); color:#fff; border:none; padding:8px 20px; border-radius:20px; cursor:pointer; font-weight:bold;">Logout</button>
+      </div>
+
+      <div id="admin-orders-list"></div>
+    </div>
+  </div>
+
+  <script>
+    let adminToken = sessionStorage.getItem('aswadan_admin_token') || null;
+
+    if (adminToken) {
+      showDashboard();
+    }
+
+    async function loginAdmin() {
+      const password = document.getElementById('admin-pass-input').value;
+      if (!password) return alert('পাসওয়ার্ড প্রদান করুন');
+
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        adminToken = data.token;
+        sessionStorage.setItem('aswadan_admin_token', adminToken);
+        showDashboard();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('admin-login-screen').style.display = 'none';
+      document.getElementById('admin-dashboard').style.display = 'block';
+      loadAdminOrders();
+      setInterval(loadAdminOrders, 5000);
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem('aswadan_admin_token');
+      location.reload();
+    }
+
+    async function loadAdminOrders() {
+      const res = await fetch('/api/admin/orders', {
+        headers: { 'Authorization': `Bearer ${adminToken}` }
+      });
+
+      if (res.status === 401) {
+        logoutAdmin();
+        return;
+      }
+
+      const data = await res.json();
+      const container = document.getElementById('admin-orders-list');
+      
+      if(data.orders.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#aaa; padding:40px 0; font-size:1.05rem;">কোনো সক্রিয় অর্ডার পাওয়া যায়নি।</p>';
+        return;
+      }
+
+      container.innerHTML = data.orders.map(o => `
+        <div class="tile-card" style="text-align:left; margin-bottom:15px; width:100%;">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-gold); padding-bottom: 8px; margin-bottom: 10px;">
+            <h4 style="color:var(--gold-bright);">Order #${o.orderId}</h4>
+            <span style="color:var(--gold-primary); font-weight:bold; background: rgba(229,193,88,0.1); padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border-gold);">${o.status}</span>
+          </div>
+          <p style="margin-bottom:4px;"><strong>Customer:</strong> ${o.customerName} (${o.phone})</p>
+          <p style="margin-bottom:4px;"><strong>Address:</strong> ${o.address}</p>
+          <p style="margin-bottom:4px;"><strong>Date:</strong> ${o.deliveryDate} | <strong>UTR Ref:</strong> ${o.utrNumber}</p>
+          <p style="margin-bottom:8px;"><strong>Total Amount:</strong> ₹${o.totalAmount}</p>
+          <div style="margin-top:12px; display:flex; gap:10px; width:100%; flex-wrap:wrap;">
+            <button onclick="updateStatus('${o.orderId}', 'ACCEPTED')" style="background:var(--green-accent); color:#fff; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Accept</button>
+            <button onclick="updateStatus('${o.orderId}', 'REJECTED')" style="background:var(--red-accent); color:#fff; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Reject</button>
+            <button onclick="updateStatus('${o.orderId}', 'DELIVERED')" style="background:var(--gold-primary); color:#000; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Mark Delivered</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateStatus(orderId, status) {
+      await fetch('/api/admin/order-status', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ orderId, status })
+      });
+      loadAdminOrders();
+    }
+  </script>
+</body>
+</html>

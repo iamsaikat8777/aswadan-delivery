@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <!-- Favicon for Browser Tabs & Mobile Home Screens -->
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>আস্বাদন - হোম ডেলিভারি সার্ভিস</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07070a">
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+
+  <!-- Top Right Floating Navigation Bar -->
+  <nav class="top-nav-bar">
+    <a href="index.html" class="top-nav-link active">🏠 Home</a>
+    <a href="menu.html" class="top-nav-link">📜 Menu</a>
+    <button class="top-nav-link" id="profile-nav-btn" onclick="openAuthModal()">👤 Sign In</button>
+    <button class="top-nav-link" onclick="openCartModal()">🛒 Cart <span id="cart-count" class="top-cart-badge">0</span></button>
+    <button class="top-nav-link" onclick="openOrdersModal()">📦 Orders</button>
+    <a href="admin.html" class="top-nav-link" style="color: var(--gold-bright);">🔐 Admin</a>
+  </nav>
+
+  <!-- Brand Hero Header -->
+  <header class="brand-hero">
+    <div class="logo-wrapper">
+      <img src="logo.png" alt="আস্বাদন Logo" class="brand-logo" onerror="this.src='logo.webp';">
+    </div>
+    
+    <div class="tagline-badge">
+      <span>✨ ঘরের স্বাদ, মনের তৃপ্তি ✨</span>
+    </div>
+
+    <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 4px;">
+      📞 Madhuchanda Paul (Payel) • 8017960203
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- HERO SPLIT SECTION WITH ANIMATED TILE SLIDER -->
+    <section class="hero-split-section">
+      <div class="hero-left-content">
+        <h1>খাটি ঘরোয়া রান্নার অনন্য অভিজ্ঞতা</h1>
+        <p>
+          বিশুদ্ধ উপাদান ও ঘরোয়া যত্নে তৈরি রুই, কাতলা, চিকেন, ডিম ও সবজি থালি এখন সরাসরি আপনার দরজায়!
+        </p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a href="menu.html" class="btn-cta">📜 সম্পূর্ণ মেনু দেখুন</a>
+          <button class="btn-cta" style="background: rgba(229,193,88,0.15); color: var(--gold-bright); border: 1px solid var(--border-gold);" onclick="openAuthModal()">👤 সাইন-ইন করুন</button>
+        </div>
+      </div>
+
+      <!-- Hero Sliding Animated Tile (No "আজকের স্পেশাল" tag) -->
+      <div id="hero-sliding-tile" class="hero-spotlight-card">
+        <div style="text-align:center; padding:20px; color:#aaa;">মেনু লোড হচ্ছে...</div>
+      </div>
+    </section>
+
+    <!-- POPULAR MENU HIGHLIGHTS -->
+    <div class="section-header">
+      <span class="gold-line"></span>
+      <h2>জনপ্রিয় খাবার সম্ভার</h2>
+      <span class="gold-line"></span>
+    </div>
+
+    <div id="home-spotlight-container" class="spotlight-showcase-grid">
+      <div style="text-align:center; padding:20px; color:#aaa; grid-column: 1 / -1;">মেনু লোড হচ্ছে...</div>
+    </div>
+
+    <!-- BENGALI NOTICE BANNER (AT BOTTOM) -->
+    <div class="pincode-notice-card">
+      <div class="notice-header">
+        <span>📌 বিশেষ নিয়মাবলী ও বিজ্ঞপ্তি</span>
+      </div>
+      <ul class="notice-list">
+        <li>আমাদের হোম ডেলিভারি পরিষেবা বর্তমানে শুধুমাত্র <span class="pincode-tag">700036</span> পিনকোডে উপলব্ধ।</li>
+        <li>কমপক্ষে <b>২ জন এর অর্ডার</b> নেওয়া হবে।</li>
+        <li>অন্তত <b>আগের দিন</b> অর্ডার দিতে হবে।</li>
+        <li>এছাড়াও বিশেষ অনুষ্ঠানের জন্য <b>স্পেশাল অর্ডার</b> নেওয়া হয়।</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-msg" class="toast-popup">🛒 কার্টে যোগ করা হয়েছে!</div>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🌐 গুগল সাইন-ইন (Google Login)</h3>
+        <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
+      </div>
+
+      <p style="font-size:0.88rem; color:#aaa; margin-bottom:12px;">অর্ডার করার জন্য আপনার গুগল অ্যাকাউন্ট দিয়ে সাইন-ইন করুন:</p>
+
+      <div style="margin:15px 0; text-align:center;">
+        <div id="g_id_onload"
+             data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+             data-callback="handleGoogleLogin">
+        </div>
+        <div class="g_id_signin" data-type="standard" data-theme="dark" data-size="large"></div>
+
+        <button id="dev-google-btn" class="btn-primary" style="background:#4285F4; color:#fff; margin-top:10px; display:none;" onclick="simulateGoogleLogin()">
+          🌐 Sign in with Google (Local Test)
+        </button>
+      </div>
+
+      <div style="margin-top:15px; border-top:1px solid #333; padding-top:12px;">
+        <label class="input-label">📱 যোগাযোগের মোবাইল নম্বর:</label>
+        <input type="tel" id="google-user-phone" class="input-field" placeholder="10-digit Mobile Number">
+        
+        <label class="input-label">🏠 পূর্ণাঙ্গ ডেলিভারি ঠিকানা:</label>
+        <textarea id="google-user-address" class="input-field" placeholder="House/Flat No, Street Name, Landmark"></textarea>
+        
+        <label class="input-label">📍 পিনকোড (শুধুমাত্র 700036 প্রযোজ্য):</label>
+        <input type="number" id="google-user-pincode" class="input-field" placeholder="700036" value="700036">
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Modal -->
+  <div id="cart-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🛒 আপনার কার্ট (Cart)</h3>
+        <button class="close-btn" onclick="closeModal('cart-modal')">&times;</button>
+      </div>
+      <div id="cart-items" class="cart-items-list"></div>
+      <div class="cart-summary">
+        <span>মোট মূল্য (Total Amount):</span>
+        <span class="total-price">₹<span id="cart-total">0</span></span>
+      </div>
+      <a href="menu.html" class="btn-primary" style="text-align:center; display:block; text-decoration:none;">অর্ডার করতে পেমেন্ট করুন</a>
+    </div>
+  </div>
+
+  <!-- Order Status Modal -->
+  <div id="orders-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📦 আমার অর্ডার স্টেটাস</h3>
+        <button class="close-btn" onclick="closeModal('orders-modal')">&times;</button>
+      </div>
+      <div id="user-orders-list" class="orders-history-list"></div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
