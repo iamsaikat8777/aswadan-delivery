@@ -1,66 +1,87 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <!-- Favicon for Browser Tabs & Mobile Home Screens -->
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>মেনু - আস্বাদন হোম ডেলিভারি</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>আস্বাদন - মেনু (Menu)</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
   
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="logo.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#07070a">
-
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
   <div class="ambient-glow"></div>
 
-  <!-- Top Right Floating Navigation Bar (With Admin Link) -->
-  <nav class="top-nav-bar">
-    <a href="index.html" class="top-nav-link">🏠 Home</a>
-    <a href="menu.html" class="top-nav-link active">📜 Menu</a>
-    <button class="top-nav-link" id="profile-nav-btn" onclick="openAuthModal()">👤 Sign In</button>
-    <button class="top-nav-link" onclick="openCartModal()">🛒 Cart <span id="cart-count" class="top-cart-badge">0</span></button>
-    <button class="top-nav-link" onclick="openOrdersModal()">📦 Orders</button>
-    <a href="admin.html" class="top-nav-link" style="color: var(--gold-bright);">🔐 Admin</a>
-  </nav>
+  <!-- Top-Right Floating Capsule Navigation Bar -->
+  <div class="top-nav-container">
+    <nav class="top-nav-bar">
+      <a href="index.html" class="top-nav-link">🏠 Home</a>
+      <a href="menu.html" class="top-nav-link active">📜 Menu</a>
 
-  <!-- Header Banner -->
+      <div class="nav-user-dropdown" id="user-nav-wrapper">
+        <button class="top-nav-link" id="profile-nav-btn" onclick="openAuthModal()">👤 Sign In</button>
+        
+        <div class="user-dropdown-menu" id="user-hover-menu">
+          <a href="javascript:void(0)" onclick="openUserDashboard('profile')">👤 User Profile</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('history')">📦 Order History</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('status')">🚚 Current Order Status</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('preferred')">⭐ Daily Preferred Menu</a>
+          <div style="border-top:1px solid rgba(229,193,88,0.2); margin:4px 0;"></div>
+          <a href="javascript:void(0)" onclick="logoutUser()" style="color: var(--red-accent);">🚪 Logout</a>
+        </div>
+      </div>
+
+      <button class="top-nav-link" onclick="openCartModal()">🛒 Cart <span id="cart-count" class="top-cart-badge">0</span></button>
+      <a href="admin.html" class="top-nav-link">🔐 Admin</a>
+    </nav>
+  </div>
+
+  <!-- Brand Hero Header -->
   <header class="brand-hero">
     <div class="logo-wrapper">
-      <a href="index.html">
-        <img src="logo.png" alt="আস্বাদন Logo" class="brand-logo" style="max-width:240px;" onerror="this.src='logo.webp';">
-      </a>
+      <img src="logo.png" alt="আস্বাদন Logo" class="brand-logo" onerror="this.src='logo.webp';">
+    </div>
+    
+    <div>
+      <div class="tagline-badge">
+        <span>✨ ঘরের স্বাদ, মনের তৃপ্তি ✨</span>
+      </div>
+    </div>
+
+    <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+      <span>📞 Madhuchanda Paul (Payel) • 8017969203</span>
+      <div style="display: flex; gap: 6px;">
+        <a href="tel:8017969203" style="background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); color: var(--gold-bright); padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;">📞 Call</a>
+        <a href="https://wa.me/918017969203?text=Hi%2C%20I%20want%20to%20know%20more%20about%20Aswadan%20food%20services." target="_blank" style="background: rgba(42,157,143,0.2); border: 1px solid var(--green-accent); color: #4ade80; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;">💬 WhatsApp</a>
+      </div>
     </div>
   </header>
 
   <div class="container">
-    
-    <!-- Section Title -->
-    <div class="section-header">
-      <span class="gold-line"></span>
-      <h2>আমাদের বিশেষ মেনু</h2>
-      <span class="gold-line"></span>
+
+    <div style="text-align:center; margin:20px 0 30px;">
+      <h1 style="color:var(--gold-bright); font-size:2rem; margin-bottom:8px;">আমাদের সম্পূর্ণ খাবারের মেনু</h1>
+      <p style="color:var(--text-muted); font-size:0.95rem;">পছন্দের ঘরোয়া থালি নির্বাচন করুন এবং সহজেই অর্ডার জমা দিন</p>
     </div>
 
-    <!-- --- RESPONSIVE TILES GRID CONTAINER --- -->
-    <div id="menu-tiles-container" class="menu-grid-tiles">
+    <div id="menu-tiles-container" class="spotlight-showcase-grid">
       <div style="text-align:center; padding:30px; color:#aaa; grid-column: 1 / -1;">মেনু লোড হচ্ছে...</div>
     </div>
 
-    <!-- --- MOVED TO BOTTOM: COMPREHENSIVE BENGALI NOTICE BANNER --- -->
-    <div class="pincode-notice-card" style="margin-top: 40px;">
+    <div class="pincode-notice-card">
       <div class="notice-header">
         <span>📌 বিশেষ নিয়মাবলী ও বিজ্ঞপ্তি</span>
       </div>
       <ul class="notice-list">
-        <li>আমাদের হোম ডেলিভারি পরিষেবা বর্তমানে শুধুমাত্র <span class="pincode-tag">700036</span> পিনকোডে উপলব্ধ।</li>
+        <li>আমাদের হোম ডেলিভারি পরিষেবা শুধুমাত্র <span class="pincode-tag">700036</span> পিনকোডে উপলব্ধ।</li>
         <li>কমপক্ষে <b>২ জন এর অর্ডার</b> নেওয়া হবে।</li>
         <li>অন্তত <b>আগের দিন</b> অর্ডার দিতে হবে।</li>
         <li>এছাড়াও বিশেষ অনুষ্ঠানের জন্য <b>স্পেশাল অর্ডার</b> নেওয়া হয়।</li>
@@ -69,84 +90,162 @@
 
   </div>
 
-  <!-- Toast Notification -->
   <div id="toast-msg" class="toast-popup">🛒 কার্টে যোগ করা হয়েছে!</div>
 
-  <!-- Auth Modal -->
+  <!-- AUTH MODAL -->
   <div id="auth-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>🌐 গুগল সাইন-ইন (Google Login)</h3>
+        <h3 id="auth-modal-title">🔑 লগইন (Login)</h3>
         <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
       </div>
 
-      <p style="font-size:0.88rem; color:#aaa; margin-bottom:12px;">অর্ডার করার জন্য আপনার গুগল অ্যাকাউন্ট দিয়ে সাইন-ইন করুন:</p>
-
-      <div style="margin:15px 0; text-align:center;">
-        <div id="g_id_onload"
-             data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
-             data-callback="handleGoogleLogin">
-        </div>
-        <div class="g_id_signin" data-type="standard" data-theme="dark" data-size="large"></div>
-
-        <button id="dev-google-btn" class="btn-primary" style="background:#4285F4; color:#fff; margin-top:10px; display:none;" onclick="simulateGoogleLogin()">
-          🌐 Sign in with Google (Local Test)
-        </button>
+      <div id="auth-tab-bar" style="display: flex; gap: 10px; margin-bottom: 18px;">
+        <button id="tab-login-btn" class="btn-primary" style="flex:1; padding:8px; margin:0;" onclick="switchAuthTab('login')">লগইন</button>
+        <button id="tab-signup-btn" class="btn-primary" style="flex:1; padding:8px; margin:0; background: rgba(229,193,88,0.15); color: var(--gold-bright); border:1px solid var(--border-gold);" onclick="switchAuthTab('signup')">নতুন সাইন-আপ</button>
       </div>
 
-      <div style="margin-top:15px; border-top:1px solid #333; padding-top:12px;">
-        <label class="input-label">📱 যোগাযোগের মোবাইল নম্বর:</label>
-        <input type="tel" id="google-user-phone" class="input-field" placeholder="10-digit Mobile Number">
-        
+      <!-- Login Form with Enter Key Support -->
+      <form id="login-form" onsubmit="event.preventDefault(); loginUser();">
+        <label class="input-label">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
+        <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" required>
+
+        <label class="input-label">🔑 পাসওয়ার্ড:</label>
+        <input type="password" id="login-password" class="input-field" placeholder="Enter Password" required>
+
+        <div style="text-align: right; margin-bottom: 12px;">
+          <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="color: var(--gold-bright); font-size: 0.85rem; text-decoration: underline;">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
+        </div>
+
+        <button type="submit" class="btn-primary">লগইন করুন</button>
+      </form>
+
+      <!-- Signup Form with Enter Key Support -->
+      <form id="signup-form" style="display: none;" onsubmit="event.preventDefault(); signupUser();">
+        <label class="input-label">👤 আপনার নাম:</label>
+        <input type="text" id="signup-name" class="input-field" placeholder="Full Name" required>
+
+        <label class="input-label">📱 মোবাইল নম্বর:</label>
+        <input type="tel" id="signup-phone" class="input-field" placeholder="10-digit Mobile Number" required>
+
+        <label class="input-label">📧 ইমেল আইডি:</label>
+        <input type="email" id="signup-email" class="input-field" placeholder="name@gmail.com" required>
+
+        <label class="input-label">🔑 পাসওয়ার্ড তৈরি করুন:</label>
+        <input type="password" id="signup-password" class="input-field" placeholder="Create Password" required>
+
         <label class="input-label">🏠 পূর্ণাঙ্গ ডেলিভারি ঠিকানা:</label>
-        <textarea id="google-user-address" class="input-field" placeholder="House/Flat No, Street Name, Landmark"></textarea>
-        
+        <textarea id="signup-address" class="input-field" placeholder="House/Flat No, Street Name, Landmark" required></textarea>
+
         <label class="input-label">📍 পিনকোড (শুধুমাত্র 700036 প্রযোজ্য):</label>
-        <input type="number" id="google-user-pincode" class="input-field" placeholder="700036" value="700036">
+        <input type="number" id="signup-pincode" class="input-field" placeholder="700036" value="700036" required>
+
+        <button type="submit" class="btn-primary">রেজিস্টার ও সাইন-আপ করুন</button>
+      </form>
+
+      <div id="forgot-form" style="display: none;">
+        <p style="color:#aaa; font-size:0.88rem; margin-bottom:12px;">রেজিস্টার করা ইমেল আইডিটি লিখুন। ৬-সংখ্যার OTP পাঠানো হবে:</p>
+        <label class="input-label">📧 ইমেল আইডি:</label>
+        <input type="email" id="forgot-email" class="input-field" placeholder="Enter your registered email">
+        <button class="btn-primary" onclick="sendResetOTP()">OTP পাঠান</button>
+      </div>
+
+      <div id="reset-form" style="display: none;">
+        <label class="input-label">🔢 ৬-সংখ্যার OTP কোড:</label>
+        <input type="text" id="reset-otp" class="input-field" placeholder="Enter 6-digit OTP">
+
+        <label class="input-label">🔑 নতুন পাসওয়ার্ড:</label>
+        <input type="password" id="reset-new-password" class="input-field" placeholder="Enter New Password">
+
+        <button class="btn-primary" onclick="submitNewPassword()">পাসওয়ার্ড পরিবর্তন করুন</button>
       </div>
     </div>
   </div>
 
-  <!-- Cart Modal -->
+  <!-- ALL-IN-ONE USER DASHBOARD POPUP MODAL -->
+  <div id="user-dashboard-modal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 id="dashboard-title">👤 ইউজার ড্যাশবোর্ড (User Dashboard)</h3>
+        <button class="close-btn" onclick="closeModal('user-dashboard-modal')">&times;</button>
+      </div>
+
+      <div class="dashboard-tabs">
+        <button class="dash-tab-btn active" id="btn-tab-profile" onclick="switchDashboardTab('profile')">👤 Profile</button>
+        <button class="dash-tab-btn" id="btn-tab-history" onclick="switchDashboardTab('history')">📦 Order History</button>
+        <button class="dash-tab-btn" id="btn-tab-status" onclick="switchDashboardTab('status')">🚚 Order Status</button>
+        <button class="dash-tab-btn" id="btn-tab-preferred" onclick="switchDashboardTab('preferred')">⭐ Preferred Menu</button>
+      </div>
+
+      <div id="dash-view-profile">
+        <label class="input-label">👤 নাম:</label>
+        <input type="text" id="prof-name" class="input-field">
+
+        <label class="input-label">📱 মোবাইল নম্বর:</label>
+        <input type="tel" id="prof-phone" class="input-field" readonly style="opacity: 0.7;">
+
+        <label class="input-label">📧 ইমেল আইডি:</label>
+        <input type="email" id="prof-email" class="input-field">
+
+        <label class="input-label">🏠 ডেলিভারি ঠিকানা:</label>
+        <textarea id="prof-address" class="input-field"></textarea>
+
+        <label class="input-label">📍 পিনকোড:</label>
+        <input type="text" id="prof-pincode" class="input-field" value="700036">
+
+        <button class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
+      </div>
+
+      <div id="dash-view-history" style="display: none;">
+        <div id="user-orders-history-list"></div>
+      </div>
+
+      <div id="dash-view-status" style="display: none;">
+        <div id="current-orders-status-list"></div>
+      </div>
+
+      <div id="dash-view-preferred" style="display: none;">
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:12px;">আপনার নিয়মিত থালি নির্বাচন করুন, ১-ক্লিকে অর্ডার করতে পারবেন:</p>
+        <div id="preferred-selection-list"></div>
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-gold); padding-top: 12px;">
+          <button class="btn-primary" onclick="savePreferredMenu()">⭐ সেভ প্রেফার্ড মেনু</button>
+          <button class="btn-primary" style="background: var(--green-accent); color:#fff; margin-top: 8px;" onclick="quickOrderPreferred()">⚡ আজই ১-ক্লিকে প্রেফার্ড অর্ডার করুন</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CART & PAYMENT MODAL -->
   <div id="cart-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>🛒 আপনার কার্ট (Cart)</h3>
+        <h3>🛒 আপনার কার্ট ও পেমেন্ট</h3>
         <button class="close-btn" onclick="closeModal('cart-modal')">&times;</button>
       </div>
       
-      <div id="cart-items" class="cart-items-list"></div>
-      
+      <div id="cart-items"></div>
+
       <div class="cart-summary">
-        <span>মোট মূল্য (Total Amount):</span>
+        <span>মোট মূল্য:</span>
         <span class="total-price">₹<span id="cart-total">0</span></span>
       </div>
 
-      <div class="payment-section">
-        <h4 style="color:var(--gold-primary); margin-top:10px;">💳 UPI / QR Code পেমেন্ট</h4>
-        <div class="qr-box">
-          <img id="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017960203@upi&pn=Madhuchanda%20Paul" alt="UPI QR Code">
-          <p style="margin-top:5px; font-size:0.9rem;"><strong>UPI ID:</strong> 8017960203@upi</p>
-          <small>Payel / Madhuchanda Paul</small>
-        </div>
-
-        <input type="text" id="utr-number" class="input-field" placeholder="🔢 Payment UTR / Transaction Ref No.">
-        <label class="input-label" style="margin-top:8px;">ডেলিভারির তারিখ নির্বাচন করুন:</label>
-        <input type="date" id="delivery-date" class="input-field">
+      <div class="qr-box">
+        <p style="font-weight:bold; font-size:0.9rem; margin-bottom:5px;">Scan QR to Pay via PhonePe / GPay / Paytm</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%20Food%20Services%26cu=INR" alt="Aswadan UPI QR">
+        <p style="margin-top:5px; font-weight:bold; color:#000;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
       </div>
-      
-      <button class="btn-primary" onclick="placeOrder()">অর্ডার কনফার্ম করুন (Confirm Order)</button>
-    </div>
-  </div>
 
-  <!-- Order Status Modal -->
-  <div id="orders-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>📦 আমার অর্ডার স্টেটাস</h3>
-        <button class="close-btn" onclick="closeModal('orders-modal')">&times;</button>
+      <label class="input-label">📅 ডেলিভারির তারিখ:</label>
+      <input type="date" id="delivery-date" class="input-field">
+
+      <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন (Upload Payment Screenshot):</label>
+      <input type="file" id="payment-screenshot-input" accept="image/jpeg, image/png, image/jpg" class="input-field" onchange="handlePaymentScreenshotUpload(event)">
+      <div style="margin:8px 0; text-align:center;">
+        <img id="payment-screenshot-preview" src="" alt="Payment Screenshot Preview" style="max-width:200px; border-radius:8px; display:none; border:1px solid var(--border-gold);">
       </div>
-      <div id="user-orders-list" class="orders-history-list"></div>
+
+      <button class="btn-primary" onclick="placeOrder()">অর্ডার নিশ্চিত করুন</button>
     </div>
   </div>
 

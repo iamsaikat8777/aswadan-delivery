@@ -1,87 +1,212 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <!-- Favicon for Browser Tabs & Mobile Home Screens -->
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>আস্বাদন Admin Panel - Password Protected</title>
+  <title>আস্বাদন Admin Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-tab-btn {
+      padding: 10px 14px; background: rgba(229,193,88,0.1); border: 1px solid var(--border-gold);
+      color: var(--text-main); border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
+    }
+    .admin-tab-btn.active { background: var(--gold-gradient); color: #000; }
+    .stat-card { background: #181824; border: 1px solid var(--border-gold); border-radius: 12px; padding: 18px; text-align: center; }
+    .admin-section-box { background: #12121a; border: 1px solid var(--border-gold); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+  </style>
 </head>
 <body style="padding: 20px;">
 
   <div class="ambient-glow"></div>
 
   <!-- Admin Login Screen -->
-  <div id="admin-login-screen" class="admin-login-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-      <a href="index.html" class="back-home-btn">← Home Page</a>
-      <a href="index.html" class="close-btn" style="text-decoration: none;" title="Go to Main Website">&times;</a>
+  <div id="admin-login-screen" style="max-width:440px; margin:70px auto; background:#12121a; border:1px solid var(--border-gold); padding:28px; border-radius:18px; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.8);">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <a href="index.html" style="color:var(--gold-bright); text-decoration:none; font-size:0.9rem; font-weight:600;">← Home Page</a>
+      <a href="index.html" style="color:#aaa; text-decoration:none; font-size:1.4rem;">&times;</a>
     </div>
 
-    <h2 style="color:var(--gold-primary); margin-bottom: 8px; text-align: center;">🔐 Admin Access</h2>
-    <p style="color:#aaa; font-size:0.88rem; margin-bottom:18px; text-align: center;">এডমিন প্যানেলে প্রবেশ করতে পাসওয়ার্ড দিন:</p>
-    
-    <!-- Password Form with Enter Key Support -->
-    <form onsubmit="event.preventDefault(); loginAdmin();">
-      <input type="password" 
-             id="admin-pass-input" 
-             class="input-field" 
-             placeholder="Enter Admin Password" 
-             onkeydown="if(event.key === 'Enter') loginAdmin();"
-             autofocus>
-      <button type="button" class="btn-primary" onclick="loginAdmin()">Login to Dashboard</button>
-    </form>
-  </div>
-
-  <!-- Protected Admin Dashboard -->
-  <div id="admin-dashboard" class="container" style="display:none;">
-    <div class="admin-dashboard-wrapper">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border-gold); padding-bottom: 15px;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <a href="index.html" class="back-home-btn">← Home Page</a>
-          <h2 style="color:var(--gold-primary); font-size: 1.5rem;">আস্বাদন Dashboard</h2>
-        </div>
-        <button onclick="logoutAdmin()" style="background:var(--red-accent); color:#fff; border:none; padding:8px 20px; border-radius:20px; cursor:pointer; font-weight:bold;">Logout</button>
+    <!-- VIEW 1: ADMIN LOGIN FORM -->
+    <div id="admin-view-login">
+      <div style="text-align:center; margin-bottom:18px;">
+        <span style="font-size:2.5rem;">🔐</span>
+        <h2 style="color:var(--gold-primary); margin-top:5px;">Admin Access</h2>
+        <p style="color:var(--text-muted); font-size:0.88rem;">এডমিন প্যানেলে প্রবেশ করতে পাসওয়ার্ড দিন:</p>
       </div>
 
-      <div id="admin-orders-list"></div>
+      <form onsubmit="event.preventDefault(); loginAdmin();">
+        <input type="password" id="admin-pass-input" class="input-field" placeholder="Enter Admin Password" required autofocus>
+        
+        <div style="text-align:right; margin:10px 0 15px;">
+          <a href="javascript:void(0)" onclick="showAdminForgotView()" style="color:var(--gold-bright); font-size:0.85rem; text-decoration:underline;">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
+        </div>
+
+        <button type="submit" class="btn-primary">Login to Dashboard</button>
+      </form>
+    </div>
+
+    <!-- VIEW 2: SEND FORGOT PASSWORD OTP -->
+    <div id="admin-view-forgot" style="display:none;">
+      <div style="text-align:center; margin-bottom:18px;">
+        <span style="font-size:2.5rem;">🔐</span>
+        <h2 style="color:var(--gold-primary); margin-top:5px;">পাসওয়ার্ড রিসেট (OTP)</h2>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-top:6px;">
+          রেজিস্টার্ড ইমেল <b>iammadhuchanda@gmail.com</b>-এ ৬-সংখ্যার OTP কোড পাঠানো হবে।
+        </p>
+      </div>
+
+      <button class="btn-primary" onclick="sendAdminOTP()">📧 OTP কোড পাঠান</button>
+      
+      <div style="text-align:center; margin-top:15px;">
+        <a href="javascript:void(0)" onclick="showAdminLoginView()" style="color:#aaa; font-size:0.85rem;">← লগইন ফর্মে ফিরে যান</a>
+      </div>
+    </div>
+
+    <!-- VIEW 3: VERIFY OTP & RESET PASSWORD -->
+    <div id="admin-view-reset" style="display:none;">
+      <div style="text-align:center; margin-bottom:18px;">
+        <span style="font-size:2.5rem;">🔢</span>
+        <h2 style="color:var(--gold-primary); margin-top:5px;">নতুন পাসওয়ার্ড সেট করুন</h2>
+      </div>
+
+      <form onsubmit="event.preventDefault(); submitAdminNewPassword();">
+        <label class="input-label">🔢 ৬-সংখ্যার OTP কোড:</label>
+        <input type="text" id="admin-reset-otp" class="input-field" placeholder="Enter 6-digit OTP" required>
+
+        <label class="input-label">🔑 নতুন এডমিন পাসওয়ার্ড:</label>
+        <input type="password" id="admin-new-password" class="input-field" placeholder="Enter New Password" required>
+
+        <button type="submit" class="btn-primary" style="margin-top:15px;">পাসওয়ার্ড পরিবর্তন করুন</button>
+      </form>
+
+      <div style="text-align:center; margin-top:15px;">
+        <a href="javascript:void(0)" onclick="showAdminLoginView()" style="color:#aaa; font-size:0.85rem;">← বাতিল করুন</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="admin-dashboard" class="container" style="display:none;">
+    <div class="admin-dashboard-wrapper">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+        <h2 style="color:var(--gold-primary);">আস্বাদন Admin Control Panel</h2>
+        <button onclick="logoutAdmin()" style="background:var(--red-accent); color:#fff; border:none; padding:8px 18px; border-radius:20px; cursor:pointer;">Logout</button>
+      </div>
+
+      <!-- Admin Tab Navigation -->
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:25px;">
+        <button class="admin-tab-btn active" onclick="switchAdminTab(this, 'dashboard')">📊 Overall Dashboard</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'pending')">⏳ Current Pending</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'accepted')">✅ Accepted</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'rejected')">❌ Rejected</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'history')">📜 Order History</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'revenue')">💰 Net Revenue</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'menu')">🍔 Manage Menu Items</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'offer')" style="color:var(--gold-bright);">🎉 Special Offer Banner</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'users')" style="color:var(--gold-bright);">👥 Manage Users</button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div id="admin-tab-content"></div>
+    </div>
+  </div>
+
+  <!-- IMAGE PREVIEW POPUP MODAL -->
+  <div id="image-preview-modal" class="modal" onclick="closeImagePreview()">
+    <div class="modal-content" style="max-width:600px; text-align:center; background:#12121a; border:2px solid var(--gold-bright); padding:20px;" onclick="event.stopPropagation()">
+      <button class="close-btn" style="position:absolute; right:15px; top:10px;" onclick="closeImagePreview()">&times;</button>
+      <h3 style="color:var(--gold-bright); margin-bottom:12px;">🖼️ পেমেন্ট স্ক্রিনশট (Payment Screenshot)</h3>
+      <img id="full-preview-img" src="" alt="Payment Screenshot" style="max-width:100%; max-height:75vh; border-radius:10px; border:1px solid var(--border-gold);">
     </div>
   </div>
 
   <script>
-    let adminToken = sessionStorage.getItem('aswadan_admin_token') || null;
+    let adminToken = sessionStorage.getItem('aswadan_admin_token');
+    let adminData = null;
+    let menuList = [];
+    let usersList = [];
+    let currentTab = 'dashboard';
+    let offerImageBase64 = '';
 
-    if (adminToken) {
-      showDashboard();
+    if (adminToken) showDashboard();
+
+    /* --- ADMIN LOGIN & FORGOT PASSWORD LOGIC --- */
+    function showAdminLoginView() {
+      document.getElementById('admin-view-login').style.display = 'block';
+      document.getElementById('admin-view-forgot').style.display = 'none';
+      document.getElementById('admin-view-reset').style.display = 'none';
+    }
+
+    function showAdminForgotView() {
+      document.getElementById('admin-view-login').style.display = 'none';
+      document.getElementById('admin-view-forgot').style.display = 'block';
+      document.getElementById('admin-view-reset').style.display = 'none';
+    }
+
+    function showAdminResetView() {
+      document.getElementById('admin-view-login').style.display = 'none';
+      document.getElementById('admin-view-forgot').style.display = 'none';
+      document.getElementById('admin-view-reset').style.display = 'block';
     }
 
     async function loginAdmin() {
       const password = document.getElementById('admin-pass-input').value;
-      if (!password) return alert('পাসওয়ার্ড প্রদান করুন');
+      if (!password) return alert('পাসওয়ার্ড লিখুন।');
 
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
       });
-
       const data = await res.json();
       if (data.success) {
         adminToken = data.token;
         sessionStorage.setItem('aswadan_admin_token', adminToken);
         showDashboard();
-      } else {
-        alert(data.message);
-      }
+      } else alert(data.message);
     }
 
+    async function sendAdminOTP() {
+      const res = await fetch('/api/admin/forgot-password', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        showAdminResetView();
+      } else alert(data.message);
+    }
+
+    async function submitAdminNewPassword() {
+      const otp = document.getElementById('admin-reset-otp').value.trim();
+      const newPassword = document.getElementById('admin-new-password').value.trim();
+
+      if (!otp || !newPassword) return alert('সমস্ত ফিল্ড পূরণ করুন।');
+
+      const res = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp, newPassword })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        showAdminLoginView();
+      } else alert(data.message);
+    }
+
+    /* --- DASHBOARD CONTROL --- */
     function showDashboard() {
       document.getElementById('admin-login-screen').style.display = 'none';
       document.getElementById('admin-dashboard').style.display = 'block';
-      loadAdminOrders();
-      setInterval(loadAdminOrders, 5000);
+      loadAdminData();
+      fetchAdminMenu();
+      fetchAdminUsers();
+      setInterval(loadAdminData, 6000);
     }
 
     function logoutAdmin() {
@@ -89,53 +214,408 @@
       location.reload();
     }
 
-    async function loadAdminOrders() {
+    async function loadAdminData() {
       const res = await fetch('/api/admin/orders', {
         headers: { 'Authorization': `Bearer ${adminToken}` }
       });
-
-      if (res.status === 401) {
-        logoutAdmin();
-        return;
-      }
-
-      const data = await res.json();
-      const container = document.getElementById('admin-orders-list');
+      if (res.status === 401) return logoutAdmin();
+      adminData = await res.json();
       
-      if(data.orders.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#aaa; padding:40px 0; font-size:1.05rem;">কোনো সক্রিয় অর্ডার পাওয়া যায়নি।</p>';
-        return;
+      if (currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users') {
+        renderAdminTab();
       }
+    }
 
-      container.innerHTML = data.orders.map(o => `
-        <div class="tile-card" style="text-align:left; margin-bottom:15px; width:100%;">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-gold); padding-bottom: 8px; margin-bottom: 10px;">
-            <h4 style="color:var(--gold-bright);">Order #${o.orderId}</h4>
-            <span style="color:var(--gold-primary); font-weight:bold; background: rgba(229,193,88,0.1); padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border-gold);">${o.status}</span>
+    async function fetchAdminMenu() {
+      const res = await fetch('/api/menu');
+      const data = await res.json();
+      if (data.success) menuList = data.menu;
+    }
+
+    async function fetchAdminUsers() {
+      try {
+        const res = await fetch('/api/admin/users', {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          usersList = data.users || [];
+        }
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+      }
+    }
+
+    async function switchAdminTab(btnElement, tab) {
+      currentTab = tab;
+      document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+      
+      if (tab === 'menu') await fetchAdminMenu();
+      if (tab === 'users') await fetchAdminUsers();
+
+      renderAdminTab();
+    }
+
+    async function renderAdminTab() {
+      if (!adminData && currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users') return;
+      const container = document.getElementById('admin-tab-content');
+
+      if (currentTab === 'dashboard') {
+        container.innerHTML = `
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:20px;">
+            <div class="stat-card"><h3>${adminData.stats.totalOrders}</h3><p style="color:#aaa;">Total Orders</p></div>
+            <div class="stat-card"><h3 style="color:var(--gold-primary);">${adminData.stats.pendingCount}</h3><p style="color:#aaa;">Pending</p></div>
+            <div class="stat-card"><h3 style="color:var(--green-accent);">${adminData.stats.acceptedCount}</h3><p style="color:#aaa;">Accepted</p></div>
+            <div class="stat-card"><h3 style="color:var(--red-accent);">${adminData.stats.rejectedCount}</h3><p style="color:#aaa;">Rejected</p></div>
+            <div class="stat-card"><h3 style="color:var(--gold-bright);">₹${adminData.stats.netRevenue}</h3><p style="color:#aaa;">Total Revenue</p></div>
           </div>
-          <p style="margin-bottom:4px;"><strong>Customer:</strong> ${o.customerName} (${o.phone})</p>
-          <p style="margin-bottom:4px;"><strong>Address:</strong> ${o.address}</p>
-          <p style="margin-bottom:4px;"><strong>Date:</strong> ${o.deliveryDate} | <strong>UTR Ref:</strong> ${o.utrNumber}</p>
-          <p style="margin-bottom:8px;"><strong>Total Amount:</strong> ₹${o.totalAmount}</p>
-          <div style="margin-top:12px; display:flex; gap:10px; width:100%; flex-wrap:wrap;">
-            <button onclick="updateStatus('${o.orderId}', 'ACCEPTED')" style="background:var(--green-accent); color:#fff; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Accept</button>
-            <button onclick="updateStatus('${o.orderId}', 'REJECTED')" style="background:var(--red-accent); color:#fff; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Reject</button>
-            <button onclick="updateStatus('${o.orderId}', 'DELIVERED')" style="background:var(--gold-primary); color:#000; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Mark Delivered</button>
+        `;
+      } else if (currentTab === 'pending') {
+        container.innerHTML = renderOrdersList(adminData.pending, true);
+      } else if (currentTab === 'accepted') {
+        container.innerHTML = renderOrdersList(adminData.accepted, false);
+      } else if (currentTab === 'rejected') {
+        container.innerHTML = renderOrdersList(adminData.rejected, false);
+      } else if (currentTab === 'history') {
+        container.innerHTML = renderOrdersList(adminData.orders, false);
+      } else if (currentTab === 'revenue') {
+        container.innerHTML = `
+          <div class="stat-card" style="padding:30px;">
+            <h1 style="color:var(--gold-bright); font-size:2.5rem;">₹${adminData.stats.netRevenue}</h1>
+            <p style="color:#aaa;">Total Net Revenue Generated</p>
           </div>
+        `;
+      } else if (currentTab === 'menu') {
+        renderMenuManagement(container);
+      } else if (currentTab === 'offer') {
+        await renderOfferManagement(container);
+      } else if (currentTab === 'users') {
+        renderUsersManagement(container);
+      }
+    }
+
+    function renderOrdersList(list, showActions) {
+      if (list.length === 0) return '<p style="text-align:center; color:#aaa; padding:20px;">কোনো অর্ডার নেই।</p>';
+      return list.map(o => `
+        <div class="tile-card" style="text-align:left; margin-bottom:12px; width:100%;">
+          <div style="display:flex; justify-content:space-between;">
+            <h4 style="color:var(--gold-bright);">#${o.orderId}</h4>
+            <span style="color:var(--gold-primary); font-weight:bold;">${o.status}</span>
+          </div>
+          <p><b>গ্রাহক:</b> ${o.customerName} (${o.phone})</p>
+          <p><b>ইমেল:</b> ${o.email || 'N/A'}</p>
+          <p><b>ঠিকানা:</b> ${o.address}</p>
+          <p><b>ডেলিভারি তারিখ:</b> ${o.deliveryDate}</p>
+          <p><b>অর্ডারের তালিকা:</b> ${o.items.map(i => i.name + ' x ' + i.qty).join(', ')}</p>
+          <p><b>মোট মূল্য:</b> ₹${o.totalAmount}</p>
+
+          ${o.rejectionReason ? `<p style="color:#e63946;"><b>বাতিলের কারণ:</b> ${o.rejectionReason}</p>` : ''}
+
+          ${o.paymentScreenshot ? `
+            <div style="margin:10px 0;">
+              <p><b>🖼️ পেমেন্ট স্ক্রিনশট (Payment Screenshot):</b></p>
+              <img src="${o.paymentScreenshot}" alt="Payment Screenshot" style="max-width:180px; max-height:180px; border-radius:8px; border:1px solid var(--border-gold); cursor:pointer; margin-top:5px; object-fit:cover;" onclick="openImagePreview('${o.paymentScreenshot}')">
+              <p style="font-size:0.78rem; color:var(--gold-bright); cursor:pointer;" onclick="openImagePreview('${o.paymentScreenshot}')">🔍 ক্লিক করে বড় ছবি দেখুন</p>
+            </div>
+          ` : '<p style="color:#e63946;"><b>পেমেন্ট স্ক্রিনশট পাওয়া যায়নি</b></p>'}
+
+          ${showActions ? `
+            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+              <button onclick="updateStatus('${o.orderId}', 'ACCEPTED')" style="background:var(--green-accent); color:#fff; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">Accept Order</button>
+              <button onclick="rejectOrderPrompt('${o.orderId}')" style="background:var(--red-accent); color:#fff; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">Reject Order</button>
+            </div>
+          ` : ''}
+
+          ${o.status === 'ACCEPTED' ? `
+            <div style="margin-top:10px;">
+              <button onclick="updateStatus('${o.orderId}', 'DELIVERED')" style="background:var(--gold-primary); color:#000; font-weight:bold; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">🚚 Mark as Delivered</button>
+            </div>
+          ` : ''}
         </div>
       `).join('');
+    }
+
+    function openImagePreview(imgSrc) {
+      const modal = document.getElementById('image-preview-modal');
+      const img = document.getElementById('full-preview-img');
+      if (modal && img) {
+        img.src = imgSrc;
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeImagePreview() {
+      const modal = document.getElementById('image-preview-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function rejectOrderPrompt(orderId) {
+      const reason = prompt('অর্ডার বাতিলের কারণ লিখুন (Reason for Rejection):');
+      if (reason === null) return;
+
+      await fetch('/api/admin/order-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ orderId, status: 'REJECTED', reason: reason.trim() || 'অনাকাঙ্ক্ষিত কারণবশত' })
+      });
+      loadAdminData();
     }
 
     async function updateStatus(orderId, status) {
       await fetch('/api/admin/order-status', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
         body: JSON.stringify({ orderId, status })
       });
-      loadAdminOrders();
+      loadAdminData();
+    }
+
+    function renderMenuManagement(container) {
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">🍔 নতুন খাবারের আইটেম যোগ করুন (Add New Menu Item)</h3>
+          <label class="input-label">খাবারের নাম (Item Name):</label>
+          <input type="text" id="new-item-name" class="input-field" placeholder="e.g. ইলিশ মাছের থালি">
+
+          <label class="input-label">মূল্য (Price in ₹):</label>
+          <input type="number" id="new-item-price" class="input-field" placeholder="e.g. 180">
+
+          <label class="input-label">বিবরণ (Description):</label>
+          <input type="text" id="new-item-desc" class="input-field" placeholder="e.g. ভাত, ডাল, ভাজা, সর্ষে ইলিশ ও চাটনি">
+
+          <button class="btn-primary" onclick="addNewMenuItem()">➕ নতুন আইটেম যোগ করুন</button>
+        </div>
+
+        <div class="admin-section-box">
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">✏️ বিদ্যমান মেনু ও মূল্য এডিট করুন (Edit Menu Items & Prices)</h3>
+          <div id="admin-menu-list">
+            ${menuList.map((item, index) => `
+              <div style="background:#1c1c28; border:1px solid #333; padding:12px; margin-bottom:10px; border-radius:10px;">
+                <label class="input-label">আইটেম #${item.id} নাম:</label>
+                <input type="text" id="edit-name-${index}" class="input-field" value="${item.name}">
+
+                <label class="input-label">মূল্য (₹):</label>
+                <input type="number" id="edit-price-${index}" class="input-field" value="${item.price}">
+
+                <label class="input-label">বিবরণ:</label>
+                <input type="text" id="edit-desc-${index}" class="input-field" value="${item.desc}">
+
+                <button onclick="deleteMenuItem(${index})" style="background:var(--red-accent); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; margin-top:8px;">❌ ডিলিট করুন</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn-primary" style="background:var(--green-accent); color:#fff;" onclick="saveAllMenuChanges()">💾 সমস্ত পরিবর্তন সেভ করুন</button>
+        </div>
+      `;
+    }
+
+    function addNewMenuItem() {
+      const name = document.getElementById('new-item-name').value.trim();
+      const price = Number(document.getElementById('new-item-price').value);
+      const desc = document.getElementById('new-item-desc').value.trim();
+
+      if (!name || !price || !desc) return alert('সমস্ত ফিল্ড পূরণ করুন!');
+
+      const newId = menuList.length > 0 ? Math.max(...menuList.map(i => i.id)) + 1 : 1;
+      menuList.push({ id: newId, name, price, desc });
+      saveAllMenuChanges();
+    }
+
+    function deleteMenuItem(index) {
+      if (confirm('আপনি কি এই আইটেমটি ডিলিট করতে চান?')) {
+        menuList.splice(index, 1);
+        saveAllMenuChanges();
+      }
+    }
+
+    async function saveAllMenuChanges() {
+      menuList.forEach((item, index) => {
+        const nameEl = document.getElementById(`edit-name-${index}`);
+        const priceEl = document.getElementById(`edit-price-${index}`);
+        const descEl = document.getElementById(`edit-desc-${index}`);
+        if (nameEl && priceEl && descEl) {
+          item.name = nameEl.value.trim();
+          item.price = Number(priceEl.value);
+          item.desc = descEl.value.trim();
+        }
+      });
+
+      const res = await fetch('/api/admin/menu/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ menu: menuList })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        await fetchAdminMenu();
+        renderAdminTab();
+      }
+    }
+
+    async function renderOfferManagement(container) {
+      const res = await fetch('/api/offer');
+      const data = await res.json();
+      const offer = data.offer || {};
+      if (offer.image) offerImageBase64 = offer.image;
+
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">🎉 স্পেশাল ডিসকাউন্ট অফার পপআপ সেটিং</h3>
+          
+          <div style="margin-bottom:15px; display:flex; align-items:center; gap:10px;">
+            <label class="input-label" style="margin:0;">পপআপ অফার চালু / বন্ধ রাখুন (Enable / Disable Popup):</label>
+            <input type="checkbox" id="offer-enable-toggle" ${offer.enabled ? 'checked' : ''} style="width:22px; height:22px; accent-color:var(--gold-primary);">
+          </div>
+
+          <label class="input-label">অফারের শিরোনাম (Offer Title):</label>
+          <input type="text" id="offer-title" class="input-field" value="${offer.title || ''}">
+
+          <label class="input-label">অফারের বিবরণ (Offer Description):</label>
+          <textarea id="offer-desc" class="input-field">${offer.desc || ''}</textarea>
+
+          <label class="input-label">🖼️ পোষ্টার ছবি আপলোড করুন (.JPG / .PNG Format):</label>
+          <input type="file" id="offer-file-input" accept="image/jpeg, image/png, image/jpg" class="input-field" onchange="handleImageUpload(event)">
+
+          <div style="margin:12px 0;">
+            <p class="input-label">বর্তমান পোষ্টার প্রিভিউ:</p>
+            <img id="offer-preview-img" src="${offer.image || ''}" style="max-width:250px; border-radius:10px; display:${offer.image ? 'block' : 'none'}; border:1px solid var(--border-gold);">
+          </div>
+
+          <button class="btn-primary" onclick="saveOfferSettings()">💾 সেভ ও পাবলিশ করুন</button>
+        </div>
+      `;
+    }
+
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          offerImageBase64 = e.target.result;
+          const preview = document.getElementById('offer-preview-img');
+          preview.src = offerImageBase64;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function saveOfferSettings() {
+      const enabled = document.getElementById('offer-enable-toggle').checked;
+      const title = document.getElementById('offer-title').value.trim();
+      const desc = document.getElementById('offer-desc').value.trim();
+
+      const res = await fetch('/api/admin/offer/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ enabled, title, desc, image: offerImageBase64 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('🎉 স্পেশাল অফার সফলভাবে সেভ ও আপডেট করা হয়েছে!');
+      }
+    }
+
+    /* 👥 USER MANAGEMENT TAB */
+    function renderUsersManagement(container) {
+      if (!usersList || usersList.length === 0) {
+        container.innerHTML = `
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="color:var(--gold-bright); margin-bottom:15px;">👥 রেজিস্টার্ড ইউজার তালিকা</h3>
+              <button onclick="refreshUsersTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Sync & Refresh Users</button>
+            </div>
+            <p style="text-align:center; color:#aaa; padding:20px;">কোনো নিবন্ধিত ইউজার পাওয়া যায়নি।</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h3 style="color:var(--gold-bright); margin:0;">👥 রেজিস্টার্ড ইউজার তালিকা ও কন্ট্রোল (${usersList.length} জন)</h3>
+            <div style="display:flex; gap:10px;">
+              <button onclick="refreshUsersTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Sync</button>
+              <input type="text" id="user-search-input" class="input-field" placeholder="🔎 নাম বা মোবাইল দিয়ে খুঁজুন..." style="max-width:240px; padding:6px 10px;" onkeyup="filterUsersList()">
+            </div>
+          </div>
+
+          <div id="users-cards-wrapper">
+            ${renderUsersCardsHTML(usersList)}
+          </div>
+        </div>
+      `;
+    }
+
+    async function refreshUsersTab() {
+      await fetchAdminUsers();
+      renderAdminTab();
+    }
+
+    function renderUsersCardsHTML(list) {
+      return list.map(u => `
+        <div style="background:#1c1c28; border:1px solid ${u.isBlocked ? 'var(--red-accent)' : 'var(--border-gold)'}; padding:14px; margin-bottom:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <strong style="color:var(--gold-bright); font-size:1.05rem;">${u.name}</strong> 
+            <span style="background:${u.isBlocked ? 'var(--red-accent)' : 'var(--green-accent)'}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.75rem; margin-left:8px; font-weight:bold;">${u.isBlocked ? 'BLOCKED' : 'ACTIVE'}</span>
+            <br>
+            <small style="color:#aaa;">📱 ${u.phone} | 📧 ${u.email || 'N/A'}</small><br>
+            <small style="color:#aaa;">🏠 ${u.address} (${u.pincode})</small>
+          </div>
+
+          <div style="display:flex; gap:8px;">
+            <button onclick="toggleBlockUser('${u.phone}')" style="background:${u.isBlocked ? 'var(--green-accent)' : 'var(--red-accent)'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">
+              ${u.isBlocked ? '✅ Unblock' : '🚫 Block'}
+            </button>
+            <button onclick="deleteUserPermanently('${u.phone}')" style="background:#333; color:#ff6b6b; border:1px solid var(--red-accent); padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterUsersList() {
+      const query = document.getElementById('user-search-input').value.toLowerCase().trim();
+      const filtered = usersList.filter(u => 
+        (u.name && u.name.toLowerCase().includes(query)) || 
+        (u.phone && u.phone.includes(query)) ||
+        (u.email && u.email.toLowerCase().includes(query))
+      );
+      document.getElementById('users-cards-wrapper').innerHTML = renderUsersCardsHTML(filtered);
+    }
+
+    async function toggleBlockUser(phone) {
+      const res = await fetch('/api/admin/users/toggle-block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        await fetchAdminUsers();
+        renderAdminTab();
+      }
+    }
+
+    async function deleteUserPermanently(phone) {
+      if (confirm(`আপনি কি সত্যিই এই ইউজারটি (${phone}) ডিলিট করতে চান?`)) {
+        const res = await fetch('/api/admin/users/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ phone })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          await fetchAdminUsers();
+          renderAdminTab();
+        }
+      }
     }
   </script>
 </body>

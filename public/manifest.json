@@ -1,20 +1,24 @@
 {
-  "name": "আস্বাদন - Aswadan Home Delivery",
-  "short_name": "Aswadan",
+  "name": "আস্বাদন - হোম ডেলিভারি সার্ভিস",
+  "short_name": "আস্বাদন",
+  "description": "খাটি ঘরোয়া রান্নার অনন্য অভিজ্ঞতা - ৭০০০৩৬ পিনকোডে হোম ডেলিভারি",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#d4af37",
+  "background_color": "#09080c",
+  "theme_color": "#07070a",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192/d4af37/000000?text=আস্বাদন",
+      "src": "logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://via.placeholder.com/512/d4af37/000000?text=আস্বাদন",
+      "src": "logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
