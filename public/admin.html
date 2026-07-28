@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>আস্বাদন Admin Dashboard</title>
@@ -17,6 +13,50 @@
     .admin-tab-btn.active { background: var(--gold-gradient); color: #000; }
     .stat-card { background: #181824; border: 1px solid var(--border-gold); border-radius: 12px; padding: 18px; text-align: center; }
     .admin-section-box { background: #12121a; border: 1px solid var(--border-gold); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+
+    /* SVG Line Graph Styling */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      overflow-x: auto;
+      background: #181824;
+      border: 1px solid var(--border-gold);
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 10px;
+    }
+    .chart-line {
+      fill: none;
+      stroke: #e5c158;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 6px rgba(229, 193, 88, 0.5));
+    }
+    .chart-dot {
+      fill: #12121a;
+      stroke: #e5c158;
+      stroke-width: 3;
+      cursor: pointer;
+      transition: r 0.2s ease, fill 0.2s ease;
+    }
+    .chart-dot:hover {
+      r: 7;
+      fill: #e5c158;
+    }
+    .chart-grid {
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-dasharray: 4 4;
+    }
+    .chart-axis {
+      stroke: rgba(229, 193, 88, 0.4);
+      stroke-width: 2;
+    }
+    .chart-text {
+      fill: #a0a0b0;
+      font-size: 11px;
+      font-family: sans-serif;
+    }
   </style>
 </head>
 <body style="padding: 20px;">
@@ -40,7 +80,12 @@
       </div>
 
       <form onsubmit="event.preventDefault(); loginAdmin();">
-        <input type="password" id="admin-pass-input" class="input-field" placeholder="Enter Admin Password" required autofocus>
+        <div style="position: relative;">
+          <input type="password" id="admin-pass-input" class="input-field" placeholder="Enter Admin Password" required autofocus style="padding-right: 42px;">
+          <button type="button" onclick="togglePasswordVisibility('admin-pass-input', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 4px;" title="Toggle Password">
+            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
         
         <div style="text-align:right; margin:10px 0 15px;">
           <a href="javascript:void(0)" onclick="showAdminForgotView()" style="color:var(--gold-bright); font-size:0.85rem; text-decoration:underline;">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
@@ -50,17 +95,20 @@
       </form>
     </div>
 
-    <!-- VIEW 2: SEND FORGOT PASSWORD OTP -->
+    <!-- VIEW 2: SEND FORGOT PASSWORD OTP WITH STRICT BLANK EMAIL CHECK -->
     <div id="admin-view-forgot" style="display:none;">
       <div style="text-align:center; margin-bottom:18px;">
         <span style="font-size:2.5rem;">🔐</span>
-        <h2 style="color:var(--gold-primary); margin-top:5px;">পাসওয়ার্ড রিসেট (OTP)</h2>
+        <h2 style="color:var(--gold-primary); margin-top:5px;">পাসওয়ার্ড রিসেট (ইমেল ভেরিফিকেশন)</h2>
         <p style="color:var(--text-muted); font-size:0.88rem; margin-top:6px;">
-          রেজিস্টার্ড ইমেল <b>iammadhuchanda@gmail.com</b>-এ ৬-সংখ্যার OTP কোড পাঠানো হবে।
+          নিরাপত্তার জন্য ওনার/এডমিন ইমেল আইডি লিখুন:
         </p>
       </div>
 
-      <button class="btn-primary" onclick="sendAdminOTP()">📧 OTP কোড পাঠান</button>
+      <label class="input-label">📧 এডমিন ইমেল আইডি:</label>
+      <input type="email" id="admin-forgot-email-input" class="input-field" placeholder="Enter admin email ID" value="">
+
+      <button class="btn-primary" onclick="verifyAndSendAdminOTP()" style="margin-top:15px;">ইমেল যাচাই ও OTP পাঠান</button>
       
       <div style="text-align:center; margin-top:15px;">
         <a href="javascript:void(0)" onclick="showAdminLoginView()" style="color:#aaa; font-size:0.85rem;">← লগইন ফর্মে ফিরে যান</a>
@@ -79,7 +127,12 @@
         <input type="text" id="admin-reset-otp" class="input-field" placeholder="Enter 6-digit OTP" required>
 
         <label class="input-label">🔑 নতুন এডমিন পাসওয়ার্ড:</label>
-        <input type="password" id="admin-new-password" class="input-field" placeholder="Enter New Password" required>
+        <div style="position: relative;">
+          <input type="password" id="admin-new-password" class="input-field" placeholder="Enter New Password" required style="padding-right: 42px;">
+          <button type="button" onclick="togglePasswordVisibility('admin-new-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 4px;" title="Toggle Password">
+            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
 
         <button type="submit" class="btn-primary" style="margin-top:15px;">পাসওয়ার্ড পরিবর্তন করুন</button>
       </form>
@@ -110,6 +163,7 @@
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'menu')">🍔 Manage Menu Items</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'offer')" style="color:var(--gold-bright);">🎉 Special Offer Banner</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'users')" style="color:var(--gold-bright);">👥 Manage Users</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'factory')" style="color:#ff6b6b; border-color:#ff6b6b;">⚙️ Factory Settings</button>
       </div>
 
       <!-- Tab Content Area -->
@@ -132,18 +186,36 @@
     let menuList = [];
     let usersList = [];
     let currentTab = 'dashboard';
+    
+    const todayObj = new Date();
+    const todayStr = todayObj.toISOString().split('T')[0];
+    const currentYearStr = todayObj.getFullYear().toString();
+    const currentMonthStr = todayStr.substring(0, 7);
+
+    let tabFilters = {
+      pending: { date: todayStr, showAll: true },
+      accepted: { date: todayStr, showAll: true },
+      rejected: { date: todayStr, showAll: true },
+      history: { date: todayStr, showAll: true },
+      revenue: { date: todayStr, showAll: true }
+    };
+
+    let selectedYearForGraph = currentYearStr;
+    let selectedMonthForGraph = currentMonthStr;
     let offerImageBase64 = '';
+    let activeFactoryOption = null;
 
     if (adminToken) showDashboard();
 
-    /* --- ADMIN LOGIN & FORGOT PASSWORD LOGIC --- */
     function showAdminLoginView() {
+      document.getElementById('admin-forgot-email-input').value = '';
       document.getElementById('admin-view-login').style.display = 'block';
       document.getElementById('admin-view-forgot').style.display = 'none';
       document.getElementById('admin-view-reset').style.display = 'none';
     }
 
     function showAdminForgotView() {
+      document.getElementById('admin-forgot-email-input').value = '';
       document.getElementById('admin-view-login').style.display = 'none';
       document.getElementById('admin-view-forgot').style.display = 'block';
       document.getElementById('admin-view-reset').style.display = 'none';
@@ -153,6 +225,17 @@
       document.getElementById('admin-view-login').style.display = 'none';
       document.getElementById('admin-view-forgot').style.display = 'none';
       document.getElementById('admin-view-reset').style.display = 'block';
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+      } else {
+        input.type = 'password';
+        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+      }
     }
 
     async function loginAdmin() {
@@ -172,13 +255,26 @@
       } else alert(data.message);
     }
 
-    async function sendAdminOTP() {
-      const res = await fetch('/api/admin/forgot-password', { method: 'POST' });
+    async function verifyAndSendAdminOTP() {
+      const emailInput = document.getElementById('admin-forgot-email-input').value.trim();
+      if (!emailInput) {
+        return alert('দয়া করে এডমিন ইমেল আইডি লিখুন।');
+      }
+
+      const res = await fetch('/api/admin/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput })
+      });
       const data = await res.json();
+      
+      // Always alert the message returned by the server
+      alert(data.message);
+      
+      // STRICT CHECK: Only advance to reset view if backend confirms success (valid admin email)
       if (data.success) {
-        alert(data.message);
         showAdminResetView();
-      } else alert(data.message);
+      }
     }
 
     async function submitAdminNewPassword() {
@@ -199,14 +295,12 @@
       } else alert(data.message);
     }
 
-    /* --- DASHBOARD CONTROL --- */
     function showDashboard() {
       document.getElementById('admin-login-screen').style.display = 'none';
       document.getElementById('admin-dashboard').style.display = 'block';
       loadAdminData();
       fetchAdminMenu();
       fetchAdminUsers();
-      setInterval(loadAdminData, 6000);
     }
 
     function logoutAdmin() {
@@ -221,7 +315,7 @@
       if (res.status === 401) return logoutAdmin();
       adminData = await res.json();
       
-      if (currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users') {
+      if (currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users' && currentTab !== 'factory') {
         renderAdminTab();
       }
     }
@@ -254,36 +348,103 @@
       if (tab === 'menu') await fetchAdminMenu();
       if (tab === 'users') await fetchAdminUsers();
 
+      await loadAdminData();
       renderAdminTab();
     }
 
     async function renderAdminTab() {
-      if (!adminData && currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users') return;
+      if (!adminData && currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users' && currentTab !== 'factory') return;
       const container = document.getElementById('admin-tab-content');
 
       if (currentTab === 'dashboard') {
         container.innerHTML = `
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:20px;">
-            <div class="stat-card"><h3>${adminData.stats.totalOrders}</h3><p style="color:#aaa;">Total Orders</p></div>
-            <div class="stat-card"><h3 style="color:var(--gold-primary);">${adminData.stats.pendingCount}</h3><p style="color:#aaa;">Pending</p></div>
-            <div class="stat-card"><h3 style="color:var(--green-accent);">${adminData.stats.acceptedCount}</h3><p style="color:#aaa;">Accepted</p></div>
-            <div class="stat-card"><h3 style="color:var(--red-accent);">${adminData.stats.rejectedCount}</h3><p style="color:#aaa;">Rejected</p></div>
-            <div class="stat-card"><h3 style="color:var(--gold-bright);">₹${adminData.stats.netRevenue}</h3><p style="color:#aaa;">Total Revenue</p></div>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(5)'), 'history')" style="cursor: pointer;" title="Click to view Order History">
+              <h3>${adminData.stats.totalOrders}</h3>
+              <p style="color:#aaa;">Total Orders</p>
+            </div>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(2)'), 'pending')" style="cursor: pointer;" title="Click to view Current Pending">
+              <h3 style="color:var(--gold-primary);">${adminData.stats.pendingCount}</h3>
+              <p style="color:#aaa;">Pending</p>
+            </div>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(3)'), 'accepted')" style="cursor: pointer;" title="Click to view Accepted Orders">
+              <h3 style="color:var(--green-accent);">${adminData.stats.acceptedCount}</h3>
+              <p style="color:#aaa;">Accepted</p>
+            </div>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(4)'), 'rejected')" style="cursor: pointer;" title="Click to view Rejected Orders">
+              <h3 style="color:var(--red-accent);">${adminData.stats.rejectedCount}</h3>
+              <p style="color:#aaa;">Rejected</p>
+            </div>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(6)'), 'revenue')" style="cursor: pointer;" title="Click to view Net Revenue">
+              <h3 style="color:var(--gold-bright);">₹${adminData.stats.netRevenue}</h3>
+              <p style="color:#aaa;">Total Revenue</p>
+            </div>
           </div>
         `;
       } else if (currentTab === 'pending') {
-        container.innerHTML = renderOrdersList(adminData.pending, true);
+        container.innerHTML = renderFilterHeader('pending', '⏳ বর্তমান পেন্ডিং অর্ডার') + renderOrdersList(getFilteredList(adminData.pending, 'pending'), true);
       } else if (currentTab === 'accepted') {
-        container.innerHTML = renderOrdersList(adminData.accepted, false);
+        container.innerHTML = renderFilterHeader('accepted', '✅ এপ্রুভড অর্ডার') + renderOrdersList(getFilteredList(adminData.accepted, 'accepted'), false);
       } else if (currentTab === 'rejected') {
-        container.innerHTML = renderOrdersList(adminData.rejected, false);
+        container.innerHTML = renderFilterHeader('rejected', '❌ বাতিল করা অর্ডার') + renderOrdersList(getFilteredList(adminData.rejected, 'rejected'), false);
       } else if (currentTab === 'history') {
-        container.innerHTML = renderOrdersList(adminData.orders, false);
+        container.innerHTML = renderFilterHeader('history', '📜 সম্পূর্ণ অর্ডার ইতিহাস') + renderOrdersList(getFilteredList(adminData.orders, 'history'), false);
       } else if (currentTab === 'revenue') {
+        const f = tabFilters.revenue;
+        const validOrders = (adminData.orders || []).filter(o => o.status === 'ACCEPTED' || o.status === 'DELIVERED');
+        const filteredRevenueOrders = f.showAll ? validOrders : validOrders.filter(o => {
+          let rawDate = o.orderDate || o.createdAt || '';
+          let normalizedDate = '';
+          if (rawDate.includes('T')) {
+            normalizedDate = rawDate.split('T')[0];
+          } else if (rawDate.includes('/')) {
+            const datePart = rawDate.split(',')[0].trim();
+            const parts = datePart.split('/');
+            if (parts.length === 3) {
+              let m = parts[0].padStart(2, '0');
+              let d = parts[1].padStart(2, '0');
+              let y = parts[2];
+              normalizedDate = `${y}-${m}-${d}`;
+            }
+          } else {
+            normalizedDate = rawDate.substring(0, 10);
+          }
+          return normalizedDate === f.date;
+        });
+        const currentRevenue = filteredRevenueOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+
         container.innerHTML = `
-          <div class="stat-card" style="padding:30px;">
-            <h1 style="color:var(--gold-bright); font-size:2.5rem;">₹${adminData.stats.netRevenue}</h1>
-            <p style="color:#aaa;">Total Net Revenue Generated</p>
+          ${renderFilterHeader('revenue', '💰 নেট রেভিনিউ ও অ্যানালাইসিস')}
+          
+          <div class="stat-card" style="padding:25px; margin-bottom:20px;">
+            <h1 style="color:var(--gold-bright); font-size:2.3rem;">₹${currentRevenue}</h1>
+            <p style="color:#aaa;">${f.showAll ? 'সর্বমোট রেভিনিউ (সমস্ত ডেটা)' : f.date + ' অর্ডার তারিখের রেভিনিউ'}</p>
+          </div>
+
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+              <h3 style="color:var(--gold-bright); margin:0;">📈 বার্ষিক মাসভিত্তিক রেভিনিউ গ্রাফ</h3>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label style="font-size:0.85rem; color:var(--gold-bright); font-weight:bold;">বছর বাছুন:</label>
+                <select class="input-field" onchange="updateGraphYear(this.value)" style="max-width:120px; padding:5px 8px;">
+                  <option value="2026" ${selectedYearForGraph === '2026' ? 'selected' : ''}>2026</option>
+                  <option value="2025" ${selectedYearForGraph === '2025' ? 'selected' : ''}>2025</option>
+                  <option value="2024" ${selectedYearForGraph === '2024' ? 'selected' : ''}>2024</option>
+                </select>
+              </div>
+            </div>
+            ${renderYearlyLineChart(validOrders, selectedYearForGraph)}
+          </div>
+
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+              <h3 style="color:var(--gold-bright); margin:0;">📉 মাসিক দিনভিত্তিক রেভিনিউ গ্রাফ</h3>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label style="font-size:0.85rem; color:var(--gold-bright); font-weight:bold;">মাস বাছুন:</label>
+                <input type="month" class="input-field" value="${selectedMonthForGraph}" onchange="updateGraphMonth(this.value)" style="max-width:160px; padding:5px 8px;">
+              </div>
+            </div>
+            ${renderMonthlyLineChart(validOrders, selectedMonthForGraph)}
           </div>
         `;
       } else if (currentTab === 'menu') {
@@ -292,48 +453,335 @@
         await renderOfferManagement(container);
       } else if (currentTab === 'users') {
         renderUsersManagement(container);
+      } else if (currentTab === 'factory') {
+        renderFactorySettingsManagement(container);
       }
     }
 
-    function renderOrdersList(list, showActions) {
-      if (list.length === 0) return '<p style="text-align:center; color:#aaa; padding:20px;">কোনো অর্ডার নেই।</p>';
-      return list.map(o => `
-        <div class="tile-card" style="text-align:left; margin-bottom:12px; width:100%;">
-          <div style="display:flex; justify-content:space-between;">
-            <h4 style="color:var(--gold-bright);">#${o.orderId}</h4>
-            <span style="color:var(--gold-primary); font-weight:bold;">${o.status}</span>
+    function renderFactorySettingsManagement(container) {
+      container.innerHTML = `
+        <div class="admin-section-box" style="border: 2px solid var(--red-accent); background: #181116;">
+          <h3 style="color: var(--red-accent); margin-bottom: 12px;">⚙️ Admin Factory Settings & Data Purge</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+            সাবধান! এই সেকশনের অপশনগুলো সম্পূর্ণ ডেটা বা নির্দিষ্ট হিস্ট্রি মুছে ফেলে। প্রতিটি ডিলিট অ্যাকশনের জন্য এডমিন ইমেলে OTP পাঠানো হবে।
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; max-width: 550px;">
+            <button onclick="triggerAdminFactory(1)" style="background: #cc0000; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">1) Delete All Data History (সব ডেটা, ইউজার, অর্ডার ও রেভিনিউ)</button>
+            <button onclick="triggerAdminFactory(2)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">2) Delete All Order History (সমস্ত অর্ডার ইতিহাস)</button>
+            <button onclick="triggerAdminFactory(3)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">3) Delete All User Data (সমস্ত ইউজার ডেটা)</button>
+            <button onclick="triggerAdminFactory(4)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">4) Delete All Revenue Data (সমস্ত রেভিনিউ ডেটা)</button>
           </div>
-          <p><b>গ্রাহক:</b> ${o.customerName} (${o.phone})</p>
-          <p><b>ইমেল:</b> ${o.email || 'N/A'}</p>
-          <p><b>ঠিকানা:</b> ${o.address}</p>
-          <p><b>ডেলিভারি তারিখ:</b> ${o.deliveryDate}</p>
-          <p><b>অর্ডারের তালিকা:</b> ${o.items.map(i => i.name + ' x ' + i.qty).join(', ')}</p>
-          <p><b>মোট মূল্য:</b> ₹${o.totalAmount}</p>
 
-          ${o.rejectionReason ? `<p style="color:#e63946;"><b>বাতিলের কারণ:</b> ${o.rejectionReason}</p>` : ''}
-
-          ${o.paymentScreenshot ? `
-            <div style="margin:10px 0;">
-              <p><b>🖼️ পেমেন্ট স্ক্রিনশট (Payment Screenshot):</b></p>
-              <img src="${o.paymentScreenshot}" alt="Payment Screenshot" style="max-width:180px; max-height:180px; border-radius:8px; border:1px solid var(--border-gold); cursor:pointer; margin-top:5px; object-fit:cover;" onclick="openImagePreview('${o.paymentScreenshot}')">
-              <p style="font-size:0.78rem; color:var(--gold-bright); cursor:pointer;" onclick="openImagePreview('${o.paymentScreenshot}')">🔍 ক্লিক করে বড় ছবি দেখুন</p>
-            </div>
-          ` : '<p style="color:#e63946;"><b>পেমেন্ট স্ক্রিনশট পাওয়া যায়নি</b></p>'}
-
-          ${showActions ? `
-            <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-              <button onclick="updateStatus('${o.orderId}', 'ACCEPTED')" style="background:var(--green-accent); color:#fff; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">Accept Order</button>
-              <button onclick="rejectOrderPrompt('${o.orderId}')" style="background:var(--red-accent); color:#fff; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">Reject Order</button>
-            </div>
-          ` : ''}
-
-          ${o.status === 'ACCEPTED' ? `
-            <div style="margin-top:10px;">
-              <button onclick="updateStatus('${o.orderId}', 'DELIVERED')" style="background:var(--gold-primary); color:#000; font-weight:bold; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">🚚 Mark as Delivered</button>
-            </div>
-          ` : ''}
+          <div id="admin-factory-otp-box" style="display: none; margin-top: 20px; background: #12121a; border: 1px solid var(--border-gold); padding: 18px; border-radius: 12px; max-width: 550px;">
+            <p id="admin-factory-instruction" style="font-weight: bold; color: var(--gold-bright); margin-bottom: 12px; font-size: 0.95rem;"></p>
+            <label class="input-label">🔢 এডমিন ইমেলের ৬-সংখ্যার OTP কোড:</label>
+            <input type="text" id="admin-factory-otp-val" class="input-field" placeholder="Enter Admin OTP" maxlength="6">
+            <button class="btn-primary" onclick="executeAdminFactory()" style="background: var(--red-accent); color: #fff; margin-top: 12px;">চূড়ান্ত কনফার্ম ও এক্সিকিউট করুন</button>
+          </div>
         </div>
-      `).join('');
+      `;
+    }
+
+    const factoryOptionNames = {
+      1: "All Data History (Users, Orders, Revenue, Pending/Accepted/Rejected)",
+      2: "All Order History (Pending, Accepted, Rejected orders)",
+      3: "All User Data",
+      4: "All Revenue Data"
+    };
+
+    async function triggerAdminFactory(optionType) {
+      activeFactoryOption = optionType;
+      const confirmed = confirm(`আপনি কি নিশ্চিত যে আপনি "${factoryOptionNames[optionType]}" ডিলিট করতে চান? এই কাজ অপরিবর্তনীয়।`);
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch('/api/admin/factory-settings/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ optionType })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+          document.getElementById('admin-factory-instruction').innerText = `অ্যাকশন: "${factoryOptionNames[optionType]}". এডমিন ইমেলে OTP পাঠানো হয়েছে, সেটি নিচে লিখুন:`;
+          document.getElementById('admin-factory-otp-box').style.display = 'block';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('ফ্যাক্টরি সেটিংস OTP পাঠাতে সমস্যা হয়েছে।');
+      }
+    }
+
+    async function executeAdminFactory() {
+      const otp = document.getElementById('admin-factory-otp-val').value.trim();
+      if (!otp || otp.length !== 6) {
+        alert('দয়া করে সঠিক ৬-সংখ্যার OTP কোড লিখুন।');
+        return;
+      }
+
+      const finalConfirmed = confirm('OTP যাচাই সফল! আপনি কি নিশ্চিতভাবে এই ডেটা পার্মানেন্টলি ডিলিট করতে চান?');
+      if (!finalConfirmed) return;
+
+      try {
+        const res = await fetch('/api/admin/factory-settings/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ optionType: activeFactoryOption, otp })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+          location.reload();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('ফ্যাক্টরি সেটিংস এক্সিকিউট করতে সমস্যা হয়েছে।');
+      }
+    }
+
+    function updateGraphYear(val) {
+      selectedYearForGraph = val;
+      renderAdminTab();
+    }
+
+    function updateGraphMonth(val) {
+      selectedMonthForGraph = val;
+      renderAdminTab();
+    }
+
+    function renderYearlyLineChart(orders, year) {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyTotals = new Array(12).fill(0);
+
+      orders.forEach(o => {
+        let rawDate = o.orderDate || o.createdAt || '';
+        let normalizedDate = '';
+        if (rawDate.includes('T')) {
+          normalizedDate = rawDate.split('T')[0];
+        } else if (rawDate.includes('/')) {
+          const datePart = rawDate.split(',')[0].trim();
+          const parts = datePart.split('/');
+          if (parts.length === 3) {
+            let m = parts[0].padStart(2, '0');
+            let d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            normalizedDate = `${y}-${m}-${d}`;
+          }
+        } else {
+          normalizedDate = rawDate.substring(0, 10);
+        }
+
+        if (normalizedDate.startsWith(year)) {
+          const m = parseInt(normalizedDate.substring(5, 7), 10);
+          if (m >= 1 && m <= 12) {
+            monthlyTotals[m - 1] += Number(o.totalAmount || 0);
+          }
+        }
+      });
+
+      const maxVal = Math.max(...monthlyTotals, 500);
+      const svgWidth = 700;
+      const svgHeight = 260;
+      const padding = 45;
+      const chartWidth = svgWidth - padding * 2;
+      const chartHeight = svgHeight - padding * 2;
+
+      let points = [];
+      monthlyTotals.forEach((val, idx) => {
+        const x = padding + (idx / 11) * chartWidth;
+        const y = (svgHeight - padding) - (val / maxVal) * chartHeight;
+        points.push({ x, y, val, label: monthNames[idx] });
+      });
+
+      const pathData = points.reduce((acc, pt, idx) => idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
+
+      return `
+        <div class="chart-container">
+          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; height:auto; overflow:visible;">
+            <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" class="chart-axis" />
+            <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" class="chart-grid" />
+            <line x1="${padding}" y1="${svgHeight/2}" x2="${svgWidth - padding}" y2="${svgHeight/2}" class="chart-grid" />
+            <path d="${pathData}" class="chart-line" />
+            ${points.map(pt => `
+              <g>
+                <circle cx="${pt.x}" cy="${pt.y}" r="5" class="chart-dot">
+                  <title>মাস: ${pt.label} ${year} | রেভিনিউ: ₹${pt.val}</title>
+                </circle>
+                <text x="${pt.x}" y="${svgHeight - padding + 18}" text-anchor="middle" class="chart-text">${pt.label}</text>
+                <text x="${pt.x}" y="${pt.y - 10}" text-anchor="middle" class="chart-text" style="font-size:10px; fill:#e5c158;">₹${pt.val}</text>
+              </g>
+            `).join('')}
+          </svg>
+        </div>
+      `;
+    }
+
+    function renderMonthlyLineChart(orders, yearMonth) {
+      const [year, month] = yearMonth.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const dailyTotals = new Array(daysInMonth).fill(0);
+
+      orders.forEach(o => {
+        let rawDate = o.orderDate || o.createdAt || '';
+        let normalizedDate = '';
+        if (rawDate.includes('T')) {
+          normalizedDate = rawDate.split('T')[0];
+        } else if (rawDate.includes('/')) {
+          const datePart = rawDate.split(',')[0].trim();
+          const parts = datePart.split('/');
+          if (parts.length === 3) {
+            let m = parts[0].padStart(2, '0');
+            let d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            normalizedDate = `${y}-${m}-${d}`;
+          }
+        } else {
+          normalizedDate = rawDate.substring(0, 10);
+        }
+
+        if (normalizedDate.startsWith(yearMonth)) {
+          const dayNum = parseInt(normalizedDate.substring(8, 10), 10);
+          if (dayNum >= 1 && dayNum <= daysInMonth) {
+            dailyTotals[dayNum - 1] += Number(o.totalAmount || 0);
+          }
+        }
+      });
+
+      const maxVal = Math.max(...dailyTotals, 500);
+      const svgWidth = 750;
+      const svgHeight = 260;
+      const padding = 45;
+      const chartWidth = svgWidth - padding * 2;
+      const chartHeight = svgHeight - padding * 2;
+
+      let points = [];
+      dailyTotals.forEach((val, idx) => {
+        const dayNum = idx + 1;
+        const x = padding + (idx / (daysInMonth - 1 || 1)) * chartWidth;
+        const y = (svgHeight - padding) - (val / maxVal) * chartHeight;
+        points.push({ x, y, val, label: dayNum });
+      });
+
+      const pathData = points.reduce((acc, pt, idx) => idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
+
+      return `
+        <div class="chart-container">
+          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; height:auto; overflow:visible;">
+            <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" class="chart-axis" />
+            <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" class="chart-grid" />
+            <line x1="${padding}" y1="${svgHeight/2}" x2="${svgWidth - padding}" y2="${svgHeight/2}" class="chart-grid" />
+            <path d="${pathData}" class="chart-line" />
+            ${points.map(pt => `
+              <g>
+                <circle cx="${pt.x}" cy="${pt.y}" r="4" class="chart-dot">
+                  <title>তারিখ: ${yearMonth}-${String(pt.label).padStart(2, '0')} | রেভিনিউ: ₹${pt.val}</title>
+                </circle>
+                ${pt.label % 3 === 0 || pt.label === 1 ? `<text x="${pt.x}" y="${svgHeight - padding + 18}" text-anchor="middle" class="chart-text">${pt.label}</text>` : ''}
+                ${pt.val > 0 ? `<text x="${pt.x}" y="${pt.y - 10}" text-anchor="middle" class="chart-text" style="font-size:9px; fill:#e5c158;">₹${pt.val}</text>` : ''}
+              </g>
+            `).join('')}
+          </svg>
+        </div>
+      `;
+    }
+
+    function renderFilterHeader(tabKey, titleText) {
+      const f = tabFilters[tabKey];
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:12px; background:#12121a; padding:15px; border:1px solid var(--border-gold); border-radius:12px;">
+          <h3 style="color:var(--gold-bright); margin:0;">${titleText}</h3>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label style="font-size:0.85rem; color:var(--gold-bright); font-weight:bold;">অর্ডার করার তারিখ:</label>
+              <input type="date" class="input-field" value="${f.date}" ${f.showAll ? 'disabled' : ''} onchange="updateTabDate('${tabKey}', this.value)" style="max-width:160px; padding:5px 8px;">
+            </div>
+            <button onclick="toggleShowAll('${tabKey}')" style="background:${f.showAll ? 'var(--gold-gradient)' : 'rgba(229,193,88,0.1)'}; color:${f.showAll ? '#000' : 'var(--gold-bright)'}; border:1px solid var(--border-gold); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:0.82rem;">
+              ${f.showAll ? '📅 অর্ডার তারিখ ফিল্টার' : '♾️ Show All Data'}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateTabDate(tabKey, dateVal) {
+      tabFilters[tabKey].date = dateVal;
+      renderAdminTab();
+    }
+
+    function toggleShowAll(tabKey) {
+      tabFilters[tabKey].showAll = !tabFilters[tabKey].showAll;
+      renderAdminTab();
+    }
+
+    function getFilteredList(list, tabKey) {
+      const f = tabFilters[tabKey];
+      if (f.showAll) return list;
+      return list.filter(o => {
+        let rawDate = o.orderDate || o.createdAt || '';
+        let normalizedDate = '';
+        if (rawDate.includes('T')) {
+          normalizedDate = rawDate.split('T')[0];
+        } else if (rawDate.includes('/')) {
+          const datePart = rawDate.split(',')[0].trim();
+          const parts = datePart.split('/');
+          if (parts.length === 3) {
+            let m = parts[0].padStart(2, '0');
+            let d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            normalizedDate = `${y}-${m}-${d}`;
+          }
+        } else {
+          normalizedDate = rawDate.substring(0, 10);
+        }
+        return normalizedDate === f.date;
+      });
+    }
+
+    function renderOrdersList(list, showActions) {
+      if (list.length === 0) return '<p style="text-align:center; color:#aaa; padding:25px;">কোনো অর্ডার পাওয়া যায়নি।</p>';
+      return list.map(o => {
+        const mapsUrl = o.location ? (o.location.startsWith('http') ? o.location.split(' ')[0] : `https://maps.google.com/?q=${o.location}`) : '';
+        return `
+          <div class="tile-card" style="text-align:left; margin-bottom:12px; width:100%;">
+            <div style="display:flex; justify-content:space-between;">
+              <h4 style="color:var(--gold-bright);">#${o.orderId}</h4>
+              <span style="color:var(--gold-primary); font-weight:bold;">${o.status}</span>
+            </div>
+            <p><b>গ্রাহক:</b> ${o.customerName} (${o.phone})</p>
+            <p><b>ইমেল:</b> ${o.email || 'N/A'}</p>
+            <p><b>ঠিকানা:</b> ${o.address}</p>
+            ${o.location ? `<p><b>📍 গুগল ম্যাপ লোকেশন:</b> <a href="${mapsUrl}" target="_blank" style="color:var(--gold-bright); text-decoration:underline; font-weight:bold;">🗺️ View Exact Location on Google Maps</a></p>` : ''}
+            <p><b>অর্ডার করার তারিখ (Order Date):</b> <span style="color:var(--gold-bright); font-weight:bold;">${o.orderDate || o.createdAt || 'N/A'}</span></p>
+            <p><b>ডেলিভারি তারিখ (Delivery Date):</b> ${o.deliveryDate}</p>
+            <p><b>অর্ডারের তালিকা:</b> ${o.items.map(i => i.name + ' x ' + i.qty).join(', ')}</p>
+            <p><b>মোট মূল্য:</b> ₹${o.totalAmount}</p>
+
+            ${o.rejectionReason ? `<p style="color:#e63946;"><b>বাতিলের কারণ:</b> ${o.rejectionReason}</p>` : ''}
+
+            ${o.paymentScreenshot ? `
+              <div style="margin:10px 0;">
+                <p><b>🖼️ পেমেন্ট স্ক্রিনশট:</b></p>
+                <img src="${o.paymentScreenshot}" alt="Payment Screenshot" style="max-width:180px; max-height:180px; border-radius:8px; border:1px solid var(--border-gold); cursor:pointer; margin-top:5px; object-fit:cover;" onclick="openImagePreview('${o.paymentScreenshot}')">
+                <p style="font-size:0.78rem; color:var(--gold-bright); cursor:pointer;" onclick="openImagePreview('${o.paymentScreenshot}')">🔍 ক্লিক করে বড় ছবি দেখুন</p>
+              </div>
+            ` : '<p style="color:#e63946;"><b>পেমেন্ট স্ক্রিনশট পাওয়া যায়নি</b></p>'}
+
+            ${showActions ? `
+              <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+                <button onclick="updateStatus('${o.orderId}', 'ACCEPTED')" style="background:var(--green-accent); color:#fff; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">Accept Order</button>
+                <button onclick="rejectOrderPrompt('${o.orderId}')" style="background:var(--red-accent); color:#fff; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">Reject Order</button>
+              </div>
+            ` : ''}
+
+            ${o.status === 'ACCEPTED' ? `
+              <div style="margin-top:10px;">
+                <button onclick="updateStatus('${o.orderId}', 'DELIVERED')" style="background:var(--gold-primary); color:#000; font-weight:bold; padding:6px 14px; border:none; border-radius:6px; cursor:pointer;">🚚 Mark as Delivered</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
     }
 
     function openImagePreview(imgSrc) {
@@ -351,7 +799,7 @@
     }
 
     async function rejectOrderPrompt(orderId) {
-      const reason = prompt('অর্ডার বাতিলের কারণ লিখুন (Reason for Rejection):');
+      const reason = prompt('অর্ডার বাতিলের কারণ লিখুন:');
       if (reason === null) return;
 
       await fetch('/api/admin/order-status', {
@@ -374,21 +822,21 @@
     function renderMenuManagement(container) {
       container.innerHTML = `
         <div class="admin-section-box">
-          <h3 style="color:var(--gold-bright); margin-bottom:15px;">🍔 নতুন খাবারের আইটেম যোগ করুন (Add New Menu Item)</h3>
-          <label class="input-label">খাবারের নাম (Item Name):</label>
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">🍔 নতুন খাবারের আইটেম যোগ করুন</h3>
+          <label class="input-label">খাবারের নাম:</label>
           <input type="text" id="new-item-name" class="input-field" placeholder="e.g. ইলিশ মাছের থালি">
 
-          <label class="input-label">মূল্য (Price in ₹):</label>
+          <label class="input-label">মূল্য (₹):</label>
           <input type="number" id="new-item-price" class="input-field" placeholder="e.g. 180">
 
-          <label class="input-label">বিবরণ (Description):</label>
+          <label class="input-label">বিবরণ:</label>
           <input type="text" id="new-item-desc" class="input-field" placeholder="e.g. ভাত, ডাল, ভাজা, সর্ষে ইলিশ ও চাটনি">
 
           <button class="btn-primary" onclick="addNewMenuItem()">➕ নতুন আইটেম যোগ করুন</button>
         </div>
 
         <div class="admin-section-box">
-          <h3 style="color:var(--gold-bright); margin-bottom:15px;">✏️ বিদ্যমান মেনু ও মূল্য এডিট করুন (Edit Menu Items & Prices)</h3>
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">✏️ বিদ্যমান মেনু ও মূল্য এডিট করুন</h3>
           <div id="admin-menu-list">
             ${menuList.map((item, index) => `
               <div style="background:#1c1c28; border:1px solid #333; padding:12px; margin-bottom:10px; border-radius:10px;">
@@ -465,17 +913,17 @@
           <h3 style="color:var(--gold-bright); margin-bottom:15px;">🎉 স্পেশাল ডিসকাউন্ট অফার পপআপ সেটিং</h3>
           
           <div style="margin-bottom:15px; display:flex; align-items:center; gap:10px;">
-            <label class="input-label" style="margin:0;">পপআপ অফার চালু / বন্ধ রাখুন (Enable / Disable Popup):</label>
+            <label class="input-label" style="margin:0;">পপআপ অফার চালু / বন্ধ রাখুন:</label>
             <input type="checkbox" id="offer-enable-toggle" ${offer.enabled ? 'checked' : ''} style="width:22px; height:22px; accent-color:var(--gold-primary);">
           </div>
 
-          <label class="input-label">অফারের শিরোনাম (Offer Title):</label>
+          <label class="input-label">অফারের শিরোনাম:</label>
           <input type="text" id="offer-title" class="input-field" value="${offer.title || ''}">
 
-          <label class="input-label">অফারের বিবরণ (Offer Description):</label>
+          <label class="input-label">অফারের বিবরণ:</label>
           <textarea id="offer-desc" class="input-field">${offer.desc || ''}</textarea>
 
-          <label class="input-label">🖼️ পোষ্টার ছবি আপলোড করুন (.JPG / .PNG Format):</label>
+          <label class="input-label">🖼️ পোষ্টার ছবি আপলোড করুন:</label>
           <input type="file" id="offer-file-input" accept="image/jpeg, image/png, image/jpg" class="input-field" onchange="handleImageUpload(event)">
 
           <div style="margin:12px 0;">
@@ -518,14 +966,13 @@
       }
     }
 
-    /* 👥 USER MANAGEMENT TAB */
     function renderUsersManagement(container) {
       if (!usersList || usersList.length === 0) {
         container.innerHTML = `
           <div class="admin-section-box">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <h3 style="color:var(--gold-bright); margin-bottom:15px;">👥 রেজিস্টার্ড ইউজার তালিকা</h3>
-              <button onclick="refreshUsersTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Sync & Refresh Users</button>
+              <button onclick="refreshUsersTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh Users</button>
             </div>
             <p style="text-align:center; color:#aaa; padding:20px;">কোনো নিবন্ধিত ইউজার পাওয়া যায়নি।</p>
           </div>
@@ -536,13 +983,12 @@
       container.innerHTML = `
         <div class="admin-section-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-            <h3 style="color:var(--gold-bright); margin:0;">👥 রেজিস্টার্ড ইউজার তালিকা ও কন্ট্রোল (${usersList.length} জন)</h3>
+            <h3 style="color:var(--gold-bright); margin:0;">👥 রেজিস্টার্ড ইউজার তালিকা (${usersList.length} জন)</h3>
             <div style="display:flex; gap:10px;">
               <button onclick="refreshUsersTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Sync</button>
               <input type="text" id="user-search-input" class="input-field" placeholder="🔎 নাম বা মোবাইল দিয়ে খুঁজুন..." style="max-width:240px; padding:6px 10px;" onkeyup="filterUsersList()">
             </div>
           </div>
-
           <div id="users-cards-wrapper">
             ${renderUsersCardsHTML(usersList)}
           </div>
@@ -556,26 +1002,29 @@
     }
 
     function renderUsersCardsHTML(list) {
-      return list.map(u => `
-        <div style="background:#1c1c28; border:1px solid ${u.isBlocked ? 'var(--red-accent)' : 'var(--border-gold)'}; padding:14px; margin-bottom:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div>
-            <strong style="color:var(--gold-bright); font-size:1.05rem;">${u.name}</strong> 
-            <span style="background:${u.isBlocked ? 'var(--red-accent)' : 'var(--green-accent)'}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.75rem; margin-left:8px; font-weight:bold;">${u.isBlocked ? 'BLOCKED' : 'ACTIVE'}</span>
-            <br>
-            <small style="color:#aaa;">📱 ${u.phone} | 📧 ${u.email || 'N/A'}</small><br>
-            <small style="color:#aaa;">🏠 ${u.address} (${u.pincode})</small>
+      return list.map(u => {
+        const uMaps = u.location ? (u.location.startsWith('http') ? u.location.split(' ')[0] : `https://maps.google.com/?q=${u.location}`) : '';
+        return `
+          <div style="background:#1c1c28; border:1px solid ${u.isBlocked ? 'var(--red-accent)' : 'var(--border-gold)'}; padding:14px; margin-bottom:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <strong style="color:var(--gold-bright); font-size:1.05rem;">${u.name}</strong> 
+              <span style="background:${u.isBlocked ? 'var(--red-accent)' : 'var(--green-accent)'}; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.75rem; margin-left:8px; font-weight:bold;">${u.isBlocked ? 'BLOCKED' : 'ACTIVE'}</span>
+              <br>
+              <small style="color:#aaa;">📱 ${u.phone} | 📧 ${u.email || 'N/A'}</small><br>
+              <small style="color:#aaa;">🏠 ${u.address} (${u.pincode})</small>
+              ${u.location ? `<br><small><a href="${uMaps}" target="_blank" style="color:var(--gold-bright); text-decoration:underline;">📍 View Location on Map</a></small>` : ''}
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button onclick="toggleBlockUser('${u.phone}')" style="background:${u.isBlocked ? 'var(--green-accent)' : 'var(--red-accent)'}; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                ${u.isBlocked ? '✅ Unblock' : '🚫 Block'}
+              </button>
+              <button onclick="deleteUserPermanently('${u.phone}')" style="background:#333; color:#ff6b6b; border:1px solid var(--red-accent); padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                🗑️ Delete
+              </button>
+            </div>
           </div>
-
-          <div style="display:flex; gap:8px;">
-            <button onclick="toggleBlockUser('${u.phone}')" style="background:${u.isBlocked ? 'var(--green-accent)' : 'var(--red-accent)'}; color:#fff; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">
-              ${u.isBlocked ? '✅ Unblock' : '🚫 Block'}
-            </button>
-            <button onclick="deleteUserPermanently('${u.phone}')" style="background:#333; color:#ff6b6b; border:1px solid var(--red-accent); padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
-              🗑️ Delete
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function filterUsersList() {
@@ -598,7 +1047,6 @@
       if (data.success) {
         alert(data.message);
         await fetchAdminUsers();
-        renderAdminTab();
       }
     }
 
@@ -614,6 +1062,8 @@
           alert(data.message);
           await fetchAdminUsers();
           renderAdminTab();
+        } else {
+          alert(data.message || 'ইউজার ডিলিট করতে সমস্যা হয়েছে।');
         }
       }
     }

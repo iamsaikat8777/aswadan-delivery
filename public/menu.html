@@ -105,7 +105,6 @@
         <button id="tab-signup-btn" class="btn-primary" style="flex:1; padding:8px; margin:0; background: rgba(229,193,88,0.15); color: var(--gold-bright); border:1px solid var(--border-gold);" onclick="switchAuthTab('signup')">নতুন সাইন-আপ</button>
       </div>
 
-      <!-- Login Form with Enter Key Support -->
       <form id="login-form" onsubmit="event.preventDefault(); loginUser();">
         <label class="input-label">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
         <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" required>
@@ -120,7 +119,6 @@
         <button type="submit" class="btn-primary">লগইন করুন</button>
       </form>
 
-      <!-- Signup Form with Enter Key Support -->
       <form id="signup-form" style="display: none;" onsubmit="event.preventDefault(); signupUser();">
         <label class="input-label">👤 আপনার নাম:</label>
         <input type="text" id="signup-name" class="input-field" placeholder="Full Name" required>
@@ -194,6 +192,17 @@
         <input type="text" id="prof-pincode" class="input-field" value="700036">
 
         <button class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
+
+        <!-- USER DELETE ALL DATA HISTORY OPTION -->
+        <div style="margin-top: 25px; border-top: 1px solid var(--border-gold); padding-top: 18px;">
+          <button onclick="requestUserHistoryDeletion()" style="background: var(--red-accent); color: #fff; border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">🗑️ Delete All Data History</button>
+          
+          <div id="user-history-otp-box" style="display: none; margin-top: 12px; background: #181824; padding: 14px; border-radius: 10px; border: 1px solid var(--border-gold);">
+            <p style="font-size: 0.85rem; color: var(--gold-bright); margin-bottom: 8px;">আপনার রেজিস্টার্ড ইমেল ঠিকানায় পাঠানো ৬-সংখ্যার OTP কোডটি লিখুন:</p>
+            <input type="text" id="user-history-otp-input" class="input-field" placeholder="Enter 6-digit OTP" maxlength="6">
+            <button class="btn-primary" onclick="verifyAndExecuteUserDeletion()" style="background: var(--red-accent); color: #fff; margin-top: 10px;">যাচাই ও সমস্ত ইতিহাস ডিলিট করুন</button>
+          </div>
+        </div>
       </div>
 
       <div id="dash-view-history" style="display: none;">

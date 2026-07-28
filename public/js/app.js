@@ -4,14 +4,36 @@ let menuData = [];
 let heroTileIndex = 0;
 let paymentScreenshotBase64 = '';
 let deferredPWAEvent = null;
+let userHistorySelectedDate = new Date().toISOString().split('T')[0];
+let userHistoryShowAll = true;
+
+// Map Modal Variables
+let activeLocationInputId = null;
+let leafletMap = null;
+let leafletMarker = null;
+let selectedLat = 22.5726; 
+let selectedLng = 88.3639;
 
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
+  checkIOSInstallBanner();
   syncLocalUserToServer();
   fetchMenu();
   updateCartUI();
   updateProfileNav();
   checkSpecialOfferPopup();
+
+  const internalLinks = document.querySelectorAll('a[href]');
+  internalLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && (href.endsWith('.html') || href === '/' || href.startsWith('/#'))) {
+      link.addEventListener('click', (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || link.getAttribute('target') === '_blank') return;
+        e.preventDefault();
+        window.location.href = href;
+      });
+    }
+  });
 
   const dateInput = document.getElementById('delivery-date');
   if (dateInput) {
@@ -21,7 +43,115 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* --- PWA SERVICE WORKER & APP INSTALLATION --- */
+/* --- iOS SAFARI APP INSTALL BANNER LOGIC --- */
+function checkIOSInstallBanner() {
+  if (isIOS() && !isInStandaloneMode()) {
+    const iosBanner = document.getElementById('ios-install-banner');
+    if (iosBanner && !localStorage.getItem('ios_banner_dismissed')) {
+      iosBanner.style.display = 'flex';
+    }
+  }
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+  return ('standalone' in window.navigator) && (window.navigator.standalone);
+}
+
+function dismissIOSBanner() {
+  const iosBanner = document.getElementById('ios-install-banner');
+  if (iosBanner) iosBanner.style.display = 'none';
+  localStorage.setItem('ios_banner_dismissed', 'true');
+}
+
+function openMapModal(inputId) {
+  activeLocationInputId = inputId;
+  document.getElementById('map-picker-modal').style.display = 'flex';
+  
+  setTimeout(() => {
+    if (!leafletMap) {
+      leafletMap = L.map('leaflet-map').setView([22.5726, 88.3639], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(leafletMap);
+
+      leafletMarker = L.marker([22.5726, 88.3639], { draggable: true }).addTo(leafletMap);
+
+      leafletMarker.on('dragend', function (e) {
+        const pos = leafletMarker.getLatLng();
+        selectedLat = pos.lat;
+        selectedLng = pos.lng;
+      });
+
+      leafletMap.on('click', function (e) {
+        selectedLat = e.latlng.lat;
+        selectedLng = e.latlng.lng;
+        leafletMarker.setLatLng([selectedLat, selectedLng]);
+      });
+    } else {
+      leafletMap.invalidateSize();
+    }
+  }, 250);
+}
+
+function closeMapModal() {
+  document.getElementById('map-picker-modal').style.display = 'none';
+}
+
+function confirmMapLocation() {
+  if (activeLocationInputId) {
+    const locVal = `https://maps.google.com/?q=${selectedLat},${selectedLng}`;
+    const inputEl = document.getElementById(activeLocationInputId);
+    if (inputEl) {
+      inputEl.value = locVal;
+    }
+    showToast('📍 মানচিত্র থেকে সঠিক লোকেশন কনফার্ম করা হয়েছে!');
+  }
+  closeMapModal();
+}
+
+function getCurrentLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const locStr = `https://maps.google.com/?q=${lat},${lng}`;
+        document.getElementById('signup-location').value = locStr;
+        showToast('📍 জিপিএস লোকেশন লিংক সফলভাবে নেওয়া হয়েছে!');
+      },
+      (error) => {
+        alert('লোকেশন পাওয়া যায়নি। ব্রাউজারের লোকেশন পারমিশন চেক করুন।');
+      }
+    );
+  } else {
+    alert('আপনার ব্রাউজার জিপিএস লোকেশন সাপোর্ট করে না।');
+  }
+}
+
+function getCurrentLocationForProfile() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const locStr = `https://maps.google.com/?q=${lat},${lng}`;
+        document.getElementById('prof-location').value = locStr;
+        showToast('📍 জিপিএস লোকেশন আপডেট করা হয়েছে!');
+      },
+      (error) => {
+        alert('লোকেশন পাওয়া যায়নি।');
+      }
+    );
+  } else {
+    alert('ব্রাউজার লোকেশন সাপোর্ট করে না।');
+  }
+}
+
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
@@ -30,7 +160,6 @@ function registerServiceWorker() {
   }
 }
 
-// Capture Chrome / Mobile PWA Install Prompt Event
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPWAEvent = e;
@@ -54,7 +183,6 @@ function triggerPWAInstall() {
   }
 }
 
-/* Automatic Sync: Ensures any signed-in user in LocalStorage is pushed to users.json on server */
 async function syncLocalUserToServer() {
   if (user && user.phone) {
     try {
@@ -66,6 +194,7 @@ async function syncLocalUserToServer() {
           name: user.name || '',
           email: user.email || '',
           address: user.address || '',
+          location: user.location || '',
           pincode: user.pincode || '700036'
         })
       });
@@ -122,20 +251,32 @@ async function checkSpecialOfferPopup() {
 
 function updateProfileNav() {
   const btn = document.getElementById('profile-nav-btn');
+  const wrapper = document.getElementById('user-nav-wrapper');
   const hoverMenu = document.getElementById('user-hover-menu');
 
   if (btn && hoverMenu) {
     if (user) {
       btn.innerText = `👤 ${user.name.split(' ')[0]}`;
-      btn.onclick = () => openUserDashboard('profile');
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        wrapper.classList.toggle('active-dropdown');
+      };
       hoverMenu.style.display = 'block';
     } else {
       btn.innerText = `👤 Sign In`;
       btn.onclick = openAuthModal;
+      wrapper.classList.remove('active-dropdown');
       hoverMenu.style.display = 'none';
     }
   }
 }
+
+document.addEventListener('click', () => {
+  const wrapper = document.getElementById('user-nav-wrapper');
+  if (wrapper) {
+    wrapper.classList.remove('active-dropdown');
+  }
+});
 
 function openUserDashboard(tabName) {
   if (!user) return openAuthModal();
@@ -165,6 +306,7 @@ function loadProfileData() {
   document.getElementById('prof-phone').value = user.phone || '';
   document.getElementById('prof-email').value = user.email || '';
   document.getElementById('prof-address').value = user.address || '';
+  document.getElementById('prof-location').value = user.location || '';
   document.getElementById('prof-pincode').value = user.pincode || '700036';
 }
 
@@ -172,12 +314,13 @@ async function saveUserProfile() {
   const name = document.getElementById('prof-name').value.trim();
   const email = document.getElementById('prof-email').value.trim();
   const address = document.getElementById('prof-address').value.trim();
+  const location = document.getElementById('prof-location').value.trim();
   const pincode = document.getElementById('prof-pincode').value.trim();
 
   const res = await fetch('/api/user/profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: user.phone, name, email, address, pincode })
+    body: JSON.stringify({ phone: user.phone, name, email, address, location, pincode })
   });
   const data = await res.json();
   if (data.success) {
@@ -185,6 +328,54 @@ async function saveUserProfile() {
     localStorage.setItem('aswadan_user', JSON.stringify(user));
     alert('প্রোফাইল আপডেট সফল হয়েছে!');
     updateProfileNav();
+  }
+}
+
+async function requestUserHistoryDeletion() {
+  const confirmed = confirm("Are you sure you want to delete all history? (আপনি কি নিশ্চিত সমস্ত ইতিহাস ডিলিট করতে চান?)");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch('/api/user/request-delete-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: user.phone })
+    });
+    const data = await res.json();
+    alert(data.message);
+    if (data.success) {
+      document.getElementById('user-history-otp-box').style.display = 'block';
+    }
+  } catch (err) {
+    console.error(err);
+    alert('OTP পাঠাতে সমস্যা হয়েছে।');
+  }
+}
+
+async function verifyAndExecuteUserDeletion() {
+  const otp = document.getElementById('user-history-otp-input').value.trim();
+  if (!otp || otp.length !== 6) {
+    alert('দয়া করে সঠিক ৬-সংখ্যার OTP কোড লিখুন।');
+    return;
+  }
+
+  const finalConfirmed = confirm("OTP verified. Are you sure you want to permanently delete all order history?");
+  if (!finalConfirmed) return;
+
+  try {
+    const res = await fetch('/api/user/verify-delete-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: user.phone, otp })
+    });
+    const data = await res.json();
+    alert(data.message);
+    if (data.success) {
+      closeModal('user-dashboard-modal');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('ইতিহাস ডিলিট করতে সমস্যা হয়েছে।');
   }
 }
 
@@ -201,20 +392,66 @@ async function loadOrderHistory() {
   const data = await res.json();
   const container = document.getElementById('user-orders-history-list');
 
-  if (data.orders.length === 0) {
-    container.innerHTML = '<p style="color:#aaa; text-align:center; padding:15px;">কোনো অর্ডারের ইতিহাস নেই।</p>';
+  const filteredOrders = userHistoryShowAll 
+    ? data.orders 
+    : data.orders.filter(o => {
+        let rawDate = o.orderDate || o.createdAt || '';
+        let normalizedDate = '';
+        if (rawDate.includes('T')) {
+          normalizedDate = rawDate.split('T')[0];
+        } else if (rawDate.includes('/')) {
+          const datePart = rawDate.split(',')[0].trim();
+          const parts = datePart.split('/');
+          if (parts.length === 3) {
+            let m = parts[0].padStart(2, '0');
+            let d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            normalizedDate = `${y}-${m}-${d}`;
+          }
+        } else {
+          normalizedDate = rawDate.substring(0, 10);
+        }
+        return normalizedDate === userHistorySelectedDate;
+      });
+
+  let htmlContent = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px; background:#181824; padding:10px; border-radius:10px; border:1px solid var(--border-gold);">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <label style="font-size:0.85rem; color:var(--gold-bright); font-weight:bold;">অর্ডার করার তারিখ:</label>
+        <input type="date" id="user-history-date" class="input-field" value="${userHistorySelectedDate}" ${userHistoryShowAll ? 'disabled' : ''} onchange="updateUserHistoryDate(this.value)" style="max-width:150px; padding:4px 8px;">
+      </div>
+      <button onclick="toggleUserHistoryShowAll()" style="background:${userHistoryShowAll ? 'var(--gold-gradient)' : 'rgba(229,193,88,0.1)'}; color:${userHistoryShowAll ? '#000' : 'var(--gold-bright)'}; border:1px solid var(--border-gold); padding:5px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.78rem;">
+        ${userHistoryShowAll ? '📅 অর্ডার তারিখ ফিল্টার' : '♾️ Show All Data'}
+      </button>
+    </div>
+  `;
+
+  if (filteredOrders.length === 0) {
+    htmlContent += '<p style="color:#aaa; text-align:center; padding:15px;">কোনো অর্ডারের ইতিহাস নেই।</p>';
   } else {
-    container.innerHTML = data.orders.map(o => `
+    htmlContent += filteredOrders.map(o => `
       <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:12px; margin-bottom:10px; border-radius:10px;">
         <div style="display:flex; justify-content:space-between;">
           <strong style="color:var(--gold-bright);">ID: ${o.orderId}</strong>
           <span style="color:var(--gold-primary); font-weight:bold;">${o.status}</span>
         </div>
-        <small style="color:#aaa;">তারিখ: ${o.deliveryDate} | মোট: ₹${o.totalAmount}</small>
+        <small style="color:#aaa;">অর্ডার তারিখ: ${o.orderDate || o.createdAt} | ডেলিভারি তারিখ: ${o.deliveryDate} | মোট: ₹${o.totalAmount}</small>
         ${o.rejectionReason ? `<p style="color:#e63946; font-size:0.82rem; margin-top:4px;"><b>বাতিলের কারণ:</b> ${o.rejectionReason}</p>` : ''}
       </div>
     `).join('');
   }
+
+  container.innerHTML = htmlContent;
+}
+
+function updateUserHistoryDate(dateVal) {
+  userHistorySelectedDate = dateVal;
+  loadOrderHistory();
+}
+
+function toggleUserHistoryShowAll() {
+  userHistoryShowAll = !userHistoryShowAll;
+  loadOrderHistory();
 }
 
 async function loadCurrentStatus() {
@@ -497,6 +734,7 @@ async function placeOrder() {
       customerName: user.name,
       email: user.email,
       address: user.address,
+      location: user.location || '',
       items: cart,
       totalAmount,
       paymentScreenshot: paymentScreenshotBase64,
@@ -581,12 +819,13 @@ async function signupUser() {
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
   const address = document.getElementById('signup-address').value.trim();
+  const location = document.getElementById('signup-location').value.trim();
   const pincode = document.getElementById('signup-pincode').value.trim();
 
   const res = await fetch('/api/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, phone, email, password, address, pincode })
+    body: JSON.stringify({ name, phone, email, password, address, location, pincode })
   });
   const data = await res.json();
   if (data.success) {
