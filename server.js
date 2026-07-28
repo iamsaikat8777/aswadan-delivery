@@ -43,13 +43,14 @@ function syncUsersFromOrders(users, orders) {
   let updated = false;
   orders.forEach(order => {
     if (order.phone) {
-      const exists = users.find(u => u.phone === order.phone);
+      const exists = users.find(u => String(u.phone).trim() === String(order.phone).trim());
       if (!exists) {
         users.push({
           name: order.customerName || 'Customer',
           phone: order.phone,
           email: order.email || '',
           address: order.address || '',
+          location: order.location || '',
           pincode: '700036',
           isBlocked: false,
           preferredItems: []
@@ -79,7 +80,6 @@ const defaultOffer = {
   image: ''
 };
 
-// Updated Admin Email to iammadhuchanda@gmail.com
 const defaultAdminConfig = {
   password: process.env.ADMIN_PASSWORD || 'payel123',
   email: 'iammadhuchanda@gmail.com'
@@ -99,7 +99,7 @@ if (!fs.existsSync(ADMIN_FILE)) saveData(ADMIN_FILE, adminConfig);
 usersDB = syncUsersFromOrders(usersDB, ordersDB);
 
 const SENDER_EMAIL = process.env.OWNER_EMAIL || 'admin.aadwadan@gmail.com';
-const SENDER_PASS = process.env.EMAIL_PASSWORD || 'uvuwefccgglddxjr';
+const SENDER_PASS = process.env.EMAIL_PASSWORD || 'ctbxceavuduhjxpu';
 const OWNER_NOTIFY_EMAIL = 'iammadhuchanda@gmail.com';
 
 const transporter = nodemailer.createTransport({
@@ -134,14 +134,14 @@ app.get('/api/offer', (req, res) => {
 });
 
 app.post('/api/auth/signup', (req, res) => {
-  const { name, phone, email, password, address, pincode } = req.body;
+  const { name, phone, email, password, address, location, pincode } = req.body;
   usersDB = loadData(USERS_FILE, []);
 
   if (pincode !== '700036') {
-    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডেই উপলব্ধ।' });
+    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
   }
 
-  const existingPhone = usersDB.find(u => u.phone === phone);
+  const existingPhone = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
   if (existingPhone) {
     return res.status(400).json({ success: false, message: 'এই নম্বরটি ইতিমধ্যে রেজিস্টার করা হয়েছে।' });
   }
@@ -151,7 +151,7 @@ app.post('/api/auth/signup', (req, res) => {
     return res.status(400).json({ success: false, message: 'এই ইমেল আইডিটি ইতিমধ্যে রেজিস্টার করা হয়েছে।' });
   }
 
-  const newUser = { name, phone, email, password, address, pincode, isBlocked: false, preferredItems: [] };
+  const newUser = { name, phone, email, password, address, location: location || '', pincode, isBlocked: false, preferredItems: [] };
   usersDB.push(newUser);
   saveData(USERS_FILE, usersDB);
 
@@ -161,7 +161,7 @@ app.post('/api/auth/signup', (req, res) => {
     `<h2>স্বাগতম ${name}!</h2><p>আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।</p><p><b>ডেলিভারি ঠিকানা:</b> ${address} (${pincode})</p>`
   );
 
-  res.json({ success: true, user: { name, phone, email, address, pincode, preferredItems: [] } });
+  res.json({ success: true, user: { name, phone, email, address, location: location || '', pincode, preferredItems: [] } });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -169,7 +169,7 @@ app.post('/api/auth/login', (req, res) => {
   usersDB = loadData(USERS_FILE, []);
 
   let user = usersDB.find(
-    u => (u.phone === identifier || u.email.toLowerCase() === identifier.toLowerCase()) && u.password === password
+    u => (String(u.phone).trim() === String(identifier).trim() || u.email.toLowerCase() === identifier.toLowerCase()) && u.password === password
   );
 
   if (!user) {
@@ -182,7 +182,7 @@ app.post('/api/auth/login', (req, res) => {
 
   res.json({
     success: true,
-    user: { name: user.name, phone: user.phone, email: user.email, address: user.address, pincode: user.pincode, preferredItems: user.preferredItems || [] }
+    user: { name: user.name, phone: user.phone, email: user.email, address: user.address, location: user.location || '', pincode: user.pincode, preferredItems: user.preferredItems || [] }
   });
 });
 
@@ -228,28 +228,29 @@ app.post('/api/auth/reset-password', (req, res) => {
 });
 
 app.post('/api/user/profile', (req, res) => {
-  const { phone, name, email, address, pincode } = req.body;
+  const { phone, name, email, address, location, pincode } = req.body;
   usersDB = loadData(USERS_FILE, []);
-  let user = usersDB.find(u => u.phone === phone);
+  let user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
 
   if (!user) {
-    user = { name, phone, email, address, pincode, isBlocked: false, preferredItems: [] };
+    user = { name, phone, email, address, location: location || '', pincode, isBlocked: false, preferredItems: [] };
     usersDB.push(user);
   } else {
     if (name) user.name = name;
     if (email) user.email = email;
     if (address) user.address = address;
+    if (location !== undefined) user.location = location;
     if (pincode) user.pincode = pincode;
   }
   saveData(USERS_FILE, usersDB);
 
-  res.json({ success: true, user: { name: user.name, phone: user.phone, email: user.email, address: user.address, pincode: user.pincode, preferredItems: user.preferredItems || [] } });
+  res.json({ success: true, user: { name: user.name, phone: user.phone, email: user.email, address: user.address, location: user.location || '', pincode: user.pincode, preferredItems: user.preferredItems || [] } });
 });
 
 app.post('/api/user/preferred-menu', (req, res) => {
   const { phone, preferredItems } = req.body;
   usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => u.phone === phone);
+  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
 
   if (!user) return res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
 
@@ -259,24 +260,72 @@ app.post('/api/user/preferred-menu', (req, res) => {
   res.json({ success: true, preferredItems: user.preferredItems });
 });
 
+app.post('/api/user/request-delete-history', (req, res) => {
+  const { phone } = req.body;
+  usersDB = loadData(USERS_FILE, []);
+  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+
+  if (!user || !user.email) {
+    return res.status(404).json({ success: false, message: 'ইউজার বা রেজিস্টার্ড ইমেল পাওয়া যায়নি।' });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[`user_del_${phone}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+
+  sendEmail(
+    user.email,
+    '🗑️ অর্ডার ইতিহাস ডিলিট কনফার্মেশন OTP - আস্বাদন',
+    `<h3>প্রিয় ${user.name},</h3>
+     <p>আপনার সমস্ত অর্ডার ইতিহাস ডিলিট করার জন্য অনুরোধ করা হয়েছে।</p>
+     <h3>আপনার ভেরিফিকেশন OTP: <b style="color:#e5c158; font-size:24px;">${otp}</b></h3>
+     <p>কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
+  );
+
+  res.json({ success: true, message: 'আপনার রেজিস্টার্ড ইমেল আইডিতে কনফার্মেশন OTP পাঠানো হয়েছে।' });
+});
+
+app.post('/api/user/verify-delete-history', (req, res) => {
+  const { phone, otp } = req.body;
+  const record = otpStore[`user_del_${phone}`];
+
+  if (!record || record.code !== otp || Date.now() > record.expiresAt) {
+    return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
+  }
+
+  ordersDB = loadData(ORDERS_FILE, []);
+  ordersDB = ordersDB.filter(o => String(o.phone).trim() !== String(phone).trim());
+  saveData(ORDERS_FILE, ordersDB);
+
+  delete otpStore[`user_del_${phone}`];
+
+  res.json({ success: true, message: 'আপনার সমস্ত অর্ডার ইতিহাস সফলভাবে মুছে ফেলা হয়েছে!' });
+});
+
 app.post('/api/orders', (req, res) => {
-  const { phone, customerName, email, address, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
+  const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
   usersDB = loadData(USERS_FILE, []);
   ordersDB = loadData(ORDERS_FILE, []);
 
-  let user = usersDB.find(u => u.phone === phone);
+  let user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
   if (user && user.isBlocked) {
     return res.status(403).json({ success: false, message: 'আপনার অ্যাকাউন্টটি স্থগিত (Blocked)। অর্ডার নেওয়া সম্ভব নয়।' });
   }
 
   if (!user && phone) {
-    user = { name: customerName, phone, email: email || '', address, pincode: '700036', isBlocked: false, preferredItems: [] };
+    user = { name: customerName, phone, email: email || '', address, location: location || '', pincode: '700036', isBlocked: false, preferredItems: [] };
     usersDB.push(user);
     saveData(USERS_FILE, usersDB);
   }
 
   const orderId = 'ASW-' + Math.floor(100000 + Math.random() * 900000);
   const userEmail = email || (user ? user.email : '');
+  const userLocation = location || (user ? user.location : '');
+  
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const orderDateStr = `${year}-${month}-${day}`; // Strictly YYYY-MM-DD
 
   const newOrder = {
     orderId,
@@ -284,11 +333,13 @@ app.post('/api/orders', (req, res) => {
     customerName,
     email: userEmail,
     address,
+    location: userLocation,
     items,
     totalAmount,
     paymentScreenshot: paymentScreenshot || '',
     deliveryDate,
     status: 'PENDING',
+    orderDate: orderDateStr,
     createdAt: new Date().toLocaleString()
   };
 
@@ -296,6 +347,7 @@ app.post('/api/orders', (req, res) => {
   saveData(ORDERS_FILE, ordersDB);
 
   const itemsList = items.map(i => `• ${i.name} x ${i.qty} = ₹${i.price * i.qty}`).join('<br>');
+  const mapsLink = userLocation ? (userLocation.startsWith('http') ? userLocation.split(' ')[0] : `https://maps.google.com/?q=${userLocation}`) : '';
   
   sendEmail(
     OWNER_NOTIFY_EMAIL,
@@ -306,6 +358,8 @@ app.post('/api/orders', (req, res) => {
      <p><b>মোবাইল:</b> ${phone}</p>
      <p><b>ইমেল:</b> ${userEmail}</p>
      <p><b>ঠিকানা:</b> ${address}</p>
+     ${userLocation ? `<p><b>গুগল ম্যাপ লোকেশন:</b> <a href="${mapsLink}" target="_blank">View on Google Maps</a> (${userLocation})</p>` : ''}
+     <p><b>অর্ডার করার তারিখ:</b> ${orderDateStr}</p>
      <p><b>ডেলিভারি তারিখ:</b> ${deliveryDate}</p>
      <hr>
      <h3>অর্ডারের তালিকা:</h3>
@@ -335,7 +389,7 @@ app.post('/api/orders', (req, res) => {
 
 app.get('/api/orders/user/:phone', (req, res) => {
   ordersDB = loadData(ORDERS_FILE, []);
-  const userOrders = ordersDB.filter(o => o.phone === req.params.phone);
+  const userOrders = ordersDB.filter(o => String(o.phone).trim() === String(req.params.phone).trim());
   res.json({ success: true, orders: userOrders });
 });
 
@@ -357,9 +411,15 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
+// Admin Forgot Password: Secure Validation Check without revealing email
 app.post('/api/admin/forgot-password', (req, res) => {
+  const { email } = req.body;
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
   const adminEmail = adminConfig.email || 'iammadhuchanda@gmail.com';
+
+  if (!email || email.trim().toLowerCase() !== adminEmail.toLowerCase()) {
+    return res.status(400).json({ success: false, message: 'ভুল এডমিন ইমেল আইডি! অনুগ্রহ করে সঠিক ইমেল দিন।' });
+  }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore['admin_otp'] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
@@ -372,7 +432,7 @@ app.post('/api/admin/forgot-password', (req, res) => {
      <p>এই কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
   );
 
-  res.json({ success: true, message: `এডমিন ইমেল (${adminEmail})-এ OTP পাঠানো হয়েছে।` });
+  res.json({ success: true, message: 'সঠিক এডমিন ইমেল! ওনার ইমেলে OTP কোড পাঠানো হয়েছে।' });
 });
 
 app.post('/api/admin/reset-password', (req, res) => {
@@ -391,10 +451,87 @@ app.post('/api/admin/reset-password', (req, res) => {
   res.json({ success: true, message: 'এডমিন পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!' });
 });
 
+app.post('/api/admin/factory-settings/request-otp', (req, res) => {
+  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+  const { optionType } = req.body;
+  adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
+  const adminEmail = adminConfig.email || 'iammadhuchanda@gmail.com';
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[`admin_factory_${optionType}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+
+  let optionName = '';
+  const optNum = Number(optionType);
+  if (optNum === 1) optionName = 'Delete All Data History (User, Order, Revenue, Pending, Accepted, Rejected)';
+  else if (optNum === 2) optionName = 'Delete All Order History (Order data, Pending, Accepted, Rejected)';
+  else if (optNum === 3) optionName = 'Delete All User Data';
+  else if (optNum === 4) optionName = 'Delete All Revenue Data';
+
+  sendEmail(
+    adminEmail,
+    `⚠️ Factory Settings OTP [Option ${optionType}] - আস্বাদন Admin`,
+    `<h2>এডমিন ফ্যাক্টরি সেটিংস ডিলিট কনফার্মেশন</h2>
+     <p>নির্বাচিত অপশন: <b>${optionName}</b></p>
+     <h3>আপনার ভেরিফিকেশন OTP: <b style="color:#e5c158; font-size:24px;">${otp}</b></h3>
+     <p>কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
+  );
+
+  res.json({ success: true, message: 'এডমিন ইমেলে ফ্যাক্টরি সেটিংস OTP পাঠানো হয়েছে।' });
+});
+
+app.post('/api/admin/factory-settings/execute', (req, res) => {
+  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+  const { optionType, otp } = req.body;
+  const record = otpStore[`admin_factory_${optionType}`];
+
+  if (!record || record.code !== otp || Date.now() > record.expiresAt) {
+    return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
+  }
+
+  let msg = '';
+  const optNum = Number(optionType);
+
+  if (optNum === 1) {
+    saveData(USERS_FILE, []);
+    saveData(ORDERS_FILE, []);
+    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত ইউজার ডেটা, অর্ডার ইতিহাস ও রেভিনিউ ডেটা মুছে ফেলা হয়েছে!';
+  } else if (optNum === 2) {
+    saveData(ORDERS_FILE, []);
+    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত অর্ডার ইতিহাস ও কারেন্ট অর্ডার মুছে ফেলা হয়েছে!';
+  } else if (optNum === 3) {
+    saveData(USERS_FILE, []);
+    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত ইউজার ডেটা মুছে ফেলা হয়েছে!';
+  } else if (optNum === 4) {
+    saveData(ORDERS_FILE, []);
+    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত রেভিনিউ ডেটা মুছে ফেলা হয়েছে!';
+  } else {
+    return res.status(400).json({ success: false, message: 'অবৈধ অপশন সিলেক্ট করা হয়েছে।' });
+  }
+
+  delete otpStore[`admin_factory_${optionType}`];
+  res.json({ success: true, message: msg });
+});
+
 app.get('/api/admin/orders', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
   ordersDB = loadData(ORDERS_FILE, []);
+  
+  let modified = false;
+  ordersDB.forEach(o => {
+    if (!o.orderDate || o.orderDate.includes(',')) {
+      const d = o.createdAt ? new Date(o.createdAt) : new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      o.orderDate = `${y}-${m}-${day}`;
+      modified = true;
+    }
+  });
+  if (modified) saveData(ORDERS_FILE, ordersDB);
+
   const pending = ordersDB.filter(o => o.status === 'PENDING');
   const accepted = ordersDB.filter(o => o.status === 'ACCEPTED');
   const rejected = ordersDB.filter(o => o.status === 'REJECTED');
@@ -472,10 +609,6 @@ app.get('/api/admin/users', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
   usersDB = loadData(USERS_FILE, []);
-  ordersDB = loadData(ORDERS_FILE, []);
-
-  usersDB = syncUsersFromOrders(usersDB, ordersDB);
-
   res.json({ success: true, users: usersDB });
 });
 
@@ -484,7 +617,7 @@ app.post('/api/admin/users/toggle-block', (req, res) => {
 
   const { phone } = req.body;
   usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => u.phone === phone);
+  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
 
   if (user) {
     user.isBlocked = !user.isBlocked;
@@ -499,16 +632,17 @@ app.post('/api/admin/users/delete', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
   const { phone } = req.body;
-  usersDB = loadData(USERS_FILE, []);
+  let users = loadData(USERS_FILE, []);
 
-  const initialLength = usersDB.length;
-  usersDB = usersDB.filter(u => u.phone !== phone);
+  const initialLength = users.length;
+  users = users.filter(u => String(u.phone).trim() !== String(phone).trim());
 
-  if (usersDB.length < initialLength) {
+  if (users.length < initialLength) {
+    usersDB = users;
     saveData(USERS_FILE, usersDB);
     res.json({ success: true, message: 'ইউজার স্থায়ীভাবে মুছে ফেলা হয়েছে (User deleted successfully)' });
   } else {
-    res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
+    res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি (User not found)।' });
   }
 });
 

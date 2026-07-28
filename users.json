@@ -3,8 +3,9 @@
     "name": "Saikat Dutta",
     "phone": "8777866113",
     "email": "iamsaikatdutta@gmail.com",
-    "password": "Saikat@123",
-    "address": "19A, pramanick Ghat Road Kolkata - 700036",
+    "password": "Saikat123",
+    "address": "baranagar",
+    "location": "https://maps.google.com/?q=22.631933402541677,88.3703461289406",
     "pincode": "700036",
     "isBlocked": false,
     "preferredItems": []
