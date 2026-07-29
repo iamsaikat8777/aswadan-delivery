@@ -1,0 +1,42 @@
+[
+  {
+    "requestId": "SRQ-108083",
+    "phone": "8777866113",
+    "customerName": "Saikat Dutta",
+    "email": "iamsaikatdutta@gmail.com",
+    "itemName": "mutton biriyani",
+    "description": "hott",
+    "qty": 2,
+    "status": "REJECTED",
+    "pricePerPlate": 0,
+    "totalAmount": 0,
+    "createdAt": "7/29/2026, 8:02:24 PM"
+  },
+  {
+    "requestId": "SRQ-332837",
+    "phone": "8777866113",
+    "customerName": "Saikat Dutta",
+    "email": "iamsaikatdutta@gmail.com",
+    "itemName": "chilli chicken",
+    "description": "spicy",
+    "qty": 3,
+    "status": "REJECTED",
+    "pricePerPlate": 0,
+    "totalAmount": 0,
+    "createdAt": "7/29/2026, 8:25:13 PM",
+    "rejectionReason": "not possible"
+  },
+  {
+    "requestId": "SRQ-503507",
+    "phone": "8777866113",
+    "customerName": "Saikat Dutta",
+    "email": "iamsaikatdutta@gmail.com",
+    "itemName": "mutton biriyani",
+    "description": "spicy",
+    "qty": 2,
+    "status": "PRICED",
+    "pricePerPlate": 500,
+    "totalAmount": 1000,
+    "createdAt": "7/29/2026, 8:34:11 PM"
+  }
+]

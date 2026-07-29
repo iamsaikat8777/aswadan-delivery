@@ -18,6 +18,8 @@ const ORDERS_FILE = path.join(__dirname, 'orders.json');
 const MENU_FILE = path.join(__dirname, 'menu.json');
 const OFFER_FILE = path.join(__dirname, 'offer.json');
 const ADMIN_FILE = path.join(__dirname, 'admin.json');
+const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
+const SPECIAL_REQUESTS_FILE = path.join(__dirname, 'special_requests.json');
 
 function loadData(filePath, defaultData = []) {
   try {
@@ -66,7 +68,7 @@ function syncUsersFromOrders(users, orders) {
 }
 
 const defaultMenu = [
-  { id: 1, name: 'রুই মাছের থালি (Rui Fish Thali)', price: 120, desc: 'ভাত, ডাল, ভাজা, রুই মাছের ঝোল ও চাটনি' },
+  { id: 1, name: 'রুই মাছের থালি (Rui Fish Thali)', price: 110, desc: 'ভাত, ডাল, ভাজা, রুই মাছের ঝোল ও চাটনি' },
   { id: 2, name: 'কাতলা মাছের থালি (Katla Fish Thali)', price: 140, desc: 'ভাত, ডাল, ভাজা, কাতলা কালিয়া ও চাটনি' },
   { id: 3, name: 'চিকেন থালি (Chicken Thali)', price: 150, desc: 'ভাত, ডাল, ভাজা, কষা মুরগির মাংস ও চাটনি' },
   { id: 4, name: 'ডিম থালি (Egg Thali)', price: 100, desc: 'ভাত, ডাল, ভাজা, ডিমের ঝোল (২টি ডিম) ও চাটনি' },
@@ -90,15 +92,18 @@ let ordersDB = loadData(ORDERS_FILE, []);
 let menuDB = loadData(MENU_FILE, defaultMenu);
 let offerDB = loadData(OFFER_FILE, defaultOffer);
 let adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
+let reviewsDB = loadData(REVIEWS_FILE, []);
+let specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
 const otpStore = {};
 
 if (!fs.existsSync(MENU_FILE)) saveData(MENU_FILE, menuDB);
 if (!fs.existsSync(OFFER_FILE)) saveData(OFFER_FILE, offerDB);
 if (!fs.existsSync(ADMIN_FILE)) saveData(ADMIN_FILE, adminConfig);
+if (!fs.existsSync(REVIEWS_FILE)) saveData(REVIEWS_FILE, reviewsDB);
+if (!fs.existsSync(SPECIAL_REQUESTS_FILE)) saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
 
 usersDB = syncUsersFromOrders(usersDB, ordersDB);
 
-// Resend Email Integration
 const resend = new Resend(process.env.EMAIL_PASSWORD || '');
 const OWNER_NOTIFY_EMAIL = process.env.OWNER_EMAIL || 'iammadhuchanda@gmail.com';
 
@@ -106,20 +111,18 @@ async function sendEmail(to, subject, htmlContent) {
   if (!to) return;
   try {
     const senderEmail = process.env.VERIFIED_SENDER || 'info@aaswadanfoodservices.com';
-    const data = await resend.emails.send({
+    await resend.emails.send({
       from: `আস্বাদন Food Services <${senderEmail}>`,
       to: [to],
       subject: subject,
       html: htmlContent
     });
-    console.log('Email sent successfully to:', to, data);
   } catch (err) {
     console.error('Email failed to:', to, err.message);
   }
 }
 
-// --- PUBLIC ROUTES ---
-
+// --- PUBLIC & USER ROUTES ---
 app.get('/api/menu', (req, res) => {
   menuDB = loadData(MENU_FILE, defaultMenu);
   res.json({ success: true, menu: menuDB });
@@ -130,258 +133,174 @@ app.get('/api/offer', (req, res) => {
   res.json({ success: true, offer: offerDB });
 });
 
-app.post('/api/auth/signup', (req, res) => {
-  const { name, phone, email, password, address, location, pincode } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-
-  if (pincode !== '700036') {
-    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
-  }
-
-  const existingPhone = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-  if (existingPhone) {
-    return res.status(400).json({ success: false, message: 'এই নম্বরটি ইতিমধ্যে রেজিস্টার করা হয়েছে।' });
-  }
-
-  const existingEmail = usersDB.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (existingEmail) {
-    return res.status(400).json({ success: false, message: 'এই ইমেল আইডিটি ইতিমধ্যে রেজিস্টার করা হয়েছে।' });
-  }
-
-  const newUser = { name, phone, email, password, address, location: location || '', pincode, isBlocked: false, preferredItems: [] };
-  usersDB.push(newUser);
-  saveData(USERS_FILE, usersDB);
-
-  sendEmail(
-    email,
-    '🎉 স্বাগতম আস্বাদন (Aswadan Food Services)-এ!',
-    `<h2>স্বাগতম ${name}!</h2><p>আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।</p><p><b>ডেলিভারি ঠিকানা:</b> ${address} (${pincode})</p>`
-  );
-
-  res.json({ success: true, user: { name, phone, email, address, location: location || '', pincode, preferredItems: [] } });
-});
-
-app.post('/api/auth/login', (req, res) => {
-  const { identifier, password } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-
-  let user = usersDB.find(
-    u => (String(u.phone).trim() === String(identifier).trim() || u.email.toLowerCase() === identifier.toLowerCase()) && u.password === password
-  );
-
-  if (!user) {
-    return res.status(401).json({ success: false, message: 'মোবাইল/ইমেল বা পাসওয়ার্ড ভুল হয়েছে।' });
-  }
-
-  if (user.isBlocked) {
-    return res.status(403).json({ success: false, message: 'আপনার অ্যাকাউন্টটি স্থগিত (Blocked) করা হয়েছে। কর্তৃপক্ষের সাথে যোগাযোগ করুন।' });
-  }
-
-  res.json({
-    success: true,
-    user: { name: user.name, phone: user.phone, email: user.email, address: user.address, location: user.location || '', pincode: user.pincode, preferredItems: user.preferredItems || [] }
-  });
-});
-
-app.post('/api/auth/forgot-password', (req, res) => {
-  const { email } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'এই ইমেল আইডিটি রেজিস্টার করা নেই।' });
-  }
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore[email.toLowerCase()] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
-
-  sendEmail(
-    email,
-    '🔐 পাসওয়ার্ড রিসেট ভেরিফিকেশন কোড - আস্বাদন',
-    `<h3>আপনার পাসওয়ার্ড রিসেট OTP: <b style="color:#e5c158; font-size:24px;">${otp}</b></h3><p>এই কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
-  );
-
-  res.json({ success: true, message: 'আপনার ইমেল আইডিতে ভেরিফিকেশন কোড পাঠানো হয়েছে।' });
-});
-
-app.post('/api/auth/reset-password', (req, res) => {
-  const { email, otp, newPassword } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  const record = otpStore[email.toLowerCase()];
-
-  if (!record || record.code !== otp || Date.now() > record.expiresAt) {
-    return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
-  }
-
-  const user = usersDB.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (user) {
-    user.password = newPassword;
-    delete otpStore[email.toLowerCase()];
-    saveData(USERS_FILE, usersDB);
-    res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!' });
-  } else {
-    res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
+app.get('/api/reviews', (req, res) => {
+  try {
+    reviewsDB = loadData(REVIEWS_FILE, []);
+    const totalReviews = reviewsDB.length;
+    let avgRating = 5.0;
+    if (totalReviews > 0) {
+      const sum = reviewsDB.reduce((acc, r) => acc + Number(r.rating), 0);
+      avgRating = (sum / totalReviews).toFixed(1);
+    }
+    res.json({ success: true, reviews: reviewsDB, stats: { totalReviews, avgRating } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error loading reviews' });
   }
 });
 
-app.post('/api/user/profile', (req, res) => {
-  const { phone, name, email, address, location, pincode } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  let user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-
-  if (!user) {
-    user = { name, phone, email, address, location: location || '', pincode, isBlocked: false, preferredItems: [] };
-    usersDB.push(user);
-  } else {
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (address) user.address = address;
-    if (location !== undefined) user.location = location;
-    if (pincode) user.pincode = pincode;
+app.post('/api/reviews', (req, res) => {
+  const { name, phone, rating, comment } = req.body;
+  if (!name || !phone || !rating || !comment) {
+    return res.status(400).json({ success: false, message: 'সব ফিল্ড পূরণ করুন।' });
   }
-  saveData(USERS_FILE, usersDB);
 
-  res.json({ success: true, user: { name: user.name, phone: user.phone, email: user.email, address: user.address, location: user.location || '', pincode: user.pincode, preferredItems: user.preferredItems || [] } });
+  usersDB = loadData(USERS_FILE, []);
+  const registeredUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+  if (!registeredUser) {
+    return res.status(403).json({ success: false, message: 'শুধুমাত্র রেজিস্টার্ড ব্যবহারকারীরাই রিভিউ দিতে পারবেন।' });
+  }
+
+  reviewsDB = loadData(REVIEWS_FILE, []);
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  const englishDate = new Date().toLocaleDateString('en-US', options);
+
+  const newReview = { id: Date.now(), name, phone, rating: Number(rating), comment, date: englishDate };
+  reviewsDB.unshift(newReview);
+  saveData(REVIEWS_FILE, reviewsDB);
+
+  res.json({ success: true, message: 'আপনার মূল্যবান রিভিউটি সফলভাবে জমা হয়েছে!', review: newReview });
 });
 
-app.post('/api/user/preferred-menu', (req, res) => {
-  const { phone, preferredItems } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-
-  if (!user) return res.status(404).json({ success: false, message: 'ব্যবহারকারী পাওয়া যায়নি।' });
-
-  user.preferredItems = preferredItems;
-  saveData(USERS_FILE, usersDB);
-
-  res.json({ success: true, preferredItems: user.preferredItems });
-});
-
-app.post('/api/user/request-delete-history', (req, res) => {
-  const { phone } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-
-  if (!user || !user.email) {
-    return res.status(404).json({ success: false, message: 'ইউজার বা রেজিস্টার্ড ইমেল পাওয়া যায়নি।' });
+// 6) Special Request Placed
+app.post('/api/special-request', (req, res) => {
+  const { phone, customerName, email, itemName, description, qty } = req.body;
+  if (!phone || !itemName || !qty) {
+    return res.status(400).json({ success: false, message: 'খাবারের নাম ও পরিমাণ উল্লেখ করুন।' });
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore[`user_del_${phone}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+  specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
+  const reqId = 'SRQ-' + Math.floor(100000 + Math.random() * 900000);
 
-  sendEmail(
-    user.email,
-    '🗑️ অর্ডার ইতিহাস ডিলিট কনফার্মেশন OTP - আস্বাদন',
-    `<h3>প্রিয় ${user.name},</h3>
-     <p>আপনার সমস্ত অর্ডার ইতিহাস ডিলিট করার জন্য অনুরোধ করা হয়েছে।</p>
-     <h3>আপনার ভেরিফিকেশন OTP: <b style="color:#e5c158; font-size:24px;">${otp}</b></h3>
-     <p>কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
-  );
-
-  res.json({ success: true, message: 'আপনার রেজিস্টার্ড ইমেল আইডিতে কনফার্মেশন OTP পাঠানো হয়েছে।' });
-});
-
-app.post('/api/user/verify-delete-history', (req, res) => {
-  const { phone, otp } = req.body;
-  const record = otpStore[`user_del_${phone}`];
-
-  if (!record || record.code !== otp || Date.now() > record.expiresAt) {
-    return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
-  }
-
-  ordersDB = loadData(ORDERS_FILE, []);
-  ordersDB = ordersDB.filter(o => String(o.phone).trim() !== String(phone).trim());
-  saveData(ORDERS_FILE, ordersDB);
-
-  delete otpStore[`user_del_${phone}`];
-
-  res.json({ success: true, message: 'আপনার সমস্ত অর্ডার ইতিহাস সফলভাবে মুছে ফেলা হয়েছে!' });
-});
-
-app.post('/api/orders', (req, res) => {
-  const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  ordersDB = loadData(ORDERS_FILE, []);
-
-  let user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-  if (user && user.isBlocked) {
-    return res.status(403).json({ success: false, message: 'আপনার অ্যাকাউন্টটি স্থগিত (Blocked)। অর্ডার নেওয়া সম্ভব নয়।' });
-  }
-
-  if (!user && phone) {
-    user = { name: customerName, phone, email: email || '', address, location: location || '', pincode: '700036', isBlocked: false, preferredItems: [] };
-    usersDB.push(user);
-    saveData(USERS_FILE, usersDB);
-  }
-
-  const orderId = 'ASW-' + Math.floor(100000 + Math.random() * 900000);
-  const userEmail = email || (user ? user.email : '');
-  const userLocation = location || (user ? user.location : '');
-  
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const orderDateStr = `${year}-${month}-${day}`;
-
-  const newOrder = {
-    orderId,
+  const newReq = {
+    requestId: reqId,
     phone,
     customerName,
-    email: userEmail,
-    address,
-    location: userLocation,
-    items,
-    totalAmount,
-    paymentScreenshot: paymentScreenshot || '',
-    deliveryDate,
+    email,
+    itemName,
+    description: description || '',
+    qty: Number(qty),
     status: 'PENDING',
-    orderDate: orderDateStr,
+    pricePerPlate: 0,
+    totalAmount: 0,
+    createdAt: new Date().toLocaleString()
+  };
+
+  specialRequestsDB.push(newReq);
+  saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
+
+  // Send mail to user and admin
+  if (email) {
+    sendEmail(
+      email,
+      `✨ আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে জমা হয়েছে: #${reqId}`,
+      `<h2>স্বাগতম ${customerName}!</h2><p>আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে গ্রহণ করা হয়েছে।</p><p><b>Request ID:</b> ${reqId}</p><p><b>খাবার:</b> ${itemName} (${qty} প্লেট)</p><p>অ্যাডমিন পর্যালোচনার পর খুব শীঘ্রই আপনাকে মূল্য জানিয়ে দেওয়া হবে।</p>`
+    );
+  }
+
+  sendEmail(
+    OWNER_NOTIFY_EMAIL,
+    `🌟 নতুন স্পেশাল ফুড রিকুয়েস্ট: #${reqId}`,
+    `<h2>নতুন স্পেশাল আইটেম রিকুয়েস্ট জমা পড়েছে</h2><p><b>Request ID:</b> ${reqId}</p><p><b>গ্রাহক:</b> ${customerName} (${phone})</p><p><b>খাবারের নাম:</b> ${itemName} (${qty} প্লেট)</p>`
+  );
+
+  res.json({ success: true, message: 'আপনার স্পেশাল রিকুয়েস্ট পাঠানো হয়েছে!', request: newReq });
+});
+
+app.get('/api/special-request/user/:phone', (req, res) => {
+  specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
+  const userReqs = specialRequestsDB.filter(r => String(r.phone).trim() === String(req.params.phone).trim());
+  res.json({ success: true, requests: userReqs });
+});
+
+app.post('/api/special-request/pay', (req, res) => {
+  const { requestId, paymentScreenshot, deliveryDate } = req.body;
+  specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
+  ordersDB = loadData(ORDERS_FILE, []);
+
+  const reqItem = specialRequestsDB.find(r => r.requestId === requestId);
+  if (!reqItem || reqItem.status !== 'PRICED') {
+    return res.status(400).json({ success: false, message: 'অনুরোধটি পাওয়া যায়নি বা মূল্য নির্ধারণ করা হয়নি।' });
+  }
+
+  reqItem.status = 'ORDERED';
+  saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
+
+  const orderId = 'ASW-SRQ-' + Math.floor(100000 + Math.random() * 900000);
+  const newOrder = {
+    orderId,
+    phone: reqItem.phone,
+    customerName: reqItem.customerName,
+    email: reqItem.email,
+    address: 'Registered Address',
+    location: '',
+    items: [{ id: Date.now(), name: `[Special] ${reqItem.itemName} (${reqItem.description})`, price: reqItem.pricePerPlate, qty: reqItem.qty }],
+    totalAmount: reqItem.totalAmount,
+    paymentScreenshot: paymentScreenshot || '',
+    deliveryDate: deliveryDate || new Date().toISOString().split('T')[0],
+    status: 'PENDING',
+    orderDate: new Date().toISOString().split('T')[0],
     createdAt: new Date().toLocaleString()
   };
 
   ordersDB.push(newOrder);
   saveData(ORDERS_FILE, ordersDB);
 
-  const itemsList = items.map(i => `• ${i.name} x ${i.qty} = ₹${i.price * i.qty}`).join('<br>');
-  const mapsLink = userLocation ? (userLocation.startsWith('http') ? userLocation.split(' ')[0] : `https://maps.google.com/?q=${userLocation}`) : '';
-  
+  // Send order placed notification for special order converted to normal order
+  if (reqItem.email) {
+    sendEmail(
+      reqItem.email,
+      `📦 স্পেশাল অর্ডার প্লেস হয়েছে: #${orderId}`,
+      `<h2>ধন্যবাদ ${reqItem.customerName}!</h2><p>আপনার স্পেশাল অর্ডারের পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।</p><p><b>Order ID:</b> ${orderId}</p><p><b>মোট মূল্য:</b> ₹${reqItem.totalAmount}</p>`
+    );
+  }
   sendEmail(
     OWNER_NOTIFY_EMAIL,
-    `🚨 NEW ORDER: #${orderId} - ₹${totalAmount}`,
-    `<h2>নতুন অনলাইন অর্ডার জমা পড়েছে!</h2>
-     <p><b>Order ID:</b> ${orderId}</p>
-     <p><b>গ্রাহকের নাম:</b> ${customerName}</p>
-     <p><b>মোবাইল:</b> ${phone}</p>
-     <p><b>ইমেল:</b> ${userEmail}</p>
-     <p><b>ঠিকানা:</b> ${address}</p>
-     ${userLocation ? `<p><b>গুগল ম্যাপ লোকেশন:</b> <a href="${mapsLink}" target="_blank">View on Google Maps</a> (${userLocation})</p>` : ''}
-     <p><b>অর্ডার করার তারিখ:</b> ${orderDateStr}</p>
-     <p><b>ডেলিভারি তারিখ:</b> ${deliveryDate}</p>
-     <hr>
-     <h3>অর্ডারের তালিকা:</h3>
-     ${itemsList}
-     <hr>
-     <p><b>মোট অর্থ:</b> ₹${totalAmount}</p>`
+    `💰 নতুন স্পেশাল অর্ডার পেমেন্ট প্রাপ্তি: #${orderId}`,
+    `<h2>স্পেশাল অর্ডার প্লেস হয়েছে</h2><p><b>Order ID:</b> ${orderId}</p><p><b>গ্রাহক:</b> ${reqItem.customerName} (${reqItem.phone})</p><p><b>মূল্য:</b> ₹${reqItem.totalAmount}</p>`
   );
 
-  if (userEmail) {
+  res.json({ success: true, message: 'স্পেশাল অর্ডারের পেমেন্ট সফলভাবে জমা হয়েছে!', order: newOrder });
+});
+
+// 1) Signup with Welcome Mail
+app.post('/api/auth/signup', (req, res) => {
+  const { name, phone, email, password, address, location, pincode } = req.body;
+  usersDB = loadData(USERS_FILE, []);
+  if (pincode !== '700036') {
+    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
+  }
+  const newUser = { name, phone, email, password, address, location: location || '', pincode, isBlocked: false, preferredItems: [] };
+  usersDB.push(newUser);
+  saveData(USERS_FILE, usersDB);
+
+  // Send Welcome Mail
+  if (email) {
     sendEmail(
-      userEmail,
-      `📋 অর্ডার নিশ্চিতকরণ: #${orderId} - আস্বাদন`,
-      `<h2>প্রিয় ${customerName}, আপনার অর্ডার জমা নেওয়া হয়েছে!</h2>
-       <p><b>Order ID:</b> ${orderId}</p>
-       <p><b>ডেলিভারি তারিখ:</b> ${deliveryDate}</p>
-       <hr>
-       <h3>অর্ডারের বিবরণ:</h3>
-       ${itemsList}
-       <hr>
-       <p><b>মোট মূল্য:</b> ₹${totalAmount}</p>
-       <p>আমাদের প্রতিনিধি খুব শীঘ্রই আপনার পেমেন্ট যাচাই করবেন। ধন্যবাদ!</p>`
+      email,
+      `🎉 আস্বাদন (Aswadan) পরিবারে আপনাকে স্বাগতম!`,
+      `<h2>নমস্কার ${name}!</h2><p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>`
     );
   }
 
-  res.json({ success: true, order: newOrder });
+  res.json({ success: true, user: newUser });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { identifier, password } = req.body;
+  usersDB = loadData(USERS_FILE, []);
+  let user = usersDB.find(u => (String(u.phone).trim() === String(identifier).trim() || u.email.toLowerCase() === identifier.toLowerCase()) && u.password === password);
+  if (!user || user.isBlocked) return res.status(401).json({ success: false, message: 'লগইন তথ্য ভুল অথবা অ্যাকাউন্ট ব্লক করা হয়েছে।' });
+  res.json({ success: true, user });
 });
 
 app.get('/api/orders/user/:phone', (req, res) => {
@@ -390,151 +309,145 @@ app.get('/api/orders/user/:phone', (req, res) => {
   res.json({ success: true, orders: userOrders });
 });
 
-// --- ADMIN ROUTES ---
+// 2) Order Placed Mail to User and Admin
+app.post('/api/orders', (req, res) => {
+  const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
+  ordersDB = loadData(ORDERS_FILE, []);
+  const orderId = 'ASW-' + Math.floor(100000 + Math.random() * 900000);
+  const newOrder = { orderId, phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate, status: 'PENDING', orderDate: new Date().toISOString().split('T')[0], createdAt: new Date().toLocaleString() };
+  ordersDB.push(newOrder);
+  saveData(ORDERS_FILE, ordersDB);
 
+  if (email) {
+    sendEmail(
+      email,
+      `📦 আপনার অর্ডার সফলভাবে জমা হয়েছে: #${orderId}`,
+      `<h2>ধন্যবাদ ${customerName}!</h2><p>আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে এবং পর্যালোচনার অপেক্ষায় রয়েছে।</p><p><b>Order ID:</b> ${orderId}</p><p><b>মোট মূল্য:</b> ₹${totalAmount}</p>`
+    );
+  }
+
+  sendEmail(
+    OWNER_NOTIFY_EMAIL,
+    `🚨 নতুন অর্ডার এসেছে: #${orderId}`,
+    `<h2>নতুন অর্ডার প্লেস হয়েছে</h2><p><b>Order ID:</b> ${orderId}</p><p><b>গ্রাহক:</b> ${customerName} (${phone})</p><p><b>মোট মূল্য:</b> ₹${totalAmount}</p>`
+  );
+
+  res.json({ success: true, order: newOrder });
+});
+
+// --- USER PROFILE DATA PURGE ROUTE ---
+app.post('/api/user/delete-history', (req, res) => {
+  const { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ success: false, message: 'মোবাইল নম্বর পাওয়া যায়নি।' });
+  }
+
+  let orders = loadData(ORDERS_FILE, []);
+  let specialReqs = loadData(SPECIAL_REQUESTS_FILE, []);
+
+  const remainingOrders = orders.filter(o => String(o.phone).trim() !== String(phone).trim());
+  const remainingSpecialReqs = specialReqs.filter(r => String(r.phone).trim() !== String(phone).trim());
+
+  saveData(ORDERS_FILE, remainingOrders);
+  saveData(SPECIAL_REQUESTS_FILE, remainingSpecialReqs);
+
+  res.json({ success: true, message: 'আপনার সমস্ত অর্ডার ও স্পেশাল রিকুয়েস্ট হিস্ট্রি সফলভাবে মুছে ফেলা হয়েছে।' });
+});
+
+// --- ADMIN ROUTES ---
 function verifyAdminToken(req) {
-  const authHeader = req.headers['authorization'];
-  return authHeader === 'Bearer aswadan_secret_admin_token';
+  return req.headers['authorization'] === 'Bearer aswadan_secret_admin_token';
 }
 
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
-
-  if (password === adminConfig.password) {
-    res.json({ success: true, token: 'aswadan_secret_admin_token' });
-  } else {
-    res.status(401).json({ success: false, message: 'ভুল এডমিন পাসওয়ার্ড!' });
-  }
+  if (password === adminConfig.password) res.json({ success: true, token: 'aswadan_secret_admin_token' });
+  else res.status(401).json({ success: false, message: 'ভুল পাসওয়ার্ড!' });
 });
 
+// Admin Forgot Password OTP
 app.post('/api/admin/forgot-password', (req, res) => {
   const { email } = req.body;
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
   const adminEmail = adminConfig.email || 'iammadhuchanda@gmail.com';
-
   if (!email || email.trim().toLowerCase() !== adminEmail.toLowerCase()) {
-    return res.status(400).json({ success: false, message: 'ভুল এডমিন ইমেল আইডি! অনুগ্রহ করে সঠিক ইমেল দিন।' });
+    return res.status(400).json({ success: false, message: 'ভুল এডমিন ইমেল আইডি!' });
   }
-
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore['admin_otp'] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
-
-  sendEmail(
-    adminEmail,
-    '🔑 এডমিন পাসওয়ার্ড রিসেট OTP - আস্বাদন Admin',
-    `<h2>আস্বাদন এডমিন প্যানেল পাসওয়ার্ড রিসেট</h2>
-     <h3>আপনার ৬-সংখ্যার OTP কোড: <b style="color:#e5c158; font-size:26px;">${otp}</b></h3>
-     <p>এই কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
-  );
-
-  res.json({ success: true, message: 'সঠিক এডমিন ইমেল! ওনার ইমেলে OTP কোড পাঠানো হয়েছে।' });
+  
+  // Send OTP to Admin Mail
+  sendEmail(adminEmail, '🔑 এডমিন পাসওয়ার্ড রিসেট OTP', `<h3>আপনার এডমিন পাসওয়ার্ড রিসেট OTP কোড হলো: <b>${otp}</b></h3>`);
+  res.json({ success: true, message: 'OTP পাঠানো হয়েছে।' });
 });
 
 app.post('/api/admin/reset-password', (req, res) => {
   const { otp, newPassword } = req.body;
   const record = otpStore['admin_otp'];
-
   if (!record || record.code !== otp || Date.now() > record.expiresAt) {
     return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
   }
-
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
   adminConfig.password = newPassword;
   delete otpStore['admin_otp'];
   saveData(ADMIN_FILE, adminConfig);
-
-  res.json({ success: true, message: 'এডমিন পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!' });
+  res.json({ success: true, message: 'পাসওয়ার্ড পরিবর্তন করা হয়েছে!' });
 });
 
 app.post('/api/admin/factory-settings/request-otp', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
   const { optionType } = req.body;
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
-  const adminEmail = adminConfig.email || 'iammadhuchanda@gmail.com';
-
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore[`admin_factory_${optionType}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
-
-  let optionName = '';
-  const optNum = Number(optionType);
-  if (optNum === 1) optionName = 'Delete All Data History (User, Order, Revenue, Pending, Accepted, Rejected)';
-  else if (optNum === 2) optionName = 'Delete All Order History (Order data, Pending, Accepted, Rejected)';
-  else if (optNum === 3) optionName = 'Delete All User Data';
-  else if (optNum === 4) optionName = 'Delete All Revenue Data';
-
-  sendEmail(
-    adminEmail,
-    `⚠️ Factory Settings OTP [Option ${optionType}] - আস্বাদন Admin`,
-    `<h2>এডমিন ফ্যাক্টরি সেটিংস ডিলিট কনফার্মেশন</h2>
-     <p>নির্বাচিত অপশন: <b>${optionName}</b></p>
-     <h3>আপনার ভেরিফিকেশন OTP: <b style="color:#e5c158; font-size:24px;">${otp}</b></h3>
-     <p>কোডটি ১০ মিনিটের জন্য বৈধ।</p>`
-  );
-
-  res.json({ success: true, message: 'এডমিন ইমেলে ফ্যাক্টরি সেটিংস OTP পাঠানো হয়েছে।' });
+  sendEmail(adminConfig.email, '⚠️ Factory Settings OTP', `<h3>OTP: ${otp}</h3>`);
+  res.json({ success: true, message: 'OTP পাঠানো হয়েছে।' });
 });
 
 app.post('/api/admin/factory-settings/execute', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
   const { optionType, otp } = req.body;
   const record = otpStore[`admin_factory_${optionType}`];
-
   if (!record || record.code !== otp || Date.now() > record.expiresAt) {
     return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
   }
-
-  let msg = '';
   const optNum = Number(optionType);
-
-  if (optNum === 1) {
-    saveData(USERS_FILE, []);
-    saveData(ORDERS_FILE, []);
-    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত ইউজার ডেটা, অর্ডার ইতিহাস ও রেভিনিউ ডেটা মুছে ফেলা হয়েছে!';
-  } else if (optNum === 2) {
-    saveData(ORDERS_FILE, []);
-    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত অর্ডার ইতিহাস ও কারেন্ট অর্ডার মুছে ফেলা হয়েছে!';
-  } else if (optNum === 3) {
-    saveData(USERS_FILE, []);
-    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত ইউজার ডেটা মুছে ফেলা হয়েছে!';
-  } else if (optNum === 4) {
-    saveData(ORDERS_FILE, []);
-    msg = 'ফ্যাক্টরি রিসেট সফল: সমস্ত রেভিনিউ ডেটা মুছে ফেলা হয়েছে!';
-  } else {
-    return res.status(400).json({ success: false, message: 'অবৈধ অপশন সিলেক্ট করা হয়েছে।' });
+  
+  if (optNum === 1) { 
+    saveData(USERS_FILE, []); 
+    saveData(ORDERS_FILE, []); 
+    saveData(REVIEWS_FILE, []);
+    saveData(SPECIAL_REQUESTS_FILE, []);
+  }
+  else if (optNum === 2) { 
+    saveData(ORDERS_FILE, []); 
+    saveData(SPECIAL_REQUESTS_FILE, []);
+  }
+  else if (optNum === 3) { 
+    saveData(USERS_FILE, []); 
+  }
+  else if (optNum === 4) { 
+    saveData(ORDERS_FILE, []); 
   }
 
   delete otpStore[`admin_factory_${optionType}`];
-  res.json({ success: true, message: msg });
+  res.json({ success: true, message: 'ফ্যাক্টরি রিসেট সফল হয়েছে!' });
 });
 
 app.get('/api/admin/orders', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
   ordersDB = loadData(ORDERS_FILE, []);
-  
-  let modified = false;
-  ordersDB.forEach(o => {
-    if (!o.orderDate || o.orderDate.includes(',')) {
-      const d = o.createdAt ? new Date(o.createdAt) : new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      o.orderDate = `${y}-${m}-${day}`;
-      modified = true;
-    }
-  });
-  if (modified) saveData(ORDERS_FILE, ordersDB);
+  specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
 
   const pending = ordersDB.filter(o => o.status === 'PENDING');
   const accepted = ordersDB.filter(o => o.status === 'ACCEPTED');
   const rejected = ordersDB.filter(o => o.status === 'REJECTED');
   const delivered = ordersDB.filter(o => o.status === 'DELIVERED');
-
+  
+  const pendingSpecial = specialRequestsDB.filter(s => s.status === 'PENDING');
   const netRevenue = [...accepted, ...delivered].reduce((sum, o) => sum + Number(o.totalAmount), 0);
-
+  
   res.json({
     success: true,
     orders: ordersDB,
@@ -542,56 +455,37 @@ app.get('/api/admin/orders', (req, res) => {
     accepted,
     rejected,
     delivered,
-    stats: {
-      totalOrders: ordersDB.length,
-      pendingCount: pending.length,
-      acceptedCount: accepted.length,
-      rejectedCount: rejected.length,
-      deliveredCount: delivered.length,
-      netRevenue
+    specialRequests: specialRequestsDB,
+    stats: { 
+      totalOrders: ordersDB.length, 
+      pendingCount: pending.length, 
+      acceptedCount: accepted.length, 
+      rejectedCount: rejected.length, 
+      specialRequestCount: pendingSpecial.length,
+      netRevenue 
     }
   });
 });
 
+// 3, 4, 5) Admin Order Status update (Accept, Reject with Reason, Delivered)
 app.post('/api/admin/order-status', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
   const { orderId, status, reason } = req.body;
   ordersDB = loadData(ORDERS_FILE, []);
   const order = ordersDB.find(o => o.orderId === orderId);
-
   if (order) {
     order.status = status;
     if (reason) order.rejectionReason = reason;
-
     saveData(ORDERS_FILE, ordersDB);
 
+    // Send Mail based on status
     if (order.email) {
       if (status === 'ACCEPTED') {
-        sendEmail(
-          order.email,
-          `✅ আপনার অর্ডার গ্রহণ করা হয়েছে: #${order.orderId}`,
-          `<h2>শুভ সংবাদ ${order.customerName}!</h2>
-           <p>আপনার অর্ডার <b>#${order.orderId}</b> রান্নাঘর থেকে অনুমোদন করা হয়েছে।</p>
-           <p><b>ডেলিভারির তারিখ:</b> ${order.deliveryDate}</p>
-           <p>তাজা ও সুস্বাদু খাবার যথাসময়ে আপনার দরজায় পৌঁছে যাবে।</p>`
-        );
+        sendEmail(order.email, `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`, `<h2>সুসংবাদ ${order.customerName}!</h2><p>আপনার অর্ডারটি (#${orderId}) সফলভাবে এপ্রুভ করা হয়েছে এবং রান্নার প্রস্তুতি চলছে।</p>`);
       } else if (status === 'REJECTED') {
-        sendEmail(
-          order.email,
-          `❌ অর্ডার স্ট্যাটাস আপডেট: #${order.orderId}`,
-          `<h2>প্রিয় ${order.customerName},</h2>
-           <p>দুঃখিত! আপনার অর্ডার <b>#${order.orderId}</b> টি বাতিল করা হয়েছে।</p>
-           <p style="color:#e63946;"><b>বাতিলের কারণ:</b> ${reason || 'অনাকাঙ্ক্ষিত কারণবশত'}</p>
-           <p>যেকোনো জিজ্ঞাসায় যোগাযোগ করুন: 8017960203</p>`
-        );
+        sendEmail(order.email, `❌ আপনার অর্ডার বাতিল করা হয়েছে: #${orderId}`, `<h2>দুঃখিত ${order.customerName}</h2><p>আপনার অর্ডারটি (#${orderId}) বাতিল করা হয়েছে।</p><p><b>কারণ:</b> ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`);
       } else if (status === 'DELIVERED') {
-        sendEmail(
-          order.email,
-          `🍛 খাবার ডেলিভারি সম্পন্ন: #${order.orderId}`,
-          `<h2>আপনার খাবার ডেলিভারি করা হয়েছে!</h2>
-           <p>আশা করি আস্বাদনের ঘরোয়া রান্না আপনার ভালো লেগেছে। আবার অর্ডার করতে ভিজিট করুন আমাদের ওয়েবসাইটে!</p>`
-        );
+        sendEmail(order.email, `🚚 আপনার অর্ডার ডেলিভারি করা হয়েছে: #${orderId}`, `<h2>ধন্যবাদ ${order.customerName}!</h2><p>আপনার অর্ডারটি (#${orderId}) সফলভাবে ডেলিভারি করা হয়েছে। আশা করি আপনার খাবার ভালো লেগেছে!</p>`);
       }
     }
 
@@ -603,64 +497,104 @@ app.post('/api/admin/order-status', (req, res) => {
 
 app.get('/api/admin/users', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
   usersDB = loadData(USERS_FILE, []);
+  ordersDB = loadData(ORDERS_FILE, []);
+  usersDB = syncUsersFromOrders(usersDB, ordersDB);
   res.json({ success: true, users: usersDB });
 });
 
 app.post('/api/admin/users/toggle-block', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-  const { phone } = req.body;
   usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-
+  const user = usersDB.find(u => String(u.phone).trim() === String(req.body.phone).trim());
   if (user) {
     user.isBlocked = !user.isBlocked;
     saveData(USERS_FILE, usersDB);
-    res.json({ success: true, isBlocked: user.isBlocked, message: `ইউজার স্ট্যাটাস পরিবর্তন করা হয়েছে: ${user.isBlocked ? 'Blocked' : 'Active'}` });
+    res.json({ success: true, isBlocked: user.isBlocked, message: 'ইউজার স্ট্যাটাস পরিবর্তিত হয়েছে।' });
   } else {
-    res.status(404).json({ success: false, message: 'User not found' });
+    res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
   }
 });
 
 app.post('/api/admin/users/delete', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-  const { phone } = req.body;
   let users = loadData(USERS_FILE, []);
-
-  const initialLength = users.length;
-  users = users.filter(u => String(u.phone).trim() !== String(phone).trim());
-
-  if (users.length < initialLength) {
+  const initialLen = users.length;
+  users = users.filter(u => String(u.phone).trim() !== String(req.body.phone).trim());
+  if (users.length < initialLen) {
     usersDB = users;
     saveData(USERS_FILE, usersDB);
-    res.json({ success: true, message: 'ইউজার স্থায়ীভাবে মুছে ফেলা হয়েছে (User deleted successfully)' });
+    res.json({ success: true, message: 'ইউজার মুছে ফেলা হয়েছে।' });
   } else {
-    res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি (User not found)।' });
+    res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
   }
+});
+
+app.get('/api/admin/special-requests', (req, res) => {
+  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
+  res.json({ success: true, requests: specialRequestsDB });
+});
+
+// 7, 8, 9) Admin Special Request Action (Priced, Rejected with Reason)
+app.post('/api/admin/special-request/action', (req, res) => {
+  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  const { requestId, action, pricePerPlate, reason } = req.body;
+  specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
+  const reqItem = specialRequestsDB.find(r => r.requestId === requestId);
+  if (!reqItem) return res.status(404).json({ success: false, message: 'রিকুয়েস্ট পাওয়া যায়নি।' });
+
+  if (action === 'PRICED') {
+    reqItem.status = 'PRICED';
+    reqItem.pricePerPlate = Number(pricePerPlate);
+    reqItem.totalAmount = Number(pricePerPlate) * reqItem.qty;
+
+    // 7) Mail to user with price to pay
+    if (reqItem.email) {
+      sendEmail(
+        reqItem.email,
+        `✨ আপনার স্পেশাল রিকুয়েস্টের মূল্য নির্ধারিত হয়েছে: #${requestId}`,
+        `<h2>নমস্কার ${reqItem.customerName}!</h2><p>আপনার "${reqItem.itemName}" রিকুয়েস্টের মূল্য নির্ধারণ করা হয়েছে।</p><p><b>প্রতি প্লেট:</b> ₹${pricePerPlate}</p><p><b>মোট মূল্য:</b> ₹${reqItem.totalAmount}</p><p>দয়া করে আপনার ড্যাশবোর্ড থেকে পেমেন্ট সম্পন্ন করুন।</p>`
+      );
+    }
+  } else if (action === 'REJECTED') {
+    reqItem.status = 'REJECTED';
+    if (reason) reqItem.rejectionReason = reason;
+
+    // 9) Special Order Rejection Mail
+    if (reqItem.email) {
+      sendEmail(
+        reqItem.email,
+        `❌ আপনার স্পেশাল রিকুয়েস্ট বাতিল করা হয়েছে: #${requestId}`,
+        `<h2>দুঃখিত ${reqItem.customerName}</h2><p>আপনার স্পেশাল রিকুয়েস্টটি (#${requestId}) বাতিল করা হয়েছে।</p><p><b>কারণ:</b> ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`
+      );
+    }
+  }
+  
+  saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
+  res.json({ success: true, message: 'রিকুয়েস্ট আপডেট হয়েছে!', request: reqItem });
 });
 
 app.post('/api/admin/menu/save', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-  const { menu } = req.body;
-  if (!Array.isArray(menu)) return res.status(400).json({ success: false, message: 'Invalid menu data' });
-
-  menuDB = menu;
+  menuDB = req.body.menu;
   saveData(MENU_FILE, menuDB);
-  res.json({ success: true, message: 'মেনু তালিকা সফলভাবে আপডেট করা হয়েছে!' });
+  res.json({ success: true, message: 'মেনু আপডেট হয়েছে!' });
 });
 
 app.post('/api/admin/offer/save', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-  const { enabled, title, desc, image } = req.body;
-  offerDB = { enabled: Boolean(enabled), title, desc, image: image || offerDB.image };
-
+  offerDB = req.body;
   saveData(OFFER_FILE, offerDB);
-  res.json({ success: true, message: 'স্পেশাল অফার ব্যানার সফলভাবে সেভ করা হয়েছে!' });
+  res.json({ success: true, message: 'অফার সেভ হয়েছে!' });
+});
+
+app.post('/api/admin/reviews/delete', (req, res) => {
+  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  reviewsDB = loadData(REVIEWS_FILE, []);
+  reviewsDB = reviewsDB.filter(r => Number(r.id) !== Number(req.body.id));
+  saveData(REVIEWS_FILE, reviewsDB);
+  res.json({ success: true, message: 'রিভিউ ডিলিট হয়েছে।' });
 });
 
 app.get('*', (req, res) => {
