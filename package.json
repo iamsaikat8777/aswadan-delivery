@@ -1,17 +1,14 @@
 {
-
-
-  "name": "aswadan-home-delivery",
+  "name": "aswadan-food-services",
   "version": "1.0.0",
-  "description": "Aswadan Home Delivery PWA & Web App",
+  "description": "Aswadan Food Services Web App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "nodemailer": "^6.9.13"
+    "express": "^4.18.2",
+    "resend": "^4.0.0"
   }
 }

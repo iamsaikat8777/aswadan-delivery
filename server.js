@@ -1,5 +1,5 @@
 const express = require('express');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
@@ -98,27 +98,24 @@ if (!fs.existsSync(ADMIN_FILE)) saveData(ADMIN_FILE, adminConfig);
 
 usersDB = syncUsersFromOrders(usersDB, ordersDB);
 
-const SENDER_EMAIL = process.env.OWNER_EMAIL || 'admin.aadwadan@gmail.com';
-const SENDER_PASS = process.env.EMAIL_PASSWORD || 'ctbxceavuduhjxpu';
-const OWNER_NOTIFY_EMAIL = 'iammadhuchanda@gmail.com';
+// Resend Email Integration
+const resend = new Resend(process.env.EMAIL_PASSWORD || '');
+const OWNER_NOTIFY_EMAIL = process.env.OWNER_EMAIL || 'iammadhuchanda@gmail.com';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: SENDER_EMAIL, pass: SENDER_PASS }
-});
-
-function sendEmail(to, subject, htmlContent) {
+async function sendEmail(to, subject, htmlContent) {
   if (!to) return;
-  const mailOptions = {
-    from: `"আস্বাদন Food Services" <${SENDER_EMAIL}>`,
-    to,
-    subject,
-    html: htmlContent
-  };
-  transporter.sendMail(mailOptions, (err) => {
-    if (err) console.error('Email failed to:', to, err.message);
-    else console.log('Email sent successfully to:', to);
-  });
+  try {
+    const senderEmail = process.env.VERIFIED_SENDER || 'info@aaswadanfoodservices.com';
+    const data = await resend.emails.send({
+      from: `আস্বাদন Food Services <${senderEmail}>`,
+      to: [to],
+      subject: subject,
+      html: htmlContent
+    });
+    console.log('Email sent successfully to:', to, data);
+  } catch (err) {
+    console.error('Email failed to:', to, err.message);
+  }
 }
 
 // --- PUBLIC ROUTES ---
@@ -325,7 +322,7 @@ app.post('/api/orders', (req, res) => {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
-  const orderDateStr = `${year}-${month}-${day}`; // Strictly YYYY-MM-DD
+  const orderDateStr = `${year}-${month}-${day}`;
 
   const newOrder = {
     orderId,
@@ -411,7 +408,6 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// Admin Forgot Password: Secure Validation Check without revealing email
 app.post('/api/admin/forgot-password', (req, res) => {
   const { email } = req.body;
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
