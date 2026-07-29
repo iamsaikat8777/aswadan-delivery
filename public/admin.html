@@ -10,7 +10,7 @@
       padding: 10px 14px; background: rgba(229,193,88,0.1); border: 1px solid var(--border-gold);
       color: var(--text-main); border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
     }
-    .admin-tab-btn.active { background: var(--gold-gradient); color: #000; }
+    .admin-tab-btn.active { background: var(--gold-gradient); color: #000 !important; }
     .stat-card { background: #181824; border: 1px solid var(--border-gold); border-radius: 12px; padding: 18px; text-align: center; }
     .admin-section-box { background: #12121a; border: 1px solid var(--border-gold); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
 
@@ -95,14 +95,11 @@
       </form>
     </div>
 
-    <!-- VIEW 2: SEND FORGOT PASSWORD OTP WITH STRICT BLANK EMAIL CHECK -->
+    <!-- VIEW 2: SEND FORGOT PASSWORD OTP -->
     <div id="admin-view-forgot" style="display:none;">
       <div style="text-align:center; margin-bottom:18px;">
         <span style="font-size:2.5rem;">🔐</span>
         <h2 style="color:var(--gold-primary); margin-top:5px;">পাসওয়ার্ড রিসেট (ইমেল ভেরিফিকেশন)</h2>
-        <p style="color:var(--text-muted); font-size:0.88rem; margin-top:6px;">
-          নিরাপত্তার জন্য ওনার/এডমিন ইমেল আইডি লিখুন:
-        </p>
       </div>
 
       <label class="input-label">📧 এডমিন ইমেল আইডি:</label>
@@ -161,8 +158,10 @@
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'history')">📜 Order History</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'revenue')">💰 Net Revenue</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'menu')">🍔 Manage Menu Items</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'offer')" style="color:var(--gold-bright);">🎉 Special Offer Banner</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'users')" style="color:var(--gold-bright);">👥 Manage Users</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'offer')">🎉 Special Offer Banner</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'users')">👥 Manage Users</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'reviews')">⭐ Manage Reviews</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'specialReqs')">✨ Special Requests</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'factory')" style="color:#ff6b6b; border-color:#ff6b6b;">⚙️ Factory Settings</button>
       </div>
 
@@ -185,6 +184,8 @@
     let adminData = null;
     let menuList = [];
     let usersList = [];
+    let reviewsList = [];
+    let specialReqsList = [];
     let currentTab = 'dashboard';
     
     const todayObj = new Date();
@@ -257,9 +258,7 @@
 
     async function verifyAndSendAdminOTP() {
       const emailInput = document.getElementById('admin-forgot-email-input').value.trim();
-      if (!emailInput) {
-        return alert('দয়া করে এডমিন ইমেল আইডি লিখুন।');
-      }
+      if (!emailInput) return alert('দয়া করে এডমিন ইমেল আইডি লিখুন।');
 
       const res = await fetch('/api/admin/forgot-password', {
         method: 'POST',
@@ -267,20 +266,13 @@
         body: JSON.stringify({ email: emailInput })
       });
       const data = await res.json();
-      
-      // Always alert the message returned by the server
       alert(data.message);
-      
-      // STRICT CHECK: Only advance to reset view if backend confirms success (valid admin email)
-      if (data.success) {
-        showAdminResetView();
-      }
+      if (data.success) showAdminResetView();
     }
 
     async function submitAdminNewPassword() {
       const otp = document.getElementById('admin-reset-otp').value.trim();
       const newPassword = document.getElementById('admin-new-password').value.trim();
-
       if (!otp || !newPassword) return alert('সমস্ত ফিল্ড পূরণ করুন।');
 
       const res = await fetch('/api/admin/reset-password', {
@@ -295,12 +287,17 @@
       } else alert(data.message);
     }
 
-    function showDashboard() {
+    async function showDashboard() {
       document.getElementById('admin-login-screen').style.display = 'none';
       document.getElementById('admin-dashboard').style.display = 'block';
-      loadAdminData();
-      fetchAdminMenu();
-      fetchAdminUsers();
+      await Promise.all([
+        loadAdminData(),
+        fetchAdminMenu(),
+        fetchAdminUsers(),
+        fetchAdminReviews(),
+        fetchAdminSpecialReqs()
+      ]);
+      renderAdminTab();
     }
 
     function logoutAdmin() {
@@ -315,7 +312,7 @@
       if (res.status === 401) return logoutAdmin();
       adminData = await res.json();
       
-      if (currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users' && currentTab !== 'factory') {
+      if (!['menu', 'offer', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) {
         renderAdminTab();
       }
     }
@@ -328,16 +325,26 @@
 
     async function fetchAdminUsers() {
       try {
-        const res = await fetch('/api/admin/users', {
-          headers: { 'Authorization': `Bearer ${adminToken}` }
-        });
+        const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${adminToken}` } });
         const data = await res.json();
-        if (data.success) {
-          usersList = data.users || [];
-        }
-      } catch (err) {
-        console.error('Failed to fetch users:', err);
-      }
+        if (data.success) usersList = data.users || [];
+      } catch (err) { console.error(err); }
+    }
+
+    async function fetchAdminReviews() {
+      try {
+        const res = await fetch('/api/reviews');
+        const data = await res.json();
+        if (data.success) reviewsList = data.reviews || [];
+      } catch (err) { console.error(err); }
+    }
+
+    async function fetchAdminSpecialReqs() {
+      try {
+        const res = await fetch('/api/admin/special-requests', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+        const data = await res.json();
+        if (data.success) specialReqsList = data.requests || [];
+      } catch (err) { console.error(err); }
     }
 
     async function switchAdminTab(btnElement, tab) {
@@ -347,36 +354,45 @@
       
       if (tab === 'menu') await fetchAdminMenu();
       if (tab === 'users') await fetchAdminUsers();
+      if (tab === 'reviews') await fetchAdminReviews();
+      if (tab === 'specialReqs') await fetchAdminSpecialReqs();
 
       await loadAdminData();
       renderAdminTab();
     }
 
     async function renderAdminTab() {
-      if (!adminData && currentTab !== 'menu' && currentTab !== 'offer' && currentTab !== 'users' && currentTab !== 'factory') return;
+      if (!adminData && !['menu', 'offer', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) return;
       const container = document.getElementById('admin-tab-content');
+      const stats = adminData?.stats || { totalOrders: 0, pendingCount: 0, acceptedCount: 0, rejectedCount: 0, netRevenue: 0 };
+      const pendingSpecialCount = specialReqsList ? specialReqsList.filter(r => r.status === 'PENDING').length : 0;
 
       if (currentTab === 'dashboard') {
         container.innerHTML = `
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:20px;">
-            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(5)'), 'history')" style="cursor: pointer;" title="Click to view Order History">
-              <h3>${adminData.stats.totalOrders}</h3>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom:20px;">
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(5)'), 'history')" style="cursor: pointer;">
+              <h3>${stats.totalOrders}</h3>
               <p style="color:#aaa;">Total Orders</p>
             </div>
-            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(2)'), 'pending')" style="cursor: pointer;" title="Click to view Current Pending">
-              <h3 style="color:var(--gold-primary);">${adminData.stats.pendingCount}</h3>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(2)'), 'pending')" style="cursor: pointer;">
+              <h3 style="color:var(--gold-primary);">${stats.pendingCount}</h3>
               <p style="color:#aaa;">Pending</p>
             </div>
-            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(3)'), 'accepted')" style="cursor: pointer;" title="Click to view Accepted Orders">
-              <h3 style="color:var(--green-accent);">${adminData.stats.acceptedCount}</h3>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(3)'), 'accepted')" style="cursor: pointer;">
+              <h3 style="color:var(--green-accent);">${stats.acceptedCount}</h3>
               <p style="color:#aaa;">Accepted</p>
             </div>
-            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(4)'), 'rejected')" style="cursor: pointer;" title="Click to view Rejected Orders">
-              <h3 style="color:var(--red-accent);">${adminData.stats.rejectedCount}</h3>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(4)'), 'rejected')" style="cursor: pointer;">
+              <h3 style="color:var(--red-accent);">${stats.rejectedCount}</h3>
               <p style="color:#aaa;">Rejected</p>
             </div>
-            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(6)'), 'revenue')" style="cursor: pointer;" title="Click to view Net Revenue">
-              <h3 style="color:var(--gold-bright);">₹${adminData.stats.netRevenue}</h3>
+            <!-- Special Request Tile counting accurately from synchronized specialReqsList -->
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(11)'), 'specialReqs')" style="cursor: pointer;">
+              <h3 style="color:var(--gold-bright);">${pendingSpecialCount}</h3>
+              <p style="color:#aaa;">Special Request</p>
+            </div>
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(6)'), 'revenue')" style="cursor: pointer;">
+              <h3 style="color:var(--gold-bright);">₹${stats.netRevenue}</h3>
               <p style="color:#aaa;">Total Revenue</p>
             </div>
           </div>
@@ -453,8 +469,163 @@
         await renderOfferManagement(container);
       } else if (currentTab === 'users') {
         renderUsersManagement(container);
+      } else if (currentTab === 'reviews') {
+        renderReviewsManagement(container);
+      } else if (currentTab === 'specialReqs') {
+        renderSpecialRequestsManagement(container);
       } else if (currentTab === 'factory') {
         renderFactorySettingsManagement(container);
+      }
+    }
+
+    function renderSpecialRequestsManagement(container) {
+      if (!specialReqsList || specialReqsList.length === 0) {
+        container.innerHTML = `
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="color:var(--gold-bright); margin-bottom:15px;">✨ স্পেশাল ফুড রিকুয়েস্ট ম্যানেজমেন্ট</h3>
+              <button onclick="refreshSpecialReqsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+            </div>
+            <p style="text-align:center; color:#aaa; padding:20px;">কোনো স্পেশাল রিকুয়েস্ট পাওয়া যায়নি।</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="color:var(--gold-bright); margin:0;">✨ স্পেশাল ফুড রিকুয়েস্ট তালিকা (${specialReqsList.length} টি)</h3>
+            <button onclick="refreshSpecialReqsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            ${specialReqsList.map(r => `
+              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; position:relative;">
+                <!-- Properly Aligned Status Badge on the Top Right -->
+                <div style="position:absolute; top:15px; right:15px;">
+                  <span style="background:${r.status==='PRICED'||r.status==='ORDERED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; color:#fff; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; display:inline-block;">${r.status}</span>
+                </div>
+
+                <div style="padding-right: 90px;">
+                  <strong style="color:var(--gold-bright); font-size:1.05rem; display:block; margin-bottom:4px;">${r.itemName} (${r.qty} প্লেট)</strong>
+                  <small style="color:#aaa;">গ্রাহক: ${r.customerName} (${r.phone}) | তারিখ: ${r.createdAt}</small>
+                  <p style="color:var(--text-main); font-size:0.9rem; margin-top:6px;"><b>বিবরণ:</b> ${r.description || 'N/A'}</p>
+                  
+                  ${r.status === 'REJECTED' && r.rejectionReason ? `<p style="color:#e63946; margin-top:6px;"><b>বাতিলের কারণ:</b> ${r.rejectionReason}</p>` : ''}
+
+                  ${r.status === 'PENDING' ? `
+                    <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                      <input type="number" id="price-input-${r.requestId}" class="input-field" placeholder="প্রতি প্লেট মূল্য (₹)" style="max-width:160px; margin:0;">
+                      <button onclick="actionSpecialReq('${r.requestId}', 'PRICED')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">দাম সেট করে এপ্রুভ করুন</button>
+                      <button onclick="rejectSpecialReqPrompt('${r.requestId}')" style="background:var(--red-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">রিজেক্ট</button>
+                    </div>
+                  ` : r.status !== 'REJECTED' ? `<p style="color:var(--gold-bright); font-weight:bold; margin-top:8px;">নির্ধারিত মূল্য প্রতি প্লেট: ₹${r.pricePerPlate} (মোট: ₹${r.totalAmount})</p>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function refreshSpecialReqsTab() {
+      await fetchAdminSpecialReqs();
+      renderAdminTab();
+    }
+
+    async function actionSpecialReq(requestId, action, reason = '') {
+      let pricePerPlate = 0;
+      if (action === 'PRICED') {
+        const pInput = document.getElementById(`price-input-${requestId}`);
+        pricePerPlate = pInput ? Number(pInput.value) : 0;
+        if (!pricePerPlate || pricePerPlate <= 0) return alert('সঠিক মূল্য লিখুন।');
+      }
+
+      const res = await fetch('/api/admin/special-request/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ requestId, action, pricePerPlate, reason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        await fetchAdminSpecialReqs();
+        renderAdminTab();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    async function rejectSpecialReqPrompt(requestId) {
+      const reason = prompt('স্পেশাল অর্ডার বাতিলের কারণ লিখুন:');
+      if (reason === null) return;
+      await actionSpecialReq(requestId, 'REJECTED', 0, reason.trim() || 'অনাকাঙ্ক্ষিত কারণবশত');
+    }
+
+    function renderReviewsManagement(container) {
+      if (!reviewsList || reviewsList.length === 0) {
+        container.innerHTML = `
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="color:var(--gold-bright); margin-bottom:15px;">⭐ গ্রাহক রিভিউ ম্যানেজমেন্ট</h3>
+              <button onclick="refreshReviewsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+            </div>
+            <p style="text-align:center; color:#aaa; padding:20px;">কোনো গ্রাহক রিভিউ পাওয়া যায়নি।</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h3 style="color:var(--gold-bright); margin:0;">⭐ গ্রাহক রিভিউ তালিকা (${reviewsList.length} টি)</h3>
+            <button onclick="refreshReviewsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            ${reviewsList.map(r => `
+              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <strong style="color:var(--gold-bright); font-size:1.05rem;">${r.name}</strong> 
+                  <span style="color:#d4af37; margin-left:8px; font-size:1rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                  <span style="color:#aaa; font-size:0.78rem; margin-left:10px;">(${r.date})</span>
+                  <p style="color:var(--text-main); font-size:0.9rem; margin-top:6px;">${r.comment}</p>
+                </div>
+                <button onclick="deleteReviewPermanently('${r.id}')" style="background:var(--red-accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                  🗑️ ডিলিট
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function refreshReviewsTab() {
+      await fetchAdminReviews();
+      renderAdminTab();
+    }
+
+    async function deleteReviewPermanently(id) {
+      if (confirm('আপনি কি এই রিভিউটি স্থায়ীভাবে মুছে ফেলতে চান?')) {
+        try {
+          const res = await fetch('/api/admin/reviews/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+            body: JSON.stringify({ id })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert(data.message);
+            await fetchAdminReviews();
+            renderAdminTab();
+          } else {
+            alert(data.message || 'রিভিউ ডিলিট করতে সমস্যা হয়েছে।');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('সার্ভার ত্রুটি!');
+        }
       }
     }
 
@@ -467,8 +638,8 @@
           </p>
 
           <div style="display: flex; flex-direction: column; gap: 12px; max-width: 550px;">
-            <button onclick="triggerAdminFactory(1)" style="background: #cc0000; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">1) Delete All Data History (সব ডেটা, ইউজার, অর্ডার ও রেভিনিউ)</button>
-            <button onclick="triggerAdminFactory(2)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">2) Delete All Order History (সমস্ত অর্ডার ইতিহাস)</button>
+            <button onclick="triggerAdminFactory(1)" style="background: #cc0000; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">1) Delete All Data History (সব ডেটা, ইউজার, অর্ডার ও স্পেশাল রিকুয়েস্ট)</button>
+            <button onclick="triggerAdminFactory(2)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">2) Delete All Order History (সমস্ত অর্ডার ও স্পেশাল রিকুয়েস্ট ইতিহাস)</button>
             <button onclick="triggerAdminFactory(3)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">3) Delete All User Data (সমস্ত ইউজার ডেটা)</button>
             <button onclick="triggerAdminFactory(4)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">4) Delete All Revenue Data (সমস্ত রেভিনিউ ডেটা)</button>
           </div>
@@ -484,8 +655,8 @@
     }
 
     const factoryOptionNames = {
-      1: "All Data History (Users, Orders, Revenue, Pending/Accepted/Rejected)",
-      2: "All Order History (Pending, Accepted, Rejected orders)",
+      1: "All Data History (Users, Orders, Revenue, Special Requests)",
+      2: "All Order History (Pending, Accepted, Rejected orders & Special Requests)",
       3: "All User Data",
       4: "All Revenue Data"
     };
@@ -1047,6 +1218,7 @@
       if (data.success) {
         alert(data.message);
         await fetchAdminUsers();
+        renderAdminTab();
       }
     }
 

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="bn" id="html-root">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title data-bn="গ্রাহক রিভিউ ও রেটিং - আস্বাদন" data-en="Customer Reviews & Ratings - Aswadan">গ্রাহক রিভিউ ও রেটিং - আস্বাদন</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .review-card {
+      background: var(--card-bg, #111017);
+      border: 1px solid var(--border-gold);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .star-rating {
+      color: #d4af37;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+    }
+    .star-input {
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .star-input input { display: none; }
+    .star-input label {
+      font-size: 1.8rem;
+      color: #444;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .star-input input:checked ~ label,
+    .star-input label:hover,
+    .star-input label:hover ~ label {
+      color: #e5c158;
+    }
+    .google-badge-box {
+      background: linear-gradient(135deg, #181724 0%, #252236 100%);
+      border: 2px solid var(--gold-bright);
+      border-radius: 20px;
+      padding: 25px;
+      text-align: center;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+
+  <!-- Top-Right Floating Capsule Navigation Bar -->
+  <div class="top-nav-container">
+    <nav class="top-nav-bar">
+      <a href="index.html" class="top-nav-link" data-bn="🏠 Home" data-en="🏠 Home">🏠 Home</a>
+      <a href="menu.html" class="top-nav-link" data-bn="📜 Menu" data-en="📜 Menu">📜 Menu</a>
+      <a href="reviews.html" class="top-nav-link active" data-bn="⭐ Reviews" data-en="⭐ Reviews">⭐ Reviews</a>
+
+      <div class="nav-user-dropdown" id="user-nav-wrapper">
+        <button class="top-nav-link" id="profile-nav-btn" onclick="openAuthModal()" data-bn="👤 Sign In" data-en="👤 Sign In">👤 Sign In</button>
+        
+        <div class="user-dropdown-menu" id="user-hover-menu">
+          <a href="javascript:void(0)" onclick="openUserDashboard('profile')" data-bn="👤 User Profile" data-en="👤 User Profile">👤 User Profile</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('history')" data-bn="📦 Order History" data-en="📦 Order History">📦 Order History</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('status')" data-bn="🚚 Current Order Status" data-en="🚚 Current Order Status">🚚 Current Order Status</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('preferred')" data-bn="⭐ Daily Preferred Menu" data-en="⭐ Daily Preferred Menu">⭐ Daily Preferred Menu</a>
+          <div style="border-top:1px solid rgba(229,193,88,0.2); margin:4px 0;"></div>
+          <a href="javascript:void(0)" onclick="logoutUser()" style="color: var(--red-accent);" data-bn="🚪 Logout" data-en="🚪 Logout">🚪 Logout</a>
+        </div>
+      </div>
+
+      <button class="top-nav-link" onclick="openCartModal()"><span data-bn="🛒 Cart" data-en="🛒 Cart">🛒 Cart</span> <span id="cart-count" class="top-cart-badge">0</span></button>
+      <a href="admin.html" class="top-nav-link" data-bn="🔐 Admin" data-en="🔐 Admin">🔐 Admin</a>
+    </nav>
+  </div>
+
+  <!-- Brand Hero Header -->
+  <header class="brand-hero">
+    <div class="logo-wrapper">
+      <img src="logo.png" alt="আস্বাদন Logo" class="brand-logo" onerror="this.src='logo.webp';">
+    </div>
+    
+    <div>
+      <div class="tagline-badge">
+        <span data-bn="✨ গ্রাহকদের মতামত ও রেটিং ✨" data-en="✨ Customer Reviews & Ratings ✨">✨ গ্রাহকদের মতামত ও রেটিং ✨</span>
+      </div>
+    </div>
+
+    <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+      <span>📞 Madhuchanda Paul (Payel) • 8017969203</span>
+      <div style="display: flex; gap: 6px;">
+        <a href="tel:8017969203" style="background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); color: var(--gold-bright); padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;" data-bn="📞 Call" data-en="📞 Call">📞 Call</a>
+        <a href="https://wa.me/918017969203?text=Hi%2C%20I%20want%20to%20know%20more%20about%20Aswadan%20food%20services." target="_blank" style="background: rgba(42,157,143,0.2); border: 1px solid var(--green-accent); color: #4ade80; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;" data-bn="💬 WhatsApp" data-en="💬 WhatsApp">💬 WhatsApp</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container" style="max-width: 800px;">
+
+    <!-- DIRECT GOOGLE REVIEW PROMO BOX -->
+    <div class="google-badge-box">
+      <h2 style="color: var(--gold-bright); font-family: 'Cinzel', serif; margin-bottom: 10px;" data-bn="🌟 Google-এ আমাদের রেটিং দিন" data-en="🌟 Rate Us on Google">🌟 Google-এ আমাদের রেটিং দিন</h2>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 18px;" data-bn="আমাদের খাবার ও পরিষেবা আপনার কেমন লাগল? সরাসরি গুগল রিভিউতে আপনার অভিজ্ঞতা শেয়ার করুন!" data-en="How did you like our food and service? Share your experience directly on Google Reviews!">আমাদের খাবার ও পরিষেবা আপনার কেমন লাগল? সরাসরি গুগল রিভিউতে আপনার অভিজ্ঞতা শেয়ার করুন!</p>
+      
+      <a href="https://g.page/r/your-google-business-review-link/review" target="_blank" class="btn-cta" style="background: #fff; color: #111; font-weight: bold; text-decoration: none; padding: 12px 25px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.15v3.14C3.15 21.32 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.15C.42 8.1 0 9.99 0 12s.42 3.9 1.15 5.38l4.12-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.15 6.62l4.12 3.14c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+        <span data-bn="Google-এ রিভিউ দিন (Leave Google Review)" data-en="Leave Google Review">Google-এ রিভিউ দিন (Leave Google Review)</span>
+      </a>
+    </div>
+
+    <!-- OVERALL RATING SUMMARY CARD -->
+    <div class="hero-split-section" style="text-align: center; display: block; margin-bottom: 25px;">
+      <h3 style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 5px;" data-bn="গড় রেটিং (Overall Rating)" data-en="Overall Rating">গড় রেটিং (Overall Rating)</h3>
+      <div id="avg-rating-number" style="font-size: 3rem; font-weight: 800; color: var(--gold-bright); font-family: 'Cinzel', serif;">5.0</div>
+      <div id="avg-stars" class="star-rating" style="margin: 5px 0;">⭐⭐⭐⭐⭐</div>
+      <p id="total-reviews-count" style="color: var(--text-muted); font-size: 0.85rem;" data-bn="মোট ০ জন গ্রাহক মতামত দিয়েছেন" data-en="Total 0 customers gave feedback">মোট ০ জন গ্রাহক মতামত দিয়েছেন</p>
+    </div>
+
+    <!-- WRITE A REVIEW FORM (REGISTERED USERS ONLY) -->
+    <div class="hero-split-section" style="display: block; margin-bottom: 35px;">
+      <h3 style="color: var(--gold-bright); font-family: 'Cinzel', serif; margin-bottom: 15px;" data-bn="✍️ আপনার রিভিউ লিখুন" data-en="✍️ Write Your Review">✍️ আপনার রিভিউ লিখুন</h3>
+      
+      <!-- Warning if not logged in -->
+      <div id="review-login-warning" style="text-align: center; padding: 15px; display: none;">
+        <p style="color: var(--gold-bright); margin-bottom: 12px; font-size: 0.95rem;" data-bn="🔒 শুধুমাত্র রেজিস্টার্ড ব্যবহারকারীরাই রিভিউ দিতে পারবেন।" data-en="🔒 Only registered users can submit reviews.">🔒 শুধুমাত্র রেজিস্টার্ড ব্যবহারকারীরাই রিভিউ দিতে পারবেন।</p>
+        <button class="btn-primary" onclick="openAuthModal()" style="max-width: 220px; margin: 0 auto;" data-bn="সাইন ইন / লগইন করুন" data-en="Sign In / Login">সাইন ইন / লগইন করুন</button>
+      </div>
+
+      <!-- Review Form if logged in -->
+      <form id="review-form" onsubmit="submitUserReview(event)" style="display: none;">
+        <label class="input-label" data-bn="👤 আপনার নাম:" data-en="👤 Your Name:">👤 আপনার নাম:</label>
+        <input type="text" id="rev-name" class="input-field" readonly style="opacity: 0.8;">
+
+        <label class="input-label" data-bn="⭐ স্টার রেটিং নির্বাচন করুন:" data-en="⭐ Select Star Rating:">⭐ স্টার রেটিং নির্বাচন করুন:</label>
+        <div class="star-input" style="margin-bottom: 12px;">
+          <input type="radio" id="star5" name="rating" value="5" required><label for="star5">★</label>
+          <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+          <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+          <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+          <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+        </div>
+
+        <label class="input-label" data-bn="💬 আপনার মতামত / অভিজ্ঞতা:" data-en="💬 Your Feedback / Experience:">💬 আপনার মতামত / অভিজ্ঞতা:</label>
+        <textarea id="rev-comment" class="input-field" rows="3" placeholder="খাবারের মান এবং ডেলিভারি সম্পর্কে কিছু বলুন..." required></textarea>
+
+        <button type="submit" class="btn-primary" style="margin-top: 10px;" data-bn="রিভিউ সাবমিট করুন" data-en="Submit Review">রিভিউ সাবমিট করুন</button>
+      </form>
+    </div>
+
+    <!-- REVIEWS LIST CONTAINER (VISIBLE TO ALL) -->
+    <div class="section-header">
+      <span class="gold-line"></span>
+      <h2 data-bn="গ্রাহকদের মতামত" data-en="Customer Feedback">গ্রাহকদের মতামত</h2>
+      <span class="gold-line"></span>
+    </div>
+
+    <div id="reviews-list-container">
+      <div style="text-align: center; color: var(--text-muted); padding: 20px;" data-bn="রিভিউ লোড হচ্ছে..." data-en="Loading reviews...">রিভিউ লোড হচ্ছে...</div>
+    </div>
+
+  </div>
+
+  <div id="toast-msg" class="toast-popup" data-bn="রিভিউ সফলভাবে জমা হয়েছে!" data-en="Review submitted successfully!">রিভিউ সফলভাবে জমা হয়েছে!</div>
+
+  <!-- AUTH MODAL (Required for Login Check & Popups) -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="auth-modal-title" data-bn="🔑 লগইন (Login)" data-en="🔑 Login">🔑 লগইন (Login)</h3>
+        <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
+      </div>
+
+      <div id="auth-tab-bar" style="display: flex; gap: 10px; margin-bottom: 18px;">
+        <button id="tab-login-btn" class="btn-primary" style="flex:1; padding:8px; margin:0;" onclick="switchAuthTab('login')" data-bn="লগইন" data-en="Login">লগইন</button>
+        <button id="tab-signup-btn" class="btn-primary" style="flex:1; padding:8px; margin:0; background: rgba(229,193,88,0.15); color: var(--gold-bright); border:1px solid var(--border-gold);" onclick="switchAuthTab('signup')" data-bn="নতুন সাইন-আপ" data-en="New Sign Up">নতুন সাইন-আপ</button>
+      </div>
+
+      <form id="login-form" onsubmit="event.preventDefault(); loginUser();">
+        <label class="input-label" data-bn="📱 মোবাইল নম্বর / ইমেল আইডি:" data-en="📱 Mobile Number / Email ID:">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
+        <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" required>
+
+        <label class="input-label" data-bn="🔑 পাসওয়ার্ড:" data-en="🔑 Password:">🔑 পাসওয়ার্ড:</label>
+        <div style="position: relative;">
+          <input type="password" id="login-password" class="input-field" placeholder="Enter Password" required style="padding-right: 42px;">
+          <button type="button" onclick="togglePasswordVisibility('login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 4px;" title="Toggle Password">
+            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+
+        <div style="text-align: right; margin-bottom: 12px;">
+          <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="color: var(--gold-bright); font-size: 0.85rem; text-decoration: underline;" data-bn="পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)" data-en="Forgot Password?">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
+        </div>
+
+        <button type="submit" class="btn-primary" data-bn="লগইন করুন" data-en="Login">লগইন করুন</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaflet JS & App JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    function checkReviewAccess() {
+      const activeUser = JSON.parse(localStorage.getItem('aswadan_user') || localStorage.getItem('currentUser') || 'null');
+      const formEl = document.getElementById('review-form');
+      const warningEl = document.getElementById('review-login-warning');
+
+      if (activeUser && activeUser.phone) {
+        if (formEl) formEl.style.display = 'block';
+        if (warningEl) warningEl.style.display = 'none';
+        const nameInput = document.getElementById('rev-name');
+        if (nameInput) nameInput.value = activeUser.name || 'Registered User';
+      } else {
+        if (formEl) formEl.style.display = 'none';
+        if (warningEl) warningEl.style.display = 'block';
+      }
+    }
+
+    async function loadReviews() {
+      const container = document.getElementById('reviews-list-container');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/reviews');
+        const data = await res.json();
+        
+        if (data.success) {
+          const avgNum = document.getElementById('avg-rating-number');
+          if (avgNum) avgNum.innerText = data.stats.avgRating;
+          
+          const totalCountEl = document.getElementById('total-reviews-count');
+          if (totalCountEl) {
+            totalCountEl.innerText = (window.currentLang === 'en') ? `Total ${data.stats.totalReviews} customers gave feedback` : `মোট ${data.stats.totalReviews} জন গ্রাহক মতামত দিয়েছেন`;
+          }
+          
+          const avgStars = document.getElementById('avg-stars');
+          if (avgStars) {
+            const fullStars = Math.round(data.stats.avgRating);
+            avgStars.innerText = '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
+          }
+
+          if (!data.reviews || data.reviews.length === 0) {
+            const noRevText = (window.currentLang === 'en') ? 'No reviews yet. Be the first to review!' : 'এখনো কোনো রিভিউ নেই। প্রথম রিভিউটি আপনি দিন!';
+            container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">${noRevText}</div>`;
+            return;
+          }
+
+          container.innerHTML = data.reviews.map(r => `
+            <div class="review-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong style="color: var(--gold-bright); font-size: 1.05rem;">${r.name}</strong>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">${r.date}</span>
+              </div>
+              <div class="star-rating" style="font-size: 1rem; margin-bottom: 8px;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+              <p style="color: var(--text-main); font-size: 0.92rem; line-height: 1.5;">${r.comment}</p>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<div style="text-align: center; color: var(--red-accent); padding: 20px;">রিভিউ লোড করতে ব্যর্থ হয়েছে।</div>`;
+        }
+      } catch (err) {
+        console.error('Error loading reviews:', err);
+        container.innerHTML = `<div style="text-align: center; color: var(--red-accent); padding: 20px;">সার্ভার কানেকশন এরর।</div>`;
+      }
+    }
+
+    async function submitUserReview(e) {
+      e.preventDefault();
+      const userSession = JSON.parse(localStorage.getItem('aswadan_user') || localStorage.getItem('currentUser') || 'null');
+      
+      if (!userSession || !userSession.phone) {
+        alert('রিভিউ দেওয়ার জন্য অনুগ্রহ করে প্রথমে সাইন ইন / লগইন করুন।');
+        openAuthModal();
+        return;
+      }
+
+      const name = userSession.name;
+      const phone = userSession.phone;
+      const ratingEl = document.querySelector('input[name="rating"]:checked');
+      const commentEl = document.getElementById('rev-comment');
+
+      if (!ratingEl || !commentEl) return;
+
+      const rating = ratingEl.value;
+      const comment = commentEl.value;
+
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, rating, comment })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message);
+          document.getElementById('review-form').reset();
+          loadReviews();
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('সার্ভার ত্রুটি। আবার চেষ্টা করুন।');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      checkReviewAccess();
+      loadReviews();
+    });
+  </script>
+</body>
+</html>

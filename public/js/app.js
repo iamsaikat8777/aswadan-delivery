@@ -1,816 +1,215 @@
-let cart = JSON.parse(localStorage.getItem('aswadan_cart')) || [];
-let user = JSON.parse(localStorage.getItem('aswadan_user')) || null;
-let menuData = [];
-let heroTileIndex = 0;
-let paymentScreenshotBase64 = '';
-let deferredPWAEvent = null;
-let userHistorySelectedDate = new Date().toISOString().split('T')[0];
-let userHistoryShowAll = true;
-
-// Map Modal Variables
-let activeLocationInputId = null;
-let leafletMap = null;
-let leafletMarker = null;
-let selectedLat = 22.5726; 
-let selectedLng = 88.3639;
-
-document.addEventListener('DOMContentLoaded', () => {
-  registerServiceWorker();
-  checkIOSInstallBanner();
-  syncLocalUserToServer();
-  fetchMenu();
-  updateCartUI();
-  updateProfileNav();
-  checkSpecialOfferPopup();
-
-  const internalLinks = document.querySelectorAll('a[href]');
-  internalLinks.forEach(link => {
-    const href = link.getAttribute('href');
-    if (href && (href.endsWith('.html') || href === '/' || href.startsWith('/#'))) {
-      link.addEventListener('click', (e) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || link.getAttribute('target') === '_blank') return;
-        e.preventDefault();
-        window.location.href = href;
-      });
+// --- GLOBAL AUTO-INJECTED LANGUAGE SWITCHER ---
+(function() {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .auto-lang-container {
+      position: fixed;
+      top: max(16px, env(safe-area-inset-top, 16px));
+      left: 20px;
+      z-index: 10000;
     }
-  });
+    .auto-lang-btn {
+      background: rgba(18, 17, 25, 0.92);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      color: #e5c158;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .auto-lang-btn:hover {
+      background: linear-gradient(135deg, #d4af37 0%, #e5c158 50%, #aa820a 100%);
+      color: #000;
+    }
+  `;
+  document.head.appendChild(style);
 
-  const dateInput = document.getElementById('delivery-date');
-  if (dateInput) {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    dateInput.value = tomorrow.toISOString().split('T')[0];
+  if (!document.getElementById('global-lang-btn-box')) {
+    const langDiv = document.createElement('div');
+    langDiv.id = 'global-lang-btn-box';
+    langDiv.className = 'auto-lang-container';
+    langDiv.innerHTML = `
+      <button class="auto-lang-btn" onclick="window.toggleGlobalLanguage()">
+        🌐 <span id="global-lang-label">English</span>
+      </button>
+    `;
+    document.body.prepend(langDiv);
   }
-});
 
-/* --- iOS SAFARI APP INSTALL BANNER LOGIC --- */
-function checkIOSInstallBanner() {
-  if (isIOS() && !isInStandaloneMode()) {
-    const iosBanner = document.getElementById('ios-install-banner');
-    if (iosBanner && !localStorage.getItem('ios_banner_dismissed')) {
-      iosBanner.style.display = 'flex';
+  window.currentLang = localStorage.getItem('aswadan_lang') || 'bn';
+
+  window.applyGlobalLanguage = function(lang) {
+    window.currentLang = lang;
+    localStorage.setItem('aswadan_lang', lang);
+    
+    const label = document.getElementById('global-lang-label');
+    if (label) {
+      label.innerText = (lang === 'bn') ? 'English' : 'বাংলা';
     }
-  }
-}
 
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-
-function isInStandaloneMode() {
-  return ('standalone' in window.navigator) && (window.navigator.standalone);
-}
-
-function dismissIOSBanner() {
-  const iosBanner = document.getElementById('ios-install-banner');
-  if (iosBanner) iosBanner.style.display = 'none';
-  localStorage.setItem('ios_banner_dismissed', 'true');
-}
-
-function openMapModal(inputId) {
-  activeLocationInputId = inputId;
-  document.getElementById('map-picker-modal').style.display = 'flex';
-  
-  setTimeout(() => {
-    if (!leafletMap) {
-      leafletMap = L.map('leaflet-map').setView([22.5726, 88.3639], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(leafletMap);
-
-      leafletMarker = L.marker([22.5726, 88.3639], { draggable: true }).addTo(leafletMap);
-
-      leafletMarker.on('dragend', function (e) {
-        const pos = leafletMarker.getLatLng();
-        selectedLat = pos.lat;
-        selectedLng = pos.lng;
-      });
-
-      leafletMap.on('click', function (e) {
-        selectedLat = e.latlng.lat;
-        selectedLng = e.latlng.lng;
-        leafletMarker.setLatLng([selectedLat, selectedLng]);
-      });
-    } else {
-      leafletMap.invalidateSize();
-    }
-  }, 250);
-}
-
-function closeMapModal() {
-  document.getElementById('map-picker-modal').style.display = 'none';
-}
-
-function confirmMapLocation() {
-  if (activeLocationInputId) {
-    const locVal = `https://maps.google.com/?q=${selectedLat},${selectedLng}`;
-    const inputEl = document.getElementById(activeLocationInputId);
-    if (inputEl) {
-      inputEl.value = locVal;
-    }
-    showToast('📍 মানচিত্র থেকে সঠিক লোকেশন কনফার্ম করা হয়েছে!');
-  }
-  closeMapModal();
-}
-
-function getCurrentLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const locStr = `https://maps.google.com/?q=${lat},${lng}`;
-        document.getElementById('signup-location').value = locStr;
-        showToast('📍 জিপিএস লোকেশন লিংক সফলভাবে নেওয়া হয়েছে!');
-      },
-      (error) => {
-        alert('লোকেশন পাওয়া যায়নি। ব্রাউজারের লোকেশন পারমিশন চেক করুন।');
+    document.querySelectorAll('[data-bn]').forEach(el => {
+      const text = el.getAttribute(`data-${lang}`);
+      if (text) {
+        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+          el.placeholder = text;
+        } else {
+          el.innerHTML = text;
+        }
       }
-    );
-  } else {
-    alert('আপনার ব্রাউজার জিপিএস লোকেশন সাপোর্ট করে না।');
-  }
-}
-
-function getCurrentLocationForProfile() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const locStr = `https://maps.google.com/?q=${lat},${lng}`;
-        document.getElementById('prof-location').value = locStr;
-        showToast('📍 জিপিএস লোকেশন আপডেট করা হয়েছে!');
-      },
-      (error) => {
-        alert('লোকেশন পাওয়া যায়নি।');
-      }
-    );
-  } else {
-    alert('ব্রাউজার লোকেশন সাপোর্ট করে না।');
-  }
-}
-
-function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('PWA Service Worker Registered Successfully!'))
-      .catch((err) => console.error('Service Worker registration failed:', err));
-  }
-}
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPWAEvent = e;
-  const pwaBanner = document.getElementById('pwa-install-banner');
-  if (pwaBanner) {
-    pwaBanner.style.display = 'flex';
-  }
-});
-
-function triggerPWAInstall() {
-  if (deferredPWAEvent) {
-    deferredPWAEvent.prompt();
-    deferredPWAEvent.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the PWA install prompt');
-      }
-      deferredPWAEvent = null;
-      const pwaBanner = document.getElementById('pwa-install-banner');
-      if (pwaBanner) pwaBanner.style.display = 'none';
     });
+  };
+
+  window.toggleGlobalLanguage = function() {
+    const newLang = (window.currentLang === 'bn') ? 'en' : 'bn';
+    window.applyGlobalLanguage(newLang);
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    window.applyGlobalLanguage(window.currentLang);
+  });
+})();
+
+// --- CART & APP CORE LOGIC ---
+let cart = JSON.parse(localStorage.getItem('aswadan_cart') || '[]');
+let currentUser = JSON.parse(localStorage.getItem('aswadan_user') || localStorage.getItem('currentUser') || 'null');
+let paymentScreenshotBase64 = '';
+let specPaymentScreenshotBase64 = '';
+let mapPickerTargetInput = null;
+let leafletMapInstance = null;
+let selectedMarker = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  updateCartCount();
+  updateAuthNavUI();
+  loadHomeSpotlight();
+  checkPWAInstallPrompt();
+  injectUserDashboardModalIfNeeded();
+  injectCartModalIfNeeded();
+  checkSpecialRequestNotificationBadge();
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const delDateInput = document.getElementById('delivery-date');
+  if (delDateInput) {
+    delDateInput.value = tomorrow.toISOString().split('T')[0];
   }
+  const specDelDateInput = document.getElementById('spec-delivery-date');
+  if (specDelDateInput) {
+    specDelDateInput.value = tomorrow.toISOString().split('T')[0];
+  }
+});
+
+function updateCartCount() {
+  const countEl = document.getElementById('cart-count');
+  if (countEl) {
+    const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+    countEl.innerText = totalQty;
+  }
+  localStorage.setItem('aswadan_cart', JSON.stringify(cart));
 }
 
-async function syncLocalUserToServer() {
-  if (user && user.phone) {
-    try {
-      await fetch('/api/user/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: user.phone,
-          name: user.name || '',
-          email: user.email || '',
-          address: user.address || '',
-          location: user.location || '',
-          pincode: user.pincode || '700036'
-        })
-      });
-    } catch (err) {
-      console.error('Local user sync error:', err);
-    }
-  }
-}
-
-function handlePaymentScreenshotUpload(event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      paymentScreenshotBase64 = e.target.result;
-      const preview = document.getElementById('payment-screenshot-preview');
-      if (preview) {
-        preview.src = paymentScreenshotBase64;
-        preview.style.display = 'inline-block';
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
-async function checkSpecialOfferPopup() {
-  try {
-    const res = await fetch('/api/offer');
-    const data = await res.json();
-    if (data.success && data.offer && data.offer.enabled) {
-      const offer = data.offer;
-      
-      const titleEl = document.getElementById('offer-popup-title');
-      const descEl = document.getElementById('offer-popup-desc');
-      const imgEl = document.getElementById('offer-popup-image');
-
-      if (titleEl) titleEl.innerText = offer.title;
-      if (descEl) descEl.innerText = offer.desc;
-      
-      if (imgEl && offer.image) {
-        imgEl.src = offer.image;
-        imgEl.style.display = 'inline-block';
-      }
-
-      setTimeout(() => {
-        const modal = document.getElementById('special-offer-modal');
-        if (modal) modal.style.display = 'flex';
-      }, 1000);
-    }
-  } catch (err) {
-    console.error('Failed to load offer banner:', err);
-  }
-}
-
-function updateProfileNav() {
+// --- STRICT LOGIN STATE NAVBAR & DROPDOWN UI FIX ---
+function updateAuthNavUI() {
   const btn = document.getElementById('profile-nav-btn');
   const wrapper = document.getElementById('user-nav-wrapper');
-  const hoverMenu = document.getElementById('user-hover-menu');
+  const dropdownMenu = document.getElementById('user-hover-menu');
 
-  if (btn && hoverMenu) {
-    if (user) {
-      btn.innerText = `👤 ${user.name.split(' ')[0]}`;
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        wrapper.classList.toggle('active-dropdown');
-      };
-      hoverMenu.style.display = 'block';
-    } else {
-      btn.innerText = `👤 Sign In`;
-      btn.onclick = openAuthModal;
-      wrapper.classList.remove('active-dropdown');
-      hoverMenu.style.display = 'none';
+  if (currentUser && currentUser.phone) {
+    if (btn) {
+      btn.innerText = `👤 ${currentUser.name ? currentUser.name.split(' ')[0] : 'Account'}`;
+      btn.onclick = toggleUserDropdown;
     }
+    if (wrapper) wrapper.style.pointerEvents = 'auto';
+    if (dropdownMenu) dropdownMenu.style.display = '';
+  } else {
+    if (btn) {
+      btn.innerText = '👤 Sign In';
+      btn.onclick = openAuthModal;
+    }
+    if (wrapper) {
+      wrapper.style.pointerEvents = 'none';
+      if (btn) btn.style.pointerEvents = 'auto';
+    }
+    if (dropdownMenu) dropdownMenu.style.display = 'none';
   }
 }
 
-document.addEventListener('click', () => {
+function toggleUserDropdown(e) {
+  if (!currentUser || !currentUser.phone) {
+    openAuthModal();
+    return;
+  }
+  if (e) e.stopPropagation();
   const wrapper = document.getElementById('user-nav-wrapper');
-  if (wrapper) {
+  if (wrapper) wrapper.classList.toggle('active-dropdown');
+}
+
+window.addEventListener('click', (e) => {
+  const wrapper = document.getElementById('user-nav-wrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
     wrapper.classList.remove('active-dropdown');
   }
 });
 
-function openUserDashboard(tabName) {
-  if (!user) return openAuthModal();
-  document.getElementById('user-dashboard-modal').style.display = 'flex';
-  switchDashboardTab(tabName);
-}
-
-function switchDashboardTab(tabName) {
-  const views = ['profile', 'history', 'status', 'preferred'];
-  
-  views.forEach(v => {
-    document.getElementById(`dash-view-${v}`).style.display = 'none';
-    document.getElementById(`btn-tab-${v}`).classList.remove('active');
-  });
-
-  document.getElementById(`dash-view-${tabName}`).style.display = 'block';
-  document.getElementById(`btn-tab-${tabName}`).classList.add('active');
-
-  if (tabName === 'profile') loadProfileData();
-  else if (tabName === 'history') loadOrderHistory();
-  else if (tabName === 'status') loadCurrentStatus();
-  else if (tabName === 'preferred') loadPreferredMenuUI();
-}
-
-function loadProfileData() {
-  document.getElementById('prof-name').value = user.name || '';
-  document.getElementById('prof-phone').value = user.phone || '';
-  document.getElementById('prof-email').value = user.email || '';
-  document.getElementById('prof-address').value = user.address || '';
-  document.getElementById('prof-location').value = user.location || '';
-  document.getElementById('prof-pincode').value = user.pincode || '700036';
-}
-
-async function saveUserProfile() {
-  const name = document.getElementById('prof-name').value.trim();
-  const email = document.getElementById('prof-email').value.trim();
-  const address = document.getElementById('prof-address').value.trim();
-  const location = document.getElementById('prof-location').value.trim();
-  const pincode = document.getElementById('prof-pincode').value.trim();
-
-  const res = await fetch('/api/user/profile', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: user.phone, name, email, address, location, pincode })
-  });
-  const data = await res.json();
-  if (data.success) {
-    user = data.user;
-    localStorage.setItem('aswadan_user', JSON.stringify(user));
-    alert('প্রোফাইল আপডেট সফল হয়েছে!');
-    updateProfileNav();
+function showToast(msg) {
+  const toast = document.getElementById('toast-msg');
+  if (toast) {
+    toast.innerText = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
   }
 }
 
-async function requestUserHistoryDeletion() {
-  const confirmed = confirm("Are you sure you want to delete all history? (আপনি কি নিশ্চিত সমস্ত ইতিহাস ডিলিট করতে চান?)");
-  if (!confirmed) return;
-
-  try {
-    const res = await fetch('/api/user/request-delete-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: user.phone })
-    });
-    const data = await res.json();
-    alert(data.message);
-    if (data.success) {
-      document.getElementById('user-history-otp-box').style.display = 'block';
-    }
-  } catch (err) {
-    console.error(err);
-    alert('OTP পাঠাতে সমস্যা হয়েছে।');
-  }
+function closeModal(modalId) {
+  const m = document.getElementById(modalId);
+  if (m) m.style.display = 'none';
 }
 
-async function verifyAndExecuteUserDeletion() {
-  const otp = document.getElementById('user-history-otp-input').value.trim();
-  if (!otp || otp.length !== 6) {
-    alert('দয়া করে সঠিক ৬-সংখ্যার OTP কোড লিখুন।');
-    return;
-  }
-
-  const finalConfirmed = confirm("OTP verified. Are you sure you want to permanently delete all order history?");
-  if (!finalConfirmed) return;
-
-  try {
-    const res = await fetch('/api/user/verify-delete-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: user.phone, otp })
-    });
-    const data = await res.json();
-    alert(data.message);
-    if (data.success) {
-      closeModal('user-dashboard-modal');
-    }
-  } catch (err) {
-    console.error(err);
-    alert('ইতিহাস ডিলিট করতে সমস্যা হয়েছে।');
-  }
-}
-
-function logoutUser() {
-  user = null;
-  localStorage.removeItem('aswadan_user');
-  closeModal('user-dashboard-modal');
-  updateProfileNav();
-  alert('Log Out সফল হয়েছে।');
-}
-
-async function loadOrderHistory() {
-  const res = await fetch(`/api/orders/user/${user.phone}`);
-  const data = await res.json();
-  const container = document.getElementById('user-orders-history-list');
-
-  const filteredOrders = userHistoryShowAll 
-    ? data.orders 
-    : data.orders.filter(o => {
-        let rawDate = o.orderDate || o.createdAt || '';
-        let normalizedDate = '';
-        if (rawDate.includes('T')) {
-          normalizedDate = rawDate.split('T')[0];
-        } else if (rawDate.includes('/')) {
-          const datePart = rawDate.split(',')[0].trim();
-          const parts = datePart.split('/');
-          if (parts.length === 3) {
-            let m = parts[0].padStart(2, '0');
-            let d = parts[1].padStart(2, '0');
-            let y = parts[2];
-            normalizedDate = `${y}-${m}-${d}`;
-          }
-        } else {
-          normalizedDate = rawDate.substring(0, 10);
-        }
-        return normalizedDate === userHistorySelectedDate;
-      });
-
-  let htmlContent = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px; background:#181824; padding:10px; border-radius:10px; border:1px solid var(--border-gold);">
-      <div style="display:flex; align-items:center; gap:6px;">
-        <label style="font-size:0.85rem; color:var(--gold-bright); font-weight:bold;">অর্ডার করার তারিখ:</label>
-        <input type="date" id="user-history-date" class="input-field" value="${userHistorySelectedDate}" ${userHistoryShowAll ? 'disabled' : ''} onchange="updateUserHistoryDate(this.value)" style="max-width:150px; padding:4px 8px;">
-      </div>
-      <button onclick="toggleUserHistoryShowAll()" style="background:${userHistoryShowAll ? 'var(--gold-gradient)' : 'rgba(229,193,88,0.1)'}; color:${userHistoryShowAll ? '#000' : 'var(--gold-bright)'}; border:1px solid var(--border-gold); padding:5px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.78rem;">
-        ${userHistoryShowAll ? '📅 অর্ডার তারিখ ফিল্টার' : '♾️ Show All Data'}
-      </button>
-    </div>
-  `;
-
-  if (filteredOrders.length === 0) {
-    htmlContent += '<p style="color:#aaa; text-align:center; padding:15px;">কোনো অর্ডারের ইতিহাস নেই।</p>';
-  } else {
-    htmlContent += filteredOrders.map(o => `
-      <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:12px; margin-bottom:10px; border-radius:10px;">
-        <div style="display:flex; justify-content:space-between;">
-          <strong style="color:var(--gold-bright);">ID: ${o.orderId}</strong>
-          <span style="color:var(--gold-primary); font-weight:bold;">${o.status}</span>
-        </div>
-        <small style="color:#aaa;">অর্ডার তারিখ: ${o.orderDate || o.createdAt} | ডেলিভারি তারিখ: ${o.deliveryDate} | মোট: ₹${o.totalAmount}</small>
-        ${o.rejectionReason ? `<p style="color:#e63946; font-size:0.82rem; margin-top:4px;"><b>বাতিলের কারণ:</b> ${o.rejectionReason}</p>` : ''}
-      </div>
-    `).join('');
-  }
-
-  container.innerHTML = htmlContent;
-}
-
-function updateUserHistoryDate(dateVal) {
-  userHistorySelectedDate = dateVal;
-  loadOrderHistory();
-}
-
-function toggleUserHistoryShowAll() {
-  userHistoryShowAll = !userHistoryShowAll;
-  loadOrderHistory();
-}
-
-async function loadCurrentStatus() {
-  const res = await fetch(`/api/orders/user/${user.phone}`);
-  const data = await res.json();
-  const container = document.getElementById('current-orders-status-list');
-  const activeOrders = data.orders.filter(o => o.status === 'PENDING' || o.status === 'ACCEPTED');
-
-  if (activeOrders.length === 0) {
-    container.innerHTML = '<p style="color:#aaa; text-align:center; padding:15px;">বর্তমানে কোনো সক্রিয় অর্ডার নেই।</p>';
-  } else {
-    container.innerHTML = activeOrders.map(o => `
-      <div style="background:#181824; border:1px solid var(--gold-primary); padding:15px; margin-bottom:12px; border-radius:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h4 style="color:var(--gold-bright);">#${o.orderId}</h4>
-          <span style="background:var(--gold-primary); color:#000; padding:2px 10px; border-radius:10px; font-weight:bold;">${o.status}</span>
-        </div>
-        <p style="margin:6px 0; font-size:0.9rem;"><b>ডেলিভারি তারিখ:</b> ${o.deliveryDate}</p>
-        <p style="font-size:0.88rem; color:#aaa;">বিবরণ: ${o.items.map(i => i.name + ' x ' + i.qty).join(', ')}</p>
-      </div>
-    `).join('');
-  }
-}
-
-function loadPreferredMenuUI() {
-  const container = document.getElementById('preferred-selection-list');
-  const prefIds = (user.preferredItems || []).map(i => i.id);
-
-  container.innerHTML = menuData.map(item => {
-    const isChecked = prefIds.includes(item.id) ? 'checked' : '';
-    return `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #222;">
-        <div>
-          <strong style="color:var(--gold-bright);">${item.name}</strong>
-          <br><small style="color:#aaa;">₹${item.price}</small>
-        </div>
-        <input type="checkbox" id="pref-check-${item.id}" value="${item.id}" ${isChecked} style="width:20px; height:20px; accent-color:var(--gold-primary);">
-      </div>
-    `;
-  }).join('');
-}
-
-async function savePreferredMenu() {
-  const selected = [];
-  menuData.forEach(item => {
-    const chk = document.getElementById(`pref-check-${item.id}`);
-    if (chk && chk.checked) {
-      selected.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
-    }
-  });
-
-  const res = await fetch('/api/user/preferred-menu', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: user.phone, preferredItems: selected })
-  });
-  const data = await res.json();
-  if (data.success) {
-    user.preferredItems = selected;
-    localStorage.setItem('aswadan_user', JSON.stringify(user));
-    alert('⭐ আপনার ডেইলি প্রেফার্ড মেনু সফলভাবে সেভ করা হয়েছে!');
-  }
-}
-
-function quickOrderPreferred() {
-  if (!user.preferredItems || user.preferredItems.length === 0) {
-    return alert('আগে আপনার পছন্দসই মেনু চেক করে সেভ বাটনে ক্লিক করুন।');
-  }
-  cart = [...user.preferredItems];
-  localStorage.setItem('aswadan_cart', JSON.stringify(cart));
-  updateCartUI();
-  closeModal('user-dashboard-modal');
-  openCartModal();
-}
-
-function getFoodIcon(name) {
-  if (name.includes('মাছ')) return '🐟';
-  if (name.includes('ডিম')) return '🥚';
-  if (name.includes('সবজি')) return '🥦';
-  if (name.includes('চিকেন')) return '🍗';
-  return '🍛';
-}
-
-async function fetchMenu() {
-  try {
-    const res = await fetch('/api/menu');
-    const data = await res.json();
-    menuData = data.menu;
-
-    const menuTilesContainer = document.getElementById('menu-tiles-container');
-    if (menuTilesContainer) {
-      menuTilesContainer.innerHTML = menuData.map(item => `
-        <div class="tile-card">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">${getFoodIcon(item.name)}</div>
-          <h3 class="tile-title">${item.name}</h3>
-          <p class="tile-desc">${item.desc}</p>
-          <div class="tile-bottom">
-            <span class="tile-price">₹${item.price}</span>
-            <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">+ Add</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    const homeSpotlight = document.getElementById('home-spotlight-container');
-    if (homeSpotlight) {
-      const popularItems = menuData.slice(0, 3);
-      homeSpotlight.innerHTML = popularItems.map(item => `
-        <div class="tile-card">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">${getFoodIcon(item.name)}</div>
-          <h3 class="tile-title">${item.name}</h3>
-          <p class="tile-desc">${item.desc}</p>
-          <div class="tile-bottom">
-            <span class="tile-price">₹${item.price}</span>
-            <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">+ Add</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    if (document.getElementById('hero-sliding-tile')) {
-      renderHeroSlidingTile();
-      startHeroTileLoop();
-    }
-  } catch (err) {
-    console.error('Menu loading failed', err);
-  }
-}
-
-function renderHeroSlidingTile() {
-  const tile = document.getElementById('hero-sliding-tile');
-  if (!tile || menuData.length === 0) return;
-
-  const item = menuData[heroTileIndex];
-  tile.classList.add('slide-out');
-
-  setTimeout(() => {
-    tile.innerHTML = `
-      <div style="font-size: 2.8rem; margin-bottom: 8px;">${getFoodIcon(item.name)}</div>
-      <h3 style="color: var(--gold-bright); font-size: 1.35rem; margin-bottom: 6px;">${item.name}</h3>
-      <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.4; margin-bottom: 14px;">${item.desc}</p>
-      <div style="font-size: 1.45rem; color: var(--gold-primary); font-weight: 800; margin-bottom: 14px;">₹${item.price}</div>
-      <button class="btn-add-tile" style="width: 100%; padding: 10px;" onclick="addToCart(${item.id}, '${item.name}', ${item.price})">+ Quick Add to Cart</button>
-    `;
-
-    tile.classList.remove('slide-out');
-    tile.classList.add('slide-in');
-
-    void tile.offsetWidth;
-    tile.classList.remove('slide-in');
-  }, 400);
-}
-
-function startHeroTileLoop() {
-  setInterval(() => {
-    if (document.getElementById('hero-sliding-tile') && menuData.length > 0) {
-      heroTileIndex = (heroTileIndex + 1) % menuData.length;
-      renderHeroSlidingTile();
-    }
-  }, 3800);
-}
-
-function addToCart(id, name, price) {
-  if (!user) return openAuthModal();
-  const exist = cart.find(i => i.id === id);
-  if (exist) exist.qty++;
-  else cart.push({ id, name, price, qty: 1 });
-
-  localStorage.setItem('aswadan_cart', JSON.stringify(cart));
-  updateCartUI();
-  showToast(`🛒 ${name} যোগ করা হয়েছে!`);
-}
-
-function updateCartQty(id, delta) {
-  const item = cart.find(i => i.id === id);
-  if (item) {
-    item.qty += delta;
-    if (item.qty <= 0) {
-      removeFromCart(id);
-      return;
-    }
-    localStorage.setItem('aswadan_cart', JSON.stringify(cart));
-    updateCartUI();
-    openCartModal();
-  }
-}
-
-function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
-  localStorage.setItem('aswadan_cart', JSON.stringify(cart));
-  updateCartUI();
-  openCartModal();
-  showToast('❌ কার্ট থেকে সরানো হয়েছে!');
-}
-
-function updateCartUI() {
-  const count = cart.reduce((s, i) => s + i.qty, 0);
-  const badge = document.getElementById('cart-count');
-  if (badge) badge.innerText = count;
-}
-
-function openCartModal() {
-  if (!user) return openAuthModal();
-
-  document.getElementById('cart-step-1').style.display = 'block';
-  document.getElementById('cart-step-2').style.display = 'none';
-
-  const container = document.getElementById('cart-items');
-  const noticeEl = document.getElementById('min-order-notice');
-  let total = 0;
-  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-
-  if (cart.length === 0) {
-    container.innerHTML = '<p style="text-align:center; padding:15px; color:#aaa;">কার্ট খালি!</p>';
-  } else {
-    container.innerHTML = cart.map(i => {
-      total += i.price * i.qty;
-      return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #333;">
-          <div style="flex:1;">
-            <strong style="color:var(--gold-bright); font-size:0.95rem;">${i.name}</strong><br>
-            <small style="color:#aaa;">₹${i.price} × ${i.qty} = ₹${i.price * i.qty}</small>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div style="display:flex; align-items:center; background:#181824; border:1px solid var(--border-gold); border-radius:6px; padding:2px 6px;">
-              <button onclick="updateCartQty(${i.id}, -1)" style="background:none; border:none; color:var(--gold-bright); font-weight:bold; font-size:1.1rem; cursor:pointer; padding:0 6px;">-</button>
-              <span style="font-weight:bold; min-width:20px; text-align:center;">${i.qty}</span>
-              <button onclick="updateCartQty(${i.id}, 1)" style="background:none; border:none; color:var(--gold-bright); font-weight:bold; font-size:1.1rem; cursor:pointer; padding:0 6px;">+</button>
-            </div>
-            <button onclick="removeFromCart(${i.id})" style="background:none; border:none; color:var(--red-accent); cursor:pointer; font-size:1.1rem; padding:4px;" title="Remove">🗑️</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  if (noticeEl) {
-    noticeEl.style.display = (totalQty > 0 && totalQty < 2) ? 'block' : 'none';
-  }
-
-  document.getElementById('cart-total').innerText = total;
-  document.getElementById('cart-modal').style.display = 'flex';
-}
-
-function proceedToPaymentStep() {
-  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-
-  if (cart.length === 0) {
-    return alert('আপনার কার্ট খালি!');
-  }
-
-  if (totalQty < 2) {
-    const noticeEl = document.getElementById('min-order-notice');
-    if (noticeEl) noticeEl.style.display = 'block';
-    return alert('⚠️ আমাদের সর্বনিম্ন অর্ডার ২ টি থালি / প্লেট। অনুগ্রহ করে কার্টে আরও খাবার যোগ করুন।');
-  }
-
-  document.getElementById('cart-step-1').style.display = 'none';
-  document.getElementById('cart-step-2').style.display = 'block';
-}
-
-function backToCartStep() {
-  document.getElementById('cart-step-1').style.display = 'block';
-  document.getElementById('cart-step-2').style.display = 'none';
-}
-
-async function placeOrder() {
-  const date = document.getElementById('delivery-date').value;
-
-  if (cart.length === 0) return alert('কার্ট খালি!');
-  if (!paymentScreenshotBase64) return alert('অনুগ্রহ করে পেমেন্টের স্ক্রিনশট আপলোড করুন।');
-
-  const totalAmount = cart.reduce((s, i) => s + i.price * i.qty, 0);
-
-  const res = await fetch('/api/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      phone: user.phone,
-      customerName: user.name,
-      email: user.email,
-      address: user.address,
-      location: user.location || '',
-      items: cart,
-      totalAmount,
-      paymentScreenshot: paymentScreenshotBase64,
-      deliveryDate: date
-    })
-  });
-  const data = await res.json();
-  if (data.success) {
-    alert(`🎉 অর্ডার সফল হয়েছে! Order ID: ${data.order.orderId}`);
-    cart = [];
-    paymentScreenshotBase64 = '';
-    const screenshotInput = document.getElementById('payment-screenshot-input');
-    if (screenshotInput) screenshotInput.value = '';
-    const preview = document.getElementById('payment-screenshot-preview');
-    if (preview) preview.style.display = 'none';
-
-    localStorage.removeItem('aswadan_cart');
-    updateCartUI();
-    closeModal('cart-modal');
-  } else {
-    alert(data.message || 'অর্ডার করতে সমস্যা হয়েছে।');
-  }
+function openAuthModal() {
+  const m = document.getElementById('auth-modal');
+  if (m) m.style.display = 'flex';
+  switchAuthTab('login');
 }
 
 function switchAuthTab(tab) {
   const loginForm = document.getElementById('login-form');
   const signupForm = document.getElementById('signup-form');
-  const forgotForm = document.getElementById('forgot-form');
-  const resetForm = document.getElementById('reset-form');
-  const tabBar = document.getElementById('auth-tab-bar');
-  const title = document.getElementById('auth-modal-title');
-
-  loginForm.style.display = 'none';
-  signupForm.style.display = 'none';
-  forgotForm.style.display = 'none';
-  resetForm.style.display = 'none';
-  tabBar.style.display = 'flex';
-
-  if (tab === 'login') {
-    loginForm.style.display = 'block';
-    title.innerText = '🔑 লগইন (Login)';
-  } else if (tab === 'signup') {
-    signupForm.style.display = 'block';
-    title.innerText = '📝 নতুন সাইন-আপ';
-  } else if (tab === 'forgot') {
-    forgotForm.style.display = 'block';
-    tabBar.style.display = 'none';
-    title.innerText = '🔐 পাসওয়ার্ড রিসেট (OTP)';
-  } else if (tab === 'reset') {
-    resetForm.style.display = 'block';
-    tabBar.style.display = 'none';
-    title.innerText = '🔢 OTP যাচাই ও পাসওয়ার্ড পরিবর্তন';
-  }
+  if (loginForm) loginForm.style.display = (tab === 'login') ? 'block' : 'none';
+  if (signupForm) signupForm.style.display = (tab === 'signup') ? 'block' : 'none';
 }
 
 async function loginUser() {
   const identifier = document.getElementById('login-identifier').value.trim();
   const password = document.getElementById('login-password').value.trim();
+  if (!identifier || !password) return alert('সমস্ত ফিল্ড পূরণ করুন।');
 
-  if (!identifier) return alert('মোবাইল নম্বর বা ইমেল আইডি লিখুন।');
-  if (!password) return alert('পাসওয়ার্ড লিখুন।');
-
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, password })
-  });
-  const data = await res.json();
-  if (data.success) {
-    user = data.user;
-    localStorage.setItem('aswadan_user', JSON.stringify(user));
-    closeModal('auth-modal');
-    updateProfileNav();
-    syncLocalUserToServer();
-    alert(`🎉 স্বাগতম ${user.name}!`);
-  } else alert(data.message);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser = data.user;
+      localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
+      closeModal('auth-modal');
+      updateAuthNavUI();
+      showToast('সফলভাবে লগইন হয়েছে!');
+      location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    alert('সার্ভার ত্রুটি!');
+  }
 }
 
 async function signupUser() {
@@ -822,61 +221,701 @@ async function signupUser() {
   const location = document.getElementById('signup-location').value.trim();
   const pincode = document.getElementById('signup-pincode').value.trim();
 
-  const res = await fetch('/api/auth/signup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, phone, email, password, address, location, pincode })
+  if (!name || !phone || !email || !password || !address || !pincode) {
+    return alert('সমস্ত প্রয়োজনীয় ফিল্ড পূরণ করুন।');
+  }
+
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, email, password, address, location, pincode })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser = data.user;
+      localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
+      closeModal('auth-modal');
+      updateAuthNavUI();
+      showToast('সাইন-আপ সফল হয়েছে!');
+      location.reload();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    alert('সার্ভার ত্রুটি!');
+  }
+}
+
+function logoutUser() {
+  localStorage.removeItem('aswadan_user');
+  localStorage.removeItem('currentUser');
+  currentUser = null;
+  updateAuthNavUI();
+  location.reload();
+}
+
+// --- AUTO-INJECT CART MODAL IF MISSING ON ANY PAGE ---
+function injectCartModalIfNeeded() {
+  if (!document.getElementById('cart-modal')) {
+    const cartModalDiv = document.createElement('div');
+    cartModalDiv.id = 'cart-modal';
+    cartModalDiv.className = 'modal';
+    cartModalDiv.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>🛒 আপনার কার্ট ও পেমেন্ট</h3>
+          <button class="close-btn" onclick="closeModal('cart-modal')">&times;</button>
+        </div>
+        <div id="cart-step-1">
+          <div id="cart-items"></div>
+          <div class="cart-summary" style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; font-weight:bold; font-size:1.1rem; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
+            <span>মোট মূল্য:</span>
+            <span class="total-price" style="color:var(--gold-bright);">₹<span id="cart-total">0</span></span>
+          </div>
+          <div id="min-order-notice" style="display:none; background:rgba(230,57,70,0.15); border:1px solid var(--red-accent); color:#ff6b6b; padding:10px; border-radius:8px; font-size:0.88rem; text-align:center; margin:12px 0; font-weight:bold;">
+            ⚠️ আমাদের সর্বনিম্ন অর্ডার ২ টি থালি / প্লেট। অনুগ্রহ করে আরও আইটেম যোগ করুন।
+          </div>
+          <button class="btn-primary" onclick="proceedToPaymentStep()" style="margin-top:15px;">পেমেন্ট ও অর্ডার নিশ্চিত করুন ➔</button>
+        </div>
+        <div id="cart-step-2" style="display: none;">
+          <button onclick="backToCartStep()" style="background:none; border:none; color:var(--gold-bright); cursor:pointer; font-weight:bold; margin-bottom:10px;">← কার্ট সংশোধন করুন</button>
+          <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center; margin-bottom:12px;">
+            <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%20Food%20Services%26cu=INR" alt="Aswadan UPI QR">
+            <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+          </div>
+          <label class="input-label">📅 ডেলিভারির তারিখ:</label>
+          <input type="date" id="delivery-date" class="input-field" style="margin-bottom:10px;">
+          <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
+          <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)" style="margin-bottom:8px;">
+          <img id="payment-screenshot-preview" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none; margin:8px auto; border:1px solid var(--border-gold);">
+          <button class="btn-primary" onclick="placeOrder()">অর্ডার নিশ্চিত করুন</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(cartModalDiv);
+  }
+}
+
+// --- DEDUPLICATED AUTO-INJECT USER DASHBOARD MODAL WITH DELETE HISTORY BUTTON ---
+function injectUserDashboardModalIfNeeded() {
+  const dropdownMenu = document.getElementById('user-hover-menu');
+  if (dropdownMenu) {
+    dropdownMenu.querySelectorAll('#dropdown-special-link').forEach(el => el.remove());
+    dropdownMenu.querySelectorAll('a[onclick*="openUserDashboard(\'special\')"]').forEach(el => el.remove());
+
+    const specialLink = document.createElement('a');
+    specialLink.id = 'dropdown-special-link';
+    specialLink.href = 'javascript:void(0)';
+    specialLink.onclick = () => openUserDashboard('special');
+    specialLink.style.cssText = 'color:var(--gold-bright); font-weight:bold; display:flex; justify-content:space-between; align-items:center;';
+    specialLink.innerHTML = `<span>✨ Special Order Request</span> <span id="dropdown-spec-badge" style="background:#e63946; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; display:none;">!</span>`;
+    
+    const logoutBtn = dropdownMenu.querySelector('a[onclick*="logoutUser"]');
+    if (logoutBtn) {
+      dropdownMenu.insertBefore(specialLink, logoutBtn);
+    } else {
+      dropdownMenu.appendChild(specialLink);
+    }
+  }
+
+  if (!document.getElementById('user-dashboard-modal')) {
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'user-dashboard-modal';
+    modalDiv.className = 'modal';
+    modalDiv.innerHTML = `
+      <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3>👤 ইউজার ড্যাশবোর্ড (User Dashboard)</h3>
+          <button class="close-btn" onclick="closeModal('user-dashboard-modal')">&times;</button>
+        </div>
+        <div class="dashboard-tabs" style="display:flex; gap:6px; margin-bottom:15px; flex-wrap:wrap;">
+          <button class="dash-tab-btn active" id="btn-tab-profile" onclick="switchDashboardTab('profile')">👤 Profile</button>
+          <button class="dash-tab-btn" id="btn-tab-history" onclick="switchDashboardTab('history')">📦 History</button>
+          <button class="dash-tab-btn" id="btn-tab-status" onclick="switchDashboardTab('status')">🚚 Status</button>
+          <button class="dash-tab-btn" id="btn-tab-preferred" onclick="switchDashboardTab('preferred')">⭐ Preferred</button>
+          <button class="dash-tab-btn" id="btn-tab-special" onclick="switchDashboardTab('special')" style="background:var(--gold-gradient); color:#000; font-weight:bold; position:relative;">✨ Special Request <span id="modal-spec-badge" style="position:absolute; top:-4px; right:-4px; background:#e63946; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:50%; display:none;">!</span></button>
+        </div>
+
+        <div id="dash-view-profile">
+          <label class="input-label">👤 নাম:</label>
+          <input type="text" id="prof-name" class="input-field">
+          <label class="input-label">📱 মোবাইল নম্বর:</label>
+          <input type="tel" id="prof-phone" class="input-field" readonly style="opacity:0.7;">
+          <label class="input-label">📧 ইমেল:</label>
+          <input type="email" id="prof-email" class="input-field">
+          <label class="input-label">🏠 ঠিকানা:</label>
+          <textarea id="prof-address" class="input-field"></textarea>
+          <label class="input-label">📍 পিনকোড:</label>
+          <input type="text" id="prof-pincode" class="input-field" value="700036">
+          <button class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
+          
+          <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <button onclick="confirmAndDeleteUserHistory()" style="width: 100%; background: #e63946; color: #fff; font-weight: bold; padding: 12px; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.92rem; box-shadow: 0 4px 15px rgba(230,57,70,0.4);">
+              🗑️ Delete All Data History
+            </button>
+          </div>
+        </div>
+
+        <div id="dash-view-history" style="display:none;"><div id="user-orders-history-list"></div></div>
+        <div id="dash-view-status" style="display:none;"><div id="current-orders-status-list"></div></div>
+        <div id="dash-view-preferred" style="display:none;"><div id="preferred-selection-list"></div></div>
+        
+        <div id="dash-view-special" style="display:none;">
+          <form id="special-request-form" onsubmit="submitSpecialFoodRequest(event)">
+            <h4 style="color:var(--gold-bright); margin-bottom:10px;">✨ কাস্টম / মেনুর বাইরে খাবারের রিকুয়েস্ট করুন</h4>
+            <label class="input-label">🍲 খাবারের নাম (Item Name):</label>
+            <input type="text" id="spec-item-name" class="input-field" placeholder="e.g. মাটন বিরিয়ানি বা স্পেশাল খিচুড়ি" required>
+            
+            <label class="input-label">🔢 পরিমাণ (কত প্লেট / জন):</label>
+            <input type="number" id="spec-item-qty" class="input-field" value="2" min="1" required>
+
+            <label class="input-label">💬 রান্নার বিবরণ / নির্দেশিকা (Description):</label>
+            <textarea id="spec-item-desc" class="input-field" rows="2" placeholder="ঝাল কেমন হবে বা বিশেষ কোনো উপাদান..."></textarea>
+
+            <button type="submit" class="btn-primary" style="margin-top:10px;">রিকুয়েস্ট জমা দিন</button>
+          </form>
+          <div style="margin-top:20px;">
+            <h4 style="color:var(--gold-bright); margin-bottom:8px;">📦 আপনার রিকুয়েস্ট তালিকা ও স্ট্যাটাস</h4>
+            <div id="user-special-requests-list"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalDiv);
+  }
+
+  if (!document.getElementById('special-payment-modal')) {
+    const payModal = document.createElement('div');
+    payModal.id = 'special-payment-modal';
+    payModal.className = 'modal';
+    payModal.innerHTML = `
+      <div class="modal-content" style="max-width:420px; text-align:center;">
+        <div class="modal-header">
+          <h3 style="color:var(--gold-bright);">💳 পেমেন্ট ও অর্ডার কনফার্ম</h3>
+          <button class="close-btn" onclick="closeModal('special-payment-modal')">&times;</button>
+        </div>
+        <p style="margin-bottom:8px;">নির্ধারিত মোট মূল্য: <b style="color:var(--gold-bright); font-size:1.2rem;">₹<span id="spec-pay-amount">0</span></b></p>
+        <div class="qr-box" style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px; display:inline-block;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="QR">
+          <p style="color:#111; font-weight:bold; margin-top:4px; font-size:0.8rem;">UPI: 8017969203@ybl</p>
+        </div>
+        
+        <label class="input-label" style="text-align:left;">📅 ডেলিভারির তারিখ:</label>
+        <input type="date" id="spec-delivery-date" class="input-field" style="margin-bottom:10px;">
+
+        <label class="input-label" style="text-align:left;">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
+        <input type="file" id="spec-payment-screenshot-input" accept="image/*" class="input-field" onchange="handleSpecScreenshotUpload(event)" style="margin-bottom:8px;">
+        <img id="spec-screenshot-preview" src="" alt="Preview" style="max-width:140px; border-radius:8px; display:none; margin:0 auto 10px auto; border:1px solid var(--border-gold);">
+
+        <button class="btn-primary" onclick="confirmSpecialPayment()">অর্ডার নিশ্চিত করুন</button>
+      </div>
+    `;
+    document.body.appendChild(payModal);
+  }
+}
+
+async function confirmAndDeleteUserHistory() {
+  if (!currentUser || !currentUser.phone) return;
+  
+  const userConfirmed = confirm('⚠️ আপনি কি নিশ্চিত যে আপনার সমস্ত অর্ডার হিস্ট্রি এবং স্পেশাল অর্ডার রিকুয়েস্ট স্থায়ীভাবে মুছে ফেলতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
+  if (!userConfirmed) return;
+
+  try {
+    const res = await fetch('/api/user/delete-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentUser.phone })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      closeModal('user-dashboard-modal');
+    } else {
+      alert(data.message || 'ডেটা ডিলিট করতে সমস্যা হয়েছে।');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('সার্ভার ত্রুটি!');
+  }
+}
+
+async function checkSpecialRequestNotificationBadge() {
+  if (!currentUser || !currentUser.phone) return;
+  try {
+    const res = await fetch(`/api/special-request/user/${currentUser.phone}`);
+    const data = await res.json();
+    if (data.success && data.requests) {
+      const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
+      const unseenActioned = data.requests.some(r => (r.status === 'PRICED' || r.status === 'REJECTED') && !seenIds.includes(r.requestId));
+      
+      const dropdownBadge = document.getElementById('dropdown-spec-badge');
+      const modalBadge = document.getElementById('modal-spec-badge');
+      
+      if (dropdownBadge) dropdownBadge.style.display = unseenActioned ? 'inline-block' : 'none';
+      if (modalBadge) modalBadge.style.display = unseenActioned ? 'inline-block' : 'none';
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function handleSpecScreenshotUpload(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      specPaymentScreenshotBase64 = e.target.result;
+      const preview = document.getElementById('spec-screenshot-preview');
+      if (preview) {
+        preview.src = specPaymentScreenshotBase64;
+        preview.style.display = 'block';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// --- USER DASHBOARD FUNCTIONS ---
+function openUserDashboard(tab) {
+  const m = document.getElementById('user-dashboard-modal');
+  if (m) m.style.display = 'flex';
+  switchDashboardTab(tab || 'profile');
+  loadUserProfileData();
+}
+
+function switchDashboardTab(tab) {
+  ['profile', 'history', 'status', 'preferred', 'special'].forEach(t => {
+    const view = document.getElementById(`dash-view-${t}`);
+    const btn = document.getElementById(`btn-tab-${t}`);
+    if (view) view.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) {
+      if (t === 'special') {
+        btn.style.background = (tab === tab) ? 'var(--gold-gradient)' : 'rgba(229,193,88,0.1)';
+        btn.style.color = (tab === tab) ? '#000' : 'var(--gold-bright)';
+      } else {
+        btn.classList.toggle('active', t === tab);
+      }
+    }
   });
+
+  if (tab === 'history') loadUserOrderHistory();
+  if (tab === 'status') loadUserOrderStatus();
+  if (tab === 'preferred') loadPreferredMenuSelection();
+  if (tab === 'special') loadUserSpecialRequests();
+}
+
+function loadUserProfileData() {
+  if (!currentUser) return;
+  document.getElementById('prof-name').value = currentUser.name || '';
+  document.getElementById('prof-phone').value = currentUser.phone || '';
+  document.getElementById('prof-email').value = currentUser.email || '';
+  document.getElementById('prof-address').value = currentUser.address || '';
+  document.getElementById('prof-pincode').value = currentUser.pincode || '700036';
+}
+
+async function saveUserProfile() {
+  const name = document.getElementById('prof-name').value.trim();
+  const email = document.getElementById('prof-email').value.trim();
+  const address = document.getElementById('prof-address').value.trim();
+  const pincode = document.getElementById('prof-pincode').value.trim();
+
+  try {
+    const res = await fetch('/api/user/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentUser.phone, name, email, address, pincode })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser = data.user;
+      localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
+      showToast('প্রোফাইল আপডেট হয়েছে!');
+      updateAuthNavUI();
+    }
+  } catch (err) { alert('সার্ভার ত্রুটি!'); }
+}
+
+async function loadUserOrderHistory() {
+  if (!currentUser) return;
+  const res = await fetch(`/api/orders/user/${currentUser.phone}`);
   const data = await res.json();
-  if (data.success) {
-    user = data.user;
-    localStorage.setItem('aswadan_user', JSON.stringify(user));
-    closeModal('auth-modal');
-    updateProfileNav();
-    syncLocalUserToServer();
-    alert(`🎉 রেজিস্ট্রেশন সফল হয়েছে!`);
-  } else alert(data.message);
+  const container = document.getElementById('user-orders-history-list');
+  if (container && data.success) {
+    container.innerHTML = data.orders.length === 0 ? '<p style="color:#aaa;">কোনো ইতিহাস নেই।</p>' : data.orders.map(o => `
+      <div style="background:#181824; border:1px solid var(--border-gold); padding:10px; border-radius:8px; margin-bottom:8px;">
+        <strong>#${o.orderId}</strong> - ${o.status} (₹${o.totalAmount})
+      </div>
+    `).join('');
+  }
 }
 
-let activeForgotEmail = '';
-
-async function sendResetOTP() {
-  const email = document.getElementById('forgot-email').value.trim();
-  const res = await fetch('/api/auth/forgot-password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
-  });
+async function loadUserOrderStatus() {
+  if (!currentUser) return;
+  const res = await fetch(`/api/orders/user/${currentUser.phone}`);
   const data = await res.json();
-  if (data.success) {
-    activeForgotEmail = email;
-    alert(data.message);
-    switchAuthTab('reset');
-  } else alert(data.message);
+  const container = document.getElementById('current-orders-status-list');
+  if (container && data.success) {
+    const active = data.orders.filter(o => o.status === 'PENDING' || o.status === 'ACCEPTED');
+    container.innerHTML = active.length === 0 ? '<p style="color:#aaa;">কোনো সক্রিয় অর্ডার নেই।</p>' : active.map(o => `
+      <div style="background:#181824; border:1px solid var(--border-gold); padding:10px; border-radius:8px; margin-bottom:8px;">
+        <strong>#${o.orderId}</strong> - <span style="color:#2a9d8f;">${o.status}</span>
+      </div>
+    `).join('');
+  }
 }
 
-async function submitNewPassword() {
-  const otp = document.getElementById('reset-otp').value.trim();
-  const newPassword = document.getElementById('reset-new-password').value.trim();
-
-  const res = await fetch('/api/auth/reset-password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: activeForgotEmail, otp, newPassword })
-  });
-  const data = await res.json();
-  if (data.success) {
-    alert(data.message);
-    switchAuthTab('login');
-  } else alert(data.message);
+async function loadPreferredMenuSelection() {
+  const container = document.getElementById('preferred-selection-list');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/menu');
+    const data = await res.json();
+    if (data.success) {
+      const pref = currentUser && currentUser.preferredItems ? currentUser.preferredItems : [];
+      container.innerHTML = data.menu.map(m => `
+        <label style="display:flex; align-items:center; gap:10px; background:#181824; padding:8px 12px; border-radius:8px; margin-bottom:6px; cursor:pointer;">
+          <input type="checkbox" value="${m.id}" ${pref.includes(m.id) ? 'checked' : ''} class="pref-chk" style="width:18px; height:18px;">
+          <span style="color:#fff; font-size:0.9rem;">${m.name} (₹${m.price})</span>
+        </label>
+      `).join('') + `<button class="btn-primary" onclick="savePreferredMenu()" style="margin-top:10px;">সেভ প্রেফার্ড মেনু</button>`;
+    }
+  } catch (err) { console.error(err); }
 }
 
-function showToast(msg) {
-  const toast = document.getElementById('toast-msg');
-  toast.innerText = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+async function savePreferredMenu() {
+  if (!currentUser) return;
+  const checkboxes = document.querySelectorAll('.pref-chk:checked');
+  const preferredItems = Array.from(checkboxes).map(chk => Number(chk.value));
+  try {
+    const res = await fetch('/api/user/preferred-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentUser.phone, preferredItems })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser.preferredItems = data.preferredItems;
+      localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
+      showToast('প্রেফার্ড মেনু সেভ হয়েছে!');
+    }
+  } catch (err) { alert('সার্ভার ত্রুটি!'); }
 }
 
-function openAuthModal() { switchAuthTab('login'); document.getElementById('auth-modal').style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+async function submitSpecialFoodRequest(e) {
+  e.preventDefault();
+  if (!currentUser) { openAuthModal(); return; }
+
+  const itemName = document.getElementById('spec-item-name').value.trim();
+  const qty = document.getElementById('spec-item-qty').value;
+  const description = document.getElementById('spec-item-desc').value.trim();
+
+  try {
+    const res = await fetch('/api/special-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentUser.phone, customerName: currentUser.name, email: currentUser.email, itemName, description, qty })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById('special-request-form').reset();
+      loadUserSpecialRequests();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) { alert('সার্ভার ত্রুটি!'); }
+}
+
+async function loadUserSpecialRequests() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`/api/special-request/user/${currentUser.phone}`);
+    const data = await res.json();
+    const container = document.getElementById('user-special-requests-list');
+    if (container && data.success) {
+      // Mark priced/rejected requests as seen when user opens this tab
+      const actionedRequests = data.requests.filter(r => r.status === 'PRICED' || r.status === 'REJECTED');
+      if (actionedRequests.length > 0) {
+        const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
+        actionedRequests.forEach(r => {
+          if (!seenIds.includes(r.requestId)) seenIds.push(r.requestId);
+        });
+        localStorage.setItem(`aswadan_seen_specs_${currentUser.phone}`, JSON.stringify(seenIds));
+        checkSpecialRequestNotificationBadge();
+      }
+
+      container.innerHTML = data.requests.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : data.requests.map(r => `
+        <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
+            <span style="color:${r.status==='PRICED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
+          </div>
+          <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
+          ${r.status === 'REJECTED' ? `
+            <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
+          ` : ''}
+          ${r.status === 'PRICED' ? `
+            <p style="color:var(--gold-bright); font-weight:bold; margin-top:5px;">মূল্য: ₹${r.totalAmount}</p>
+            <button onclick="openSpecialPaymentModal('${r.requestId}', ${r.totalAmount})" style="background:var(--green-accent); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও স্ক্রিনশট দিন</button>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+  } catch (err) { console.error(err); }
+}
+
+let activeSpecialReqId = null;
+function openSpecialPaymentModal(requestId, totalAmount) {
+  activeSpecialReqId = requestId;
+  specPaymentScreenshotBase64 = '';
+  document.getElementById('spec-pay-amount').innerText = totalAmount;
+  document.getElementById('spec-screenshot-preview').style.display = 'none';
+  document.getElementById('spec-payment-screenshot-input').value = '';
+  document.getElementById('special-payment-modal').style.display = 'flex';
+}
+
+async function confirmSpecialPayment() {
+  const deliveryDate = document.getElementById('spec-delivery-date').value;
+  if (!deliveryDate) return alert('ডেলিভারি তারিখ দিন।');
+  if (!specPaymentScreenshotBase64) return alert('পেমেন্ট স্ক্রিনশট আপলোড করুন।');
+
+  try {
+    const res = await fetch('/api/special-request/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requestId: activeSpecialReqId,
+        paymentScreenshot: specPaymentScreenshotBase64,
+        deliveryDate
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById('special-payment-modal').style.display = 'none';
+      loadUserSpecialRequests();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) { alert('পেমেন্ট সাবমিট করতে ত্রুটি হয়েছে।'); }
+}
+
+// --- CART MANAGEMENT ---
+function addToCart(id, name, price, desc) {
+  const existing = cart.find(item => item.id === id);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({ id, name, price, desc, qty: 1 });
+  }
+  updateCartCount();
+  showToast('🛒 কার্টে যোগ করা হয়েছে!');
+}
+
+function openCartModal() {
+  injectCartModalIfNeeded();
+  const m = document.getElementById('cart-modal');
+  if (m) m.style.display = 'flex';
+  renderCartItems();
+  const step1 = document.getElementById('cart-step-1');
+  const step2 = document.getElementById('cart-step-2');
+  if (step1) step1.style.display = 'block';
+  if (step2) step2.style.display = 'none';
+}
+
+function renderCartItems() {
+  const container = document.getElementById('cart-items');
+  const totalEl = document.getElementById('cart-total');
+  const noticeEl = document.getElementById('min-order-notice');
+  if (!container) return;
+
+  if (cart.length === 0) {
+    container.innerHTML = `<p style="text-align:center; color:#aaa; padding:20px;">আপনার কার্ট খালি আছে।</p>`;
+    if (totalEl) totalEl.innerText = '0';
+    if (noticeEl) noticeEl.style.display = 'none';
+    return;
+  }
+
+  let total = 0;
+  let totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+
+  container.innerHTML = cart.map(item => {
+    total += item.price * item.qty;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#1c1c28; padding:10px; border-radius:8px; margin-bottom:8px;">
+        <div>
+          <strong style="color:var(--gold-bright); font-size:0.9rem;">${item.name}</strong><br>
+          <small style="color:#aaa;">₹${item.price} x ${item.qty}</small>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button onclick="changeQty(${item.id}, -1)" style="background:#333; color:#fff; border:none; width:26px; height:26px; border-radius:4px; cursor:pointer;">-</button>
+          <span style="font-weight:bold; width:20px; text-align:center;">${item.qty}</span>
+          <button onclick="changeQty(${item.id}, 1)" style="background:var(--gold-gradient); color:#000; border:none; width:26px; height:26px; border-radius:4px; cursor:pointer; font-weight:bold;">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (totalEl) totalEl.innerText = total;
+  if (noticeEl) noticeEl.style.display = (totalQty < 2) ? 'block' : 'none';
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (item) {
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+  }
+  updateCartCount();
+  renderCartItems();
+}
+
+function proceedToPaymentStep() {
+  let totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+  if (totalQty < 2) {
+    alert('⚠️ আমাদের সর্বনিম্ন অর্ডার ২ টি থালি / প্লেট।');
+    return;
+  }
+  if (!currentUser || !currentUser.phone) {
+    alert('অর্ডার করতে অনুগ্রহ করে লগইন করুন।');
+    closeModal('cart-modal');
+    openAuthModal();
+    return;
+  }
+  document.getElementById('cart-step-1').style.display = 'none';
+  document.getElementById('cart-step-2').style.display = 'block';
+}
+
+function backToCartStep() {
+  document.getElementById('cart-step-1').style.display = 'block';
+  document.getElementById('cart-step-2').style.display = 'none';
+}
+
+function handlePaymentScreenshotUpload(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      paymentScreenshotBase64 = e.target.result;
+      const preview = document.getElementById('payment-screenshot-preview');
+      if (preview) { preview.src = paymentScreenshotBase64; preview.style.display = 'block'; }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+async function placeOrder() {
+  const deliveryDate = document.getElementById('delivery-date').value;
+  if (!deliveryDate) return alert('তারিখ সিলেক্ট করুন।');
+  
+  if (!paymentScreenshotBase64) {
+    return alert('⚠️ পেমেন্ট সম্পন্ন করে স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
+  }
+
+  const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: currentUser.phone,
+        customerName: currentUser.name,
+        email: currentUser.email,
+        address: currentUser.address,
+        location: currentUser.location || '',
+        items: cart,
+        totalAmount,
+        paymentScreenshot: paymentScreenshotBase64,
+        deliveryDate
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`🎉 অর্ডার #${data.order.orderId} সফলভাবে জমা হয়েছে!`);
+      cart = [];
+      paymentScreenshotBase64 = '';
+      updateCartCount();
+      closeModal('cart-modal');
+      location.href = 'index.html';
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    alert('অর্ডার প্লেস করতে সমস্যা হয়েছে।');
+  }
+}
+
+// --- HOME SPOTLIGHT WITH HORIZONTAL SIDE-BY-SIDE SLIDING ANIMATION ---
+async function loadHomeSpotlight() {
+  try {
+    const res = await fetch('/api/menu');
+    const data = await res.json();
+    if (data.success && data.menu.length > 0) {
+      const menu = data.menu;
+      let currentIndex = 0;
+      const slidingCard = document.getElementById('hero-sliding-tile');
+      
+      function getFoodIcon(name) {
+        let n = name.toLowerCase();
+        if (n.includes('fish') || n.includes('রুই') || n.includes('কাতলা')) return '🐟';
+        if (n.includes('chicken') || n.includes('চিকেন')) return '🍗';
+        if (n.includes('egg') || n.includes('ডিম')) return '🥚';
+        return '🍲';
+      }
+
+      function renderSpotlight(idx) {
+        if (!slidingCard) return;
+        const item = menu[idx];
+        const icon = getFoodIcon(item.name);
+        
+        // Apply horizontal slide out animation, switch content, then slide in
+        slidingCard.classList.remove('slide-in-right');
+        slidingCard.classList.add('slide-out-left');
+
+        setTimeout(() => {
+          slidingCard.innerHTML = `
+            <div style="font-size:2.2rem; margin-bottom:6px;">${icon}</div>
+            <h3 class="tile-title">${item.name}</h3>
+            <p class="tile-desc">${item.desc}</p>
+            <div class="tile-bottom">
+              <span class="tile-price">₹${item.price}</span>
+              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
+            </div>
+          `;
+          slidingCard.classList.remove('slide-out-left');
+          slidingCard.classList.add('slide-in-right');
+        }, 350);
+      }
+
+      renderSpotlight(currentIndex);
+      setInterval(() => {
+        if (slidingCard) {
+          currentIndex = (currentIndex + 1) % menu.length;
+          renderSpotlight(currentIndex);
+        }
+      }, 4500);
+
+      const gridContainer = document.getElementById('home-spotlight-container');
+      if (gridContainer) {
+        gridContainer.innerHTML = menu.slice(0, 4).map(item => `
+          <div class="tile-card">
+            <div>
+              <div style="font-size:1.8rem; margin-bottom:4px;">${getFoodIcon(item.name)}</div>
+              <h3 class="tile-title">${item.name}</h3>
+              <p class="tile-desc">${item.desc}</p>
+            </div>
+            <div class="tile-bottom">
+              <span class="tile-price">₹${item.price}</span>
+              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (err) { console.error(err); }
+}
+
+function checkPWAInstallPrompt() {}

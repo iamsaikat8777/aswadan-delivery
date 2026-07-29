@@ -1,35 +1,25 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="bn" id="html-root">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>আস্বাদন - হোম ডেলিভারি সার্ভিস</title>
+  <title data-bn="আস্বাদন - হোম ডেলিভারি সার্ভিস" data-en="Aswadan - Home Delivery Service">আস্বাদন - হোম ডেলিভারি সার্ভিস</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Leaflet CSS for Interactive Map Picker Modal -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="logo.png">
   <link rel="stylesheet" href="css/style.css">
   
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#07070a">
+  <meta name="theme-color" content="#09080c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="আস্বাদন">
-
-  <style>
-    /* Safari Specific Flex & Font Rendering Fixes */
-    body {
-      -webkit-text-size-adjust: 100%;
-      -webkit-font-smoothing: antialiased;
-    }
-  </style>
 </head>
 <body>
 
@@ -38,24 +28,25 @@
   <!-- Top-Right Floating Capsule Navigation Bar -->
   <div class="top-nav-container">
     <nav class="top-nav-bar">
-      <a href="index.html" class="top-nav-link active">🏠 Home</a>
-      <a href="menu.html" class="top-nav-link">📜 Menu</a>
+      <a href="index.html" class="top-nav-link active" data-bn="🏠 Home" data-en="🏠 Home">🏠 Home</a>
+      <a href="menu.html" class="top-nav-link" data-bn="📜 Menu" data-en="📜 Menu">📜 Menu</a>
+      <a href="reviews.html" class="top-nav-link" data-bn="⭐ Reviews" data-en="⭐ Reviews">⭐ Reviews</a>
 
       <div class="nav-user-dropdown" id="user-nav-wrapper">
-        <button class="top-nav-link" id="profile-nav-btn" onclick="openAuthModal()">👤 Sign In</button>
+        <button class="top-nav-link" id="profile-nav-btn" onclick="openAuthModal()" data-bn="👤 Sign In" data-en="👤 Sign In">👤 Sign In</button>
         
         <div class="user-dropdown-menu" id="user-hover-menu">
-          <a href="javascript:void(0)" onclick="openUserDashboard('profile')">👤 User Profile</a>
-          <a href="javascript:void(0)" onclick="openUserDashboard('history')">📦 Order History</a>
-          <a href="javascript:void(0)" onclick="openUserDashboard('status')">🚚 Current Order Status</a>
-          <a href="javascript:void(0)" onclick="openUserDashboard('preferred')">⭐ Daily Preferred Menu</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('profile')" data-bn="👤 User Profile" data-en="👤 User Profile">👤 User Profile</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('history')" data-bn="📦 Order History" data-en="📦 Order History">📦 Order History</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('status')" data-bn="🚚 Current Order Status" data-en="🚚 Current Order Status">🚚 Current Order Status</a>
+          <a href="javascript:void(0)" onclick="openUserDashboard('preferred')" data-bn="⭐ Daily Preferred Menu" data-en="⭐ Daily Preferred Menu">⭐ Daily Preferred Menu</a>
           <div style="border-top:1px solid rgba(229,193,88,0.2); margin:4px 0;"></div>
-          <a href="javascript:void(0)" onclick="logoutUser()" style="color: var(--red-accent);">🚪 Logout</a>
+          <a href="javascript:void(0)" onclick="logoutUser()" style="color: var(--red-accent);" data-bn="🚪 Logout" data-en="🚪 Logout">🚪 Logout</a>
         </div>
       </div>
 
-      <button class="top-nav-link" onclick="openCartModal()">🛒 Cart <span id="cart-count" class="top-cart-badge">0</span></button>
-      <a href="admin.html" class="top-nav-link">🔐 Admin</a>
+      <button class="top-nav-link" onclick="openCartModal()"><span data-bn="🛒 Cart" data-en="🛒 Cart">🛒 Cart</span> <span id="cart-count" class="top-cart-badge">0</span></button>
+      <a href="admin.html" class="top-nav-link" data-bn="🔐 Admin" data-en="🔐 Admin">🔐 Admin</a>
     </nav>
   </div>
 
@@ -67,125 +58,92 @@
     
     <div>
       <div class="tagline-badge">
-        <span>✨ ঘরের স্বাদ, মনের তৃপ্তি ✨</span>
+        <span data-bn="✨ ঘরের স্বাদ, মনের তৃপ্তি ✨" data-en="✨ Taste of Home, Satisfaction of Mind ✨">✨ ঘরের স্বাদ, মনের তৃপ্তি ✨</span>
       </div>
     </div>
 
     <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
       <span>📞 Madhuchanda Paul (Payel) • 8017969203</span>
       <div style="display: flex; gap: 6px;">
-        <a href="tel:8017969203" style="background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); color: var(--gold-bright); padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;">📞 Call</a>
-        <a href="https://wa.me/918017969203?text=Hi%2C%20I%20want%20to%20know%20more%20about%20Aswadan%20food%20services." target="_blank" style="background: rgba(42,157,143,0.2); border: 1px solid var(--green-accent); color: #4ade80; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;">💬 WhatsApp</a>
+        <a href="tel:8017969203" style="background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); color: var(--gold-bright); padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;" data-bn="📞 Call" data-en="📞 Call">📞 Call</a>
+        <a href="https://wa.me/918017969203?text=Hi%2C%20I%20want%20to%20know%20more%20about%20Aswadan%20food%20services." target="_blank" style="background: rgba(42,157,143,0.2); border: 1px solid var(--green-accent); color: #4ade80; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; text-decoration: none; font-weight: bold;" data-bn="💬 WhatsApp" data-en="💬 WhatsApp">💬 WhatsApp</a>
       </div>
     </div>
   </header>
 
   <div class="container">
 
-    <!-- ANDROID / CHROME NATIVE APP INSTALL BANNER -->
-    <div id="pwa-install-banner" class="pwa-banner-box" style="display:none;">
+    <div id="pwa-install-banner" class="pwa-banner-box">
       <div style="display:flex; align-items:center; gap:10px;">
         <span style="font-size:1.8rem;">📲</span>
         <div>
-          <strong style="color:var(--gold-bright); font-size:0.92rem;">আস্বাদন অ্যাপ ইনস্টল করুন</strong><br>
-          <small style="color:#ccc; font-size:0.78rem;">সহজে ১-ক্লিকে অর্ডার করতে হোম স্ক্রিনে রাখুন</small>
+          <strong style="color:var(--gold-bright); font-size:0.92rem;" data-bn="আস্বাদন অ্যাপ ইনস্টল করুন" data-en="Install Aswadan App">আস্বাদন অ্যাপ ইনস্টল করুন</strong><br>
+          <small style="color:#ccc; font-size:0.78rem;" data-bn="সহজে ১-ক্লিকে অর্ডার করতে হোম স্ক্রিনে রাখুন" data-en="Keep on home screen for easy 1-click ordering">সহজে ১-ক্লিকে অর্ডার করতে হোম স্ক্রিনে রাখুন</small>
         </div>
       </div>
-      <button onclick="triggerPWAInstall()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:7px 14px; border-radius:20px; font-size:0.82rem; cursor:pointer;">ইনস্টল করুন</button>
+      <button onclick="triggerPWAInstall()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:7px 14px; border-radius:20px; font-size:0.82rem; cursor:pointer;" data-bn="ইনস্টল করুন" data-en="Install">ইনস্টল করুন</button>
     </div>
 
-    <!-- iOS / SAFARI APP INSTALL INSTRUCTIONS BANNER -->
-    <div id="ios-install-banner" class="pwa-banner-box" style="display:none; border-color:var(--gold-bright);">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:1.8rem;">🍏</span>
-        <div>
-          <strong style="color:var(--gold-bright); font-size:0.92rem;">আইফোন (iPhone) অ্যাপ ইনস্টল</strong><br>
-          <small style="color:#ddd; font-size:0.78rem;">Safari ব্রাউজারের নিচের <b>Share (শেয়ার)</b> আইকনে ক্লিক করে <b>'Add to Home Screen'</b> সিলেক্ট করুন।</small>
-        </div>
-      </div>
-      <button onclick="dismissIOSBanner()" style="background:#333; color:#fff; border:none; padding:6px 10px; border-radius:12px; font-size:0.75rem; cursor:pointer; font-weight:bold;">✕ বন্ধ</button>
-    </div>
-
-    <!-- HERO SPLIT SECTION -->
     <section class="hero-split-section">
       <div class="hero-left-content">
-        <h1>খাটি ঘরোয়া রান্নার অনন্য অভিজ্ঞতা</h1>
-        <p>
+        <h1 data-bn="খাটি ঘরোয়া রান্নার অনন্য অভিজ্ঞতা" data-en="Unique Experience of Authentic Home-Cooked Food">খাটি ঘরোয়া রান্নার অনন্য অভিজ্ঞতা</h1>
+        <p data-bn="বিশুদ্ধ উপাদান ও ঘরোয়া যত্নে তৈরি রুই, কাতলা, চিকেন, ডিম ও সবজি থালি এখন সরাসরি আপনার দরজায়!" data-en="Pure ingredients and home-care prepared rui, katla, chicken, egg, and veg thalis now straight to your door!">
           বিশুদ্ধ উপাদান ও ঘরোয়া যত্নে তৈরি রুই, কাতলা, চিকেন, ডিম ও সবজি থালি এখন সরাসরি আপনার দরজায়!
         </p>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <a href="menu.html" class="btn-cta">📜 সম্পূর্ণ মেনু দেখুন</a>
-          <button class="btn-cta" style="background: rgba(229,193,88,0.15); color: var(--gold-bright); border: 1px solid var(--border-gold);" onclick="openUserDashboard('preferred')">⭐ ডেইলি প্রেফার্ড অর্ডার</button>
+          <a href="menu.html" class="btn-cta" data-bn="📜 সম্পূর্ণ মেনু দেখুন" data-en="📜 View Complete Menu">📜 সম্পূর্ণ মেনু দেখুন</a>
+          <button class="btn-cta" style="background: rgba(229,193,88,0.15); color: var(--gold-bright); border: 1px solid var(--border-gold);" onclick="openUserDashboard('preferred')" data-bn="⭐ ডেইলি প্রেফার্ড অর্ডার" data-en="⭐ Daily Preferred Order">⭐ ডেইলি প্রেফার্ড অর্ডার</button>
         </div>
       </div>
 
       <div id="hero-sliding-tile" class="hero-spotlight-card">
-        <div style="text-align:center; padding:20px; color:#aaa;">মেনু লোড হচ্ছে...</div>
+        <div style="text-align:center; padding:20px; color:#aaa;" data-bn="মেনু লোড হচ্ছে..." data-en="Loading menu...">মেনু লোড হচ্ছে...</div>
       </div>
     </section>
 
-    <!-- POPULAR MENU HIGHLIGHTS -->
     <div class="section-header">
       <span class="gold-line"></span>
-      <h2>জনপ্রিয় খাবার সম্ভার</h2>
+      <h2 data-bn="জনপ্রিয় খাবার সম্ভার" data-en="Popular Food Collection">জনপ্রিয় খাবার সম্ভার</h2>
       <span class="gold-line"></span>
     </div>
 
     <div id="home-spotlight-container" class="spotlight-showcase-grid">
-      <div style="text-align:center; padding:20px; color:#aaa; grid-column: 1 / -1;">মেনু লোড হচ্ছে...</div>
+      <div style="text-align:center; padding:20px; color:#aaa; grid-column: 1 / -1;" data-bn="মেনু লোড হচ্ছে..." data-en="Loading menu...">মেনু লোড হচ্ছে...</div>
     </div>
 
-    <!-- BENGALI NOTICE BANNER -->
     <div class="pincode-notice-card">
       <div class="notice-header">
-        <span>📌 বিশেষ নিয়মাবলী ও বিজ্ঞপ্তি</span>
+        <span data-bn="📌 বিশেষ নিয়মাবলী ও বিজ্ঞপ্তি" data-en="📌 Special Rules & Notice">📌 বিশেষ নিয়মাবলী ও বিজ্ঞপ্তি</span>
       </div>
       <ul class="notice-list">
-        <li>আমাদের হোম ডেলিভারি পরিষেবা শুধুমাত্র <span class="pincode-tag">700036</span> পিনকোডে উপলব্ধ।</li>
-        <li>কমপক্ষে <b>২ জন এর অর্ডার (২টি থালি)</b> নেওয়া হবে।</li>
-        <li>অন্তত <b>আগের দিন</b> অর্ডার দিতে হবে।</li>
-        <li>এছাড়াও বিশেষ অনুষ্ঠানের জন্য <b>স্পেশাল অর্ডার</b> নেওয়া হয়।</li>
+        <li><span data-bn="আমাদের হোম ডেলিভারি পরিষেবা শুধুমাত্র" data-en="Our home delivery service is available only in pincode">আমাদের হোম ডেলিভারি পরিষেবা শুধুমাত্র</span> <span class="pincode-tag">700036</span> <span data-bn="পিনকোডে উপলব্ধ।" data-en=".">পিনকোডে উপলব্ধ।</span></li>
+        <li><span data-bn="কমপক্ষে" data-en="Minimum order of">কমপক্ষে</span> <b><span data-bn="২ জন এর অর্ডার (২টি থালি)" data-en="2 persons order (2 thalis)">২ জন এর অর্ডার (২টি থালি)</span></b> <span data-bn="নেওয়া হবে।" data-en="will be taken.">নেওয়া হবে।</span></li>
+        <li><span data-bn="অন্তত" data-en="Must order at least">অন্তত</span> <b><span data-bn="আগের দিন" data-en="the previous day">আগের দিন</span></b> <span data-bn="অর্ডার দিতে হবে।" data-en=".">অর্ডার দিতে হবে।</span></li>
+        <li><span data-bn="এছাড়াও বিশেষ অনুষ্ঠানের জন্য" data-en="Also special orders are taken for special occasions.">এছাড়াও বিশেষ অনুষ্ঠানের জন্য</span> <b><span data-bn="স্পেশাল অর্ডার" data-en="Special Order">স্পেশাল অর্ডার</span></b> <span data-bn="নেওয়া হয়।" data-en="">নেওয়া হয়।</span></li>
       </ul>
     </div>
 
   </div>
 
-  <div id="toast-msg" class="toast-popup">🛒 কার্টে যোগ করা হয়েছে!</div>
+  <div id="toast-msg" class="toast-popup" data-bn="🛒 কার্টে যোগ করা হয়েছে!" data-en="🛒 Added to cart!">🛒 কার্টে যোগ করা হয়েছে!</div>
 
-  <!-- SPECIAL DISCOUNT OFFER POPUP MODAL -->
-  <div id="special-offer-modal" class="modal">
-    <div class="modal-content" style="text-align:center; max-width:480px; border:2px solid var(--gold-bright);">
-      <button class="close-btn" style="position:absolute; right:15px; top:10px;" onclick="closeModal('special-offer-modal')">&times;</button>
-      <h2 id="offer-popup-title" style="color:var(--gold-bright); font-size:1.4rem; margin-bottom:10px;">🎉 স্পেশাল ধামাকা অফার!</h2>
-      <div id="offer-poster-container" style="margin:10px 0;">
-        <img id="offer-popup-image" src="" alt="Special Offer" style="max-width:100%; border-radius:12px; display:none; border:1px solid var(--border-gold);">
-      </div>
-      <p id="offer-popup-desc" style="color:#ddd; line-height:1.5; font-size:0.95rem; margin:12px 0;"></p>
-      <div style="display:flex; gap:10px; margin-top:15px;">
-        <a href="menu.html" class="btn-primary" style="text-decoration:none; display:block;">🛒 এখনই অর্ডার করুন</a>
-        <button class="btn-primary" style="background:#333; color:#fff;" onclick="closeModal('special-offer-modal')">বন্ধ করুন</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- AUTH MODAL -->
   <div id="auth-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="auth-modal-title">🔑 লগইন (Login)</h3>
+        <h3 id="auth-modal-title" data-bn="🔑 লগইন (Login)" data-en="🔑 Login">🔑 লগইন (Login)</h3>
         <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
       </div>
 
       <div id="auth-tab-bar" style="display: flex; gap: 10px; margin-bottom: 18px;">
-        <button id="tab-login-btn" class="btn-primary" style="flex:1; padding:8px; margin:0;" onclick="switchAuthTab('login')">লগইন</button>
-        <button id="tab-signup-btn" class="btn-primary" style="flex:1; padding:8px; margin:0; background: rgba(229,193,88,0.15); color: var(--gold-bright); border:1px solid var(--border-gold);" onclick="switchAuthTab('signup')">নতুন সাইন-আপ</button>
+        <button id="tab-login-btn" class="btn-primary" style="flex:1; padding:8px; margin:0;" onclick="switchAuthTab('login')" data-bn="লগইন" data-en="Login">লগইন</button>
+        <button id="tab-signup-btn" class="btn-primary" style="flex:1; padding:8px; margin:0; background: rgba(229,193,88,0.15); color: var(--gold-bright); border:1px solid var(--border-gold);" onclick="switchAuthTab('signup')" data-bn="নতুন সাইন-আপ" data-en="New Sign Up">নতুন সাইন-আপ</button>
       </div>
 
       <form id="login-form" onsubmit="event.preventDefault(); loginUser();">
-        <label class="input-label">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
+        <label class="input-label" data-bn="📱 মোবাইল নম্বর / ইমেল আইডি:" data-en="📱 Mobile Number / Email ID:">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
         <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" required>
 
-        <label class="input-label">🔑 পাসওয়ার্ড:</label>
+        <label class="input-label" data-bn="🔑 পাসওয়ার্ড:" data-en="🔑 Password:">🔑 পাসওয়ার্ড:</label>
         <div style="position: relative;">
           <input type="password" id="login-password" class="input-field" placeholder="Enter Password" required style="padding-right: 42px;">
           <button type="button" onclick="togglePasswordVisibility('login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 4px;" title="Toggle Password">
@@ -194,216 +152,15 @@
         </div>
 
         <div style="text-align: right; margin-bottom: 12px;">
-          <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="color: var(--gold-bright); font-size: 0.85rem; text-decoration: underline;">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
+          <a href="javascript:void(0)" onclick="switchAuthTab('forgot')" style="color: var(--gold-bright); font-size: 0.85rem; text-decoration: underline;" data-bn="পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)" data-en="Forgot Password?">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
         </div>
 
-        <button type="submit" class="btn-primary">লগইন করুন</button>
+        <button type="submit" class="btn-primary" data-bn="লগইন করুন" data-en="Login">লগইন করুন</button>
       </form>
-
-      <form id="signup-form" style="display: none;" onsubmit="event.preventDefault(); signupUser();">
-        <label class="input-label">👤 আপনার নাম:</label>
-        <input type="text" id="signup-name" class="input-field" placeholder="Full Name" required>
-
-        <label class="input-label">📱 মোবাইল নম্বর:</label>
-        <input type="tel" id="signup-phone" class="input-field" placeholder="10-digit Mobile Number" required>
-
-        <label class="input-label">📧 ইমেল আইডি:</label>
-        <input type="email" id="signup-email" class="input-field" placeholder="name@gmail.com" required>
-
-        <label class="input-label">🔑 পাসওয়ার্ড তৈরি করুন:</label>
-        <div style="position: relative;">
-          <input type="password" id="signup-password" class="input-field" placeholder="Create Password" required style="padding-right: 42px;">
-          <button type="button" onclick="togglePasswordVisibility('signup-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 4px;" title="Toggle Password">
-            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          </button>
-        </div>
-
-        <label class="input-label">🏠 পূর্ণাঙ্গ ডেলিভারি ঠিকানা:</label>
-        <textarea id="signup-address" class="input-field" placeholder="House/Flat No, Street Name, Landmark" required></textarea>
-
-        <label class="input-label">📍 গুগল লোকেশন / ম্যাপ পিন (Google Location):</label>
-        <div style="display:flex; gap:8px; margin-bottom:4px;">
-          <input type="text" id="signup-location" class="input-field" placeholder="GPS coordinates or map link">
-          <button type="button" onclick="getCurrentLocation()" style="background:var(--gold-gradient); border:none; padding:0 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.75rem; white-space:nowrap;">📍 Get GPS</button>
-          <button type="button" onclick="openMapModal('signup-location')" style="background:rgba(229,193,88,0.2); border:1px solid var(--border-gold); color:var(--gold-bright); padding:0 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.75rem; white-space:nowrap;">🗺️ Pin Map</button>
-        </div>
-        <small style="color:#aaa; font-size:0.75rem;">('Get GPS' ক্লিক করুন অথবা ম্যাপে পিন করুন)</small>
-
-        <label class="input-label" style="margin-top:8px;">📍 পিনকোড (শুধুমাত্র 700036 প্রযোজ্য):</label>
-        <input type="number" id="signup-pincode" class="input-field" placeholder="700036" value="700036" required>
-
-        <button type="submit" class="btn-primary">রেজিস্টার ও সাইন-আপ করুন</button>
-      </form>
-
-      <div id="forgot-form" style="display: none;">
-        <p style="color:#aaa; font-size:0.88rem; margin-bottom:12px;">রেজিস্টার করা ইমেল আইডিটি লিখুন। ৬-সংখ্যার OTP পাঠানো হবে:</p>
-        <label class="input-label">📧 ইমেল আইডি:</label>
-        <input type="email" id="forgot-email" class="input-field" placeholder="Enter your registered email">
-        <button class="btn-primary" onclick="sendResetOTP()">OTP পাঠান</button>
-      </div>
-
-      <div id="reset-form" style="display: none;">
-        <label class="input-label">🔢 ৬-সংখ্যার OTP কোড:</label>
-        <input type="text" id="reset-otp" class="input-field" placeholder="Enter 6-digit OTP">
-
-        <label class="input-label">🔑 নতুন পাসওয়ার্ড:</label>
-        <div style="position: relative;">
-          <input type="password" id="reset-new-password" class="input-field" placeholder="Enter New Password" style="padding-right: 42px;">
-          <button type="button" onclick="togglePasswordVisibility('reset-new-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 4px;" title="Toggle Password">
-            <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          </button>
-        </div>
-
-        <button class="btn-primary" onclick="submitNewPassword()">পাসওয়ার্ড পরিবর্তন করুন</button>
-      </div>
     </div>
   </div>
 
-  <!-- ALL-IN-ONE USER DASHBOARD POPUP MODAL -->
-  <div id="user-dashboard-modal" class="modal">
-    <div class="modal-content" style="max-width: 550px;">
-      <div class="modal-header">
-        <h3 id="dashboard-title">👤 ইউজার ড্যাশবোর্ড (User Dashboard)</h3>
-        <button class="close-btn" onclick="closeModal('user-dashboard-modal')">&times;</button>
-      </div>
-
-      <div class="dashboard-tabs">
-        <button class="dash-tab-btn active" id="btn-tab-profile" onclick="switchDashboardTab('profile')">👤 Profile</button>
-        <button class="dash-tab-btn" id="btn-tab-history" onclick="switchDashboardTab('history')">📦 Order History</button>
-        <button class="dash-tab-btn" id="btn-tab-status" onclick="switchDashboardTab('status')">🚚 Order Status</button>
-        <button class="dash-tab-btn" id="btn-tab-preferred" onclick="switchDashboardTab('preferred')">⭐ Preferred Menu</button>
-      </div>
-
-      <div id="dash-view-profile">
-        <label class="input-label">👤 নাম:</label>
-        <input type="text" id="prof-name" class="input-field">
-
-        <label class="input-label">📱 মোবাইল নম্বর:</label>
-        <input type="tel" id="prof-phone" class="input-field" readonly style="opacity: 0.7;">
-
-        <label class="input-label">📧 ইমেল আইডি:</label>
-        <input type="email" id="prof-email" class="input-field">
-
-        <label class="input-label">🏠 ডেলিভারি ঠিকানা:</label>
-        <textarea id="prof-address" class="input-field"></textarea>
-
-        <label class="input-label">📍 গুগল লোকেশন (Google Maps / GPS):</label>
-        <div style="display:flex; gap:8px;">
-          <input type="text" id="prof-location" class="input-field" placeholder="GPS or Map link">
-          <button type="button" onclick="getCurrentLocationForProfile()" style="background:var(--gold-gradient); border:none; padding:0 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.75rem; white-space:nowrap;">📍 Get GPS</button>
-          <button type="button" onclick="openMapModal('prof-location')" style="background:rgba(229,193,88,0.2); border:1px solid var(--border-gold); color:var(--gold-bright); padding:0 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.75rem; white-space:nowrap;">🗺️ Pin Map</button>
-        </div>
-
-        <label class="input-label" style="margin-top:8px;">📍 পিনকোড:</label>
-        <input type="text" id="prof-pincode" class="input-field" value="700036">
-
-        <button class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
-
-        <div style="margin-top: 25px; border-top: 1px solid var(--border-gold); padding-top: 18px;">
-          <button onclick="requestUserHistoryDeletion()" style="background: var(--red-accent); color: #fff; border: none; padding: 11px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">🗑️ Delete All Data History</button>
-          
-          <div id="user-history-otp-box" style="display: none; margin-top: 12px; background: #181824; padding: 14px; border-radius: 10px; border: 1px solid var(--border-gold);">
-            <p style="font-size: 0.85rem; color: var(--gold-bright); margin-bottom: 8px;">আপনার রেজিস্টার্ড ইমেল ঠিকানায় পাঠানো ৬-সংখ্যার OTP কোডটি লিখুন:</p>
-            <input type="text" id="user-history-otp-input" class="input-field" placeholder="Enter 6-digit OTP" maxlength="6">
-            <button class="btn-primary" onclick="verifyAndExecuteUserDeletion()" style="background: var(--red-accent); color: #fff; margin-top: 10px;">যাচাই ও সমস্ত ইতিহাস ডিলিট করুন</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="dash-view-history" style="display: none;">
-        <div id="user-orders-history-list"></div>
-      </div>
-
-      <div id="dash-view-status" style="display: none;">
-        <div id="current-orders-status-list"></div>
-      </div>
-
-      <div id="dash-view-preferred" style="display: none;">
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:12px;">আপনার নিয়মিত থালি নির্বাচন করুন, ১-ক্লিকে অর্ডার করতে পারবেন:</p>
-        <div id="preferred-selection-list"></div>
-        <div style="margin-top: 15px; border-top: 1px solid var(--border-gold); padding-top: 12px;">
-          <button class="btn-primary" onclick="savePreferredMenu()">⭐ সেভ প্রেফার্ড মেনু</button>
-          <button class="btn-primary" style="background: var(--green-accent); color:#fff; margin-top: 8px;" onclick="quickOrderPreferred()">⚡ আজই ১-ক্লিকে প্রেফার্ড অর্ডার করুন</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- INTERACTIVE MAP PICKER MODAL -->
-  <div id="map-picker-modal" class="modal">
-    <div class="modal-content" style="max-width: 600px; padding: 20px;">
-      <div class="modal-header">
-        <h3 style="color:var(--gold-bright);">📍 মানচিত্র থেকে আপনার সঠিক লোকেশন পিন করুন</h3>
-        <button class="close-btn" onclick="closeMapModal()">&times;</button>
-      </div>
-      <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 12px;">ম্যাপে ক্লিক করে বা পিন ড্র্যাগ করে আপনার সঠিক অবস্থান সিলেক্ট করুন:</p>
-      <div id="leaflet-map" style="width: 100%; height: 350px; border-radius: 10px; border: 1px solid var(--border-gold); z-index: 1001;"></div>
-      <button class="btn-primary" onclick="confirmMapLocation()" style="margin-top: 15px;">✅ এই লোকেশন কনফার্ম করুন</button>
-    </div>
-  </div>
-
-  <!-- 2-STEP CART & PAYMENT MODAL -->
-  <div id="cart-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>🛒 আপনার কার্ট ও পেমেন্ট</h3>
-        <button class="close-btn" onclick="closeModal('cart-modal')">&times;</button>
-      </div>
-
-      <div id="cart-step-1">
-        <div id="cart-items"></div>
-
-        <div class="cart-summary">
-          <span>মোট মূল্য:</span>
-          <span class="total-price">₹<span id="cart-total">0</span></span>
-        </div>
-
-        <div id="min-order-notice" style="display:none; background:rgba(230,57,70,0.15); border:1px solid var(--red-accent); color:#ff6b6b; padding:10px; border-radius:8px; font-size:0.88rem; text-align:center; margin:12px 0; font-weight:bold;">
-          ⚠️ আমাদের সর্বনিম্ন অর্ডার ২ টি থালি / প্লেট। অনুগ্রহ করে আরও আইটেম যোগ করুন।
-        </div>
-
-        <button class="btn-primary" onclick="proceedToPaymentStep()">পেমেন্ট ও অর্ডার নিশ্চিত করুন ➔</button>
-      </div>
-
-      <div id="cart-step-2" style="display: none;">
-        <button onclick="backToCartStep()" style="background:none; border:none; color:var(--gold-bright); cursor:pointer; font-weight:bold; margin-bottom:10px; font-size:0.9rem;">← কার্ট সংশোধন করুন</button>
-
-        <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
-          <p style="font-weight:800; font-size:0.95rem; color:#111111 !important; margin-bottom:8px;">Scan QR to Pay via PhonePe / GPay / Paytm</p>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%20Food%20Services%26cu=INR" alt="Aswadan UPI QR">
-          <p style="margin-top:8px; font-weight:800; color:#111111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
-        </div>
-
-        <label class="input-label">📅 ডেলিভারির তারিখ:</label>
-        <input type="date" id="delivery-date" class="input-field">
-
-        <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
-        <input type="file" id="payment-screenshot-input" accept="image/jpeg, image/png, image/jpg" class="input-field" onchange="handlePaymentScreenshotUpload(event)">
-        
-        <div style="margin:8px 0; text-align:center;">
-          <img id="payment-screenshot-preview" src="" alt="Payment Screenshot Preview" style="max-width:200px; border-radius:8px; display:none; border:1px solid var(--border-gold);">
-        </div>
-
-        <button class="btn-primary" onclick="placeOrder()">অর্ডার নিশ্চিত করুন</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Leaflet JS for Interactive Map Modal -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    function togglePasswordVisibility(inputId, btn) {
-      const input = document.getElementById(inputId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-      } else {
-        input.type = 'password';
-        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
-      }
-    }
-  </script>
   <script src="js/app.js"></script>
 </body>
 </html>

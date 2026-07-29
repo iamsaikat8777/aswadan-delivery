@@ -19,7 +19,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Prevents white flashing/blinking during page transitions */
 html {
   background-color: #09080c;
 }
@@ -33,13 +32,11 @@ body {
   animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* --- FAST & SMOOTH PAGE TRANSITIONS --- */
 @keyframes pageFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-/* --- SMOOTH CONTENT ENTRY ANIMATIONS (HOME & MENU) --- */
 .brand-hero {
   animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
 }
@@ -67,7 +64,6 @@ body {
   }
 }
 
-/* --- SMOOTH MODAL POPUP & LOGIN ANIMATIONS --- */
 .modal {
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -88,7 +84,6 @@ body {
   opacity: 1;
 }
 
-/* --- AUTH TAB FORM SWITCHING ANIMATION --- */
 #login-form, #signup-form, #forgot-form, #reset-form {
   animation: formSwitchFade 0.25s ease-out forwards;
 }
@@ -104,7 +99,6 @@ body {
   }
 }
 
-/* --- ADMIN PANEL TAB & CARD ANIMATIONS --- */
 #admin-tab-content > * {
   animation: adminTabSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -120,7 +114,6 @@ body {
   }
 }
 
-/* Stat Cards Hover Elevation Effect */
 .stat-card {
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
@@ -131,7 +124,6 @@ body {
   box-shadow: 0 8px 25px rgba(212, 175, 55, 0.25);
 }
 
-/* Admin Tab Buttons Smooth Scale */
 .admin-tab-btn {
   transition: all 0.2s ease;
 }
@@ -141,7 +133,6 @@ body {
   transform: translateY(-2px);
 }
 
-/* Ambient Radial Glow behind Logo */
 .ambient-glow {
   position: absolute;
   top: -20px;
@@ -168,11 +159,10 @@ body {
   }
 }
 
-/* Top Navigation Bar */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
-  padding: 16px 20px 0 0;
+  padding: max(16px, env(safe-area-inset-top, 16px)) 20px 0 0;
   position: relative;
   z-index: 100;
 }
@@ -229,7 +219,6 @@ body {
   margin-left: 2px;
 }
 
-/* User Hover / Click Dropdown Menu */
 .nav-user-dropdown {
   position: relative;
   display: inline-block;
@@ -276,7 +265,6 @@ body {
   color: var(--gold-bright);
 }
 
-/* Brand Header */
 .brand-hero {
   text-align: center;
   padding: 0 15px 10px;
@@ -318,7 +306,6 @@ body {
   z-index: 2;
 }
 
-/* Hero Split Section */
 .hero-split-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -360,28 +347,60 @@ body {
   text-decoration: none;
   border: none;
   cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-/* Horizontal Sliding Animation */
+.btn-cta:hover {
+  transform: translateY(-2px);
+}
+
+/* --- SIDE-BY-SIDE SLIDING ANIMATION & HOVER GOLDEN GLOW FOR TILES --- */
 .hero-spotlight-card {
   background: #13121b;
-  border: 1px solid var(--gold-primary);
+  border: 1px solid var(--border-gold);
   border-radius: 16px;
   padding: 25px 20px;
   text-align: center;
   box-shadow: 0 8px 25px rgba(212, 175, 55, 0.18);
-  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: opacity, transform;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.hero-spotlight-card.slide-out {
-  opacity: 0;
-  transform: translateX(-40px) scale(0.95);
+.hero-spotlight-card:hover, .tile-card:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.3), inset 0 0 15px rgba(212, 175, 55, 0.1);
 }
 
-.hero-spotlight-card.slide-in {
-  opacity: 0;
-  transform: translateX(40px) scale(0.95);
+/* Side-by-side smooth sliding classes */
+.hero-spotlight-card.slide-out-left {
+  animation: slideOutLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.hero-spotlight-card.slide-in-right {
+  animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .spotlight-showcase-grid {
@@ -399,6 +418,11 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tile-card:hover {
+  transform: translateY(-3px);
 }
 
 .tile-title { color: var(--gold-bright); font-size: 1.15rem; margin-bottom: 6px; }
@@ -414,6 +438,11 @@ body {
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.btn-add-tile:hover {
+  transform: scale(1.05);
 }
 
 .pincode-notice-card {
@@ -422,6 +451,12 @@ body {
   border-radius: 14px;
   padding: 18px;
   margin: 30px 0;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pincode-notice-card:hover {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 .notice-header { font-weight: bold; color: var(--gold-bright); margin-bottom: 8px; }
@@ -544,11 +579,10 @@ body {
 
 .toast-popup.show { bottom: 20px; }
 
-/* --- MOBILE SPECIFIC TOUCH-UP MEDIA QUERIES --- */
 @media (max-width: 768px) {
   .top-nav-container {
     justify-content: center;
-    padding: 12px 10px 0;
+    padding: max(12px, env(safe-area-inset-top, 12px)) 10px 0;
   }
 
   .top-nav-bar {
