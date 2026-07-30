@@ -1,5 +1,5 @@
 /* ==========================================================
-   ASWADAN FOOD SERVICES - FINAL REFINED STYLESHEET
+   ASWADAN FOOD SERVICES - FINAL PERFECT STYLESHEET
    ========================================================== */
 
 :root {
@@ -32,7 +32,7 @@ body {
   color: var(--text-main);
   min-height: 100dvh;
   overflow-x: hidden;
-  padding-bottom: 80px;
+  padding-bottom: 110px;
   animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -41,11 +41,11 @@ body {
   to { opacity: 1; }
 }
 
-/* --- DESKTOP BRAND HERO (BALANCED PADDING SO LOGO IS NOT TOO HIGH OR TOO LOW) --- */
+/* --- DESKTOP BRAND HERO (EXACT PERFECT SPACING FOR LOGO & CONTENT) --- */
 .brand-hero {
   animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
-  margin-top: 20px;
-  padding-top: 85px; /* Perfect desktop spacing below the fixed navbar */
+  margin-top: 25px;
+  padding-top: 95px; /* Clean desktop spacing below fixed navbar */
 }
 
 .hero-split-section {
@@ -166,7 +166,7 @@ body {
   }
 }
 
-/* --- SMALL & COMPACT FIXED UPPER-RIGHT DESKTOP NAVBAR --- */
+/* --- SMALL, COMPACT & FIXED UPPER-RIGHT DESKTOP NAVBAR --- */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
@@ -615,16 +615,20 @@ body {
 
 .toast-popup.show { bottom: 20px; }
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES (OPTIMIZED FOR PHONES ONLY) --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES --- */
 @media (max-width: 768px) {
+  body {
+    padding-bottom: 120px;
+  }
+
   .brand-hero {
     margin-top: 0px !important;
-    padding-top: 55px !important; /* Fixed mobile layout for zero overflow & perfect logo placement */
+    padding-top: 45px !important;
   }
 
   .top-nav-container {
     justify-content: flex-end !important;
-    padding: max(8px, env(safe-area-inset-top, 8px)) 8px 0 0 !important;
+    padding: max(6px, env(safe-area-inset-top, 6px)) 6px 0 0 !important;
   }
 
   .top-nav-bar {
@@ -666,7 +670,7 @@ body {
 @media (max-width: 420px) {
   .brand-hero {
     margin-top: 0px !important;
-    padding-top: 48px !important;
+    padding-top: 40px !important;
   }
 
   .top-nav-link, .auto-lang-btn-inline {
