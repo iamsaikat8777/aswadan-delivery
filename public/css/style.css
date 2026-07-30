@@ -617,7 +617,7 @@ body {
 /* --- MOBILE RESPONSIVE MEDIA QUERIES (FIXED BOTTOM OVERLAP & FULLY PRESERVED AMBIENT GLOW) --- */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 210px !important; /* Generous bottom padding to ensure the last card/button never clips over mobile address bar */
+    padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important;
   }
 
   .brand-hero {
@@ -668,7 +668,9 @@ body {
 
 @media (max-width: 420px) {
   body {
-    padding-bottom: 210px !important;
+    padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important;
+    overflow-x:hidden;
+    overflow-y:auto;
   }
 
   .brand-hero {
@@ -684,5 +686,16 @@ body {
   .tagline-badge {
     font-size: 0.75rem;
     padding: 3px 10px;
+  }
+}
+
+html,
+body{
+  overscroll-behavior-y:none;
+}
+
+@supports(padding:max(0px)){
+  body{
+    padding-bottom:max(110px, calc(110px + env(safe-area-inset-bottom)));
   }
 }
