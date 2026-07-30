@@ -32,7 +32,7 @@ body {
   color: var(--text-main);
   min-height: 100dvh;
   overflow-x: hidden;
-  padding-bottom: 110px;
+  padding-bottom: 90px;
   animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -598,9 +598,10 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* --- FIXED TOAST POPUP POSITIONING (PREVENTS OFF-SCREEN STICKING) --- */
 .toast-popup {
   position: fixed;
-  bottom: -60px;
+  bottom: -80px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--gold-gradient);
@@ -609,15 +610,18 @@ body {
   padding: 10px 20px;
   border-radius: 20px;
   transition: bottom 0.3s ease;
-  z-index: 2000;
+  z-index: 20000;
+  pointer-events: none;
 }
 
-.toast-popup.show { bottom: 20px; }
+.toast-popup.show { 
+  bottom: 30px; /* Sits comfortably above mobile browser floating address bars */
+}
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES (FIXED BOTTOM OVERLAP & FULLY PRESERVED AMBIENT GLOW) --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES --- */
 @media (max-width: 768px) {
   body {
-    padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 140px !important;
   }
 
   .brand-hero {
@@ -668,9 +672,7 @@ body {
 
 @media (max-width: 420px) {
   body {
-    padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important;
-    overflow-x:hidden;
-    overflow-y:auto;
+    padding-bottom: 140px !important;
   }
 
   .brand-hero {
@@ -686,16 +688,5 @@ body {
   .tagline-badge {
     font-size: 0.75rem;
     padding: 3px 10px;
-  }
-}
-
-html,
-body{
-  overscroll-behavior-y:none;
-}
-
-@supports(padding:max(0px)){
-  body{
-    padding-bottom:max(110px, calc(110px + env(safe-area-inset-bottom)));
   }
 }
