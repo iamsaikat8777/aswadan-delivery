@@ -165,7 +165,7 @@ body {
   }
 }
 
-/* --- UNTOUCHED PERFECT DESKTOP NAVBAR --- */
+/* --- PERFECT DESKTOP NAVBAR --- */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
@@ -490,7 +490,7 @@ body {
 
 .notice-header { font-weight: bold; color: var(--gold-bright); margin-bottom: 8px; }
 .notice-list { padding-left: 20px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
-.pincode-tag { background: var(--gold-primary); color: #000; font-weight: bold; padding: 1px 6px; border-radius: 4px; }
+.pincode-tag {background: var(--gold-primary); color: #000; font-weight: bold; padding: 1px 6px; border-radius: 4px; }
 
 /* Dashboard Popup Tabs */
 .dashboard-tabs {
@@ -598,7 +598,6 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- FIXED TOAST POPUP POSITIONING (PREVENTS OFF-SCREEN STICKING) --- */
 .toast-popup {
   position: fixed;
   bottom: -80px;
@@ -615,10 +614,10 @@ body {
 }
 
 .toast-popup.show { 
-  bottom: 30px; /* Sits comfortably above mobile browser floating address bars */
+  bottom: 30px;
 }
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES (OPTIMIZED MOBILE NAVBAR SIZE) --- */
 @media (max-width: 768px) {
   body {
     padding-bottom: 140px !important;
@@ -631,18 +630,19 @@ body {
 
   .top-nav-container {
     justify-content: flex-end !important;
-    padding: max(6px, env(safe-area-inset-top, 6px)) 6px 0 0 !important;
+    padding: max(8px, env(safe-area-inset-top, 8px)) 10px 0 0 !important;
   }
 
   .top-nav-bar {
-    padding: 2px 4px !important;
-    gap: 2px !important;
+    padding: 3px 6px !important;
+    gap: 3px !important;
     max-width: 100%;
   }
 
+  /* Increased mobile navbar font size and padding slightly for perfect visibility */
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 3px 6px !important;
-    font-size: 0.68rem !important;
+    padding: 5px 10px !important;
+    font-size: 0.78rem !important; 
   }
 
   .brand-logo {
@@ -681,8 +681,8 @@ body {
   }
 
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 3px 5px !important;
-    font-size: 0.64rem !important;
+    padding: 4px 8px !important;
+    font-size: 0.74rem !important;
   }
   
   .tagline-badge {
