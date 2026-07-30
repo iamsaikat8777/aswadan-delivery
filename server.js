@@ -198,12 +198,11 @@ app.post('/api/special-request', (req, res) => {
   specialRequestsDB.push(newReq);
   saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
 
-  // Send mail to user and admin
   if (email) {
     sendEmail(
       email,
       `✨ আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে জমা হয়েছে: #${reqId}`,
-      `<h2>স্বাগতম ${customerName}!</h2><p>আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে গ্রহণ করা হয়েছে।</p><p><b>Request ID:</b> ${reqId}</p><p><b>খাবার:</b> ${itemName} (${qty} প্লেট)</p><p>অ্যাডমিন পর্যালোচনার পর খুব শীঘ্রই আপনাকে মূল্য জানিয়ে দেওয়া হবে।</p>`
+      `<h2>স্বাগতম ${customerName}!</h2><p>আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে গ্রহণ করা হয়েছে।</p><p><b>Request ID:</b> ${reqId}</p><p><b>খাবার:</b> ${itemName} (${qty} প্লেট)</p>`
     );
   }
 
@@ -255,7 +254,6 @@ app.post('/api/special-request/pay', (req, res) => {
   ordersDB.push(newOrder);
   saveData(ORDERS_FILE, ordersDB);
 
-  // Send order placed notification for special order converted to normal order
   if (reqItem.email) {
     sendEmail(
       reqItem.email,
@@ -283,7 +281,6 @@ app.post('/api/auth/signup', (req, res) => {
   usersDB.push(newUser);
   saveData(USERS_FILE, usersDB);
 
-  // Send Welcome Mail
   if (email) {
     sendEmail(
       email,
@@ -301,6 +298,38 @@ app.post('/api/auth/login', (req, res) => {
   let user = usersDB.find(u => (String(u.phone).trim() === String(identifier).trim() || u.email.toLowerCase() === identifier.toLowerCase()) && u.password === password);
   if (!user || user.isBlocked) return res.status(401).json({ success: false, message: 'লগইন তথ্য ভুল অথবা অ্যাকাউন্ট ব্লক করা হয়েছে।' });
   res.json({ success: true, user });
+});
+
+// User Forgot Password OTP
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { email } = req.body;
+  usersDB = loadData(USERS_FILE, []);
+  const user = usersDB.find(u => u.email && u.email.toLowerCase() === email.trim().toLowerCase());
+  if (!user) {
+    return res.status(400).json({ success: false, message: 'এই ইমেল আইডি দিয়ে কোনো অ্যাকাউন্ট রেজিস্টার্ড নেই!' });
+  }
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[`user_otp_${user.phone}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
+  
+  sendEmail(user.email, '🔑 আস্বাদন পাসওয়ার্ড রিসেট OTP', `<h3>আপনার পাসওয়ার্ড রিসেট OTP কোড হলো: <b>${otp}</b></h3>`);
+  res.json({ success: true, message: 'আপনার রেজিস্টার্ড ইমেলে OTP পাঠানো হয়েছে।' });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  usersDB = loadData(USERS_FILE, []);
+  const user = usersDB.find(u => u.email && u.email.toLowerCase() === email.trim().toLowerCase());
+  if (!user) return res.status(400).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
+
+  const record = otpStore[`user_otp_${user.phone}`];
+  if (!record || record.code !== otp || Date.now() > record.expiresAt) {
+    return res.status(400).json({ success: false, message: 'ভুল বা মেয়াদোত্তীর্ণ OTP কোড।' });
+  }
+
+  user.password = newPassword;
+  delete otpStore[`user_otp_${user.phone}`];
+  saveData(USERS_FILE, usersDB);
+  res.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!' });
 });
 
 app.get('/api/orders/user/:phone', (req, res) => {
@@ -366,7 +395,6 @@ app.post('/api/admin/login', (req, res) => {
   else res.status(401).json({ success: false, message: 'ভুল পাসওয়ার্ড!' });
 });
 
-// Admin Forgot Password OTP
 app.post('/api/admin/forgot-password', (req, res) => {
   const { email } = req.body;
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
@@ -377,7 +405,6 @@ app.post('/api/admin/forgot-password', (req, res) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore['admin_otp'] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
   
-  // Send OTP to Admin Mail
   sendEmail(adminEmail, '🔑 এডমিন পাসওয়ার্ড রিসেট OTP', `<h3>আপনার এডমিন পাসওয়ার্ড রিসেট OTP কোড হলো: <b>${otp}</b></h3>`);
   res.json({ success: true, message: 'OTP পাঠানো হয়েছে।' });
 });
@@ -467,7 +494,7 @@ app.get('/api/admin/orders', (req, res) => {
   });
 });
 
-// 3, 4, 5) Admin Order Status update (Accept, Reject with Reason, Delivered)
+// 3, 4, 5, 10) Admin Order Status update (Accept, Reject with Reason, Delivered)
 app.post('/api/admin/order-status', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const { orderId, status, reason } = req.body;
@@ -478,7 +505,6 @@ app.post('/api/admin/order-status', (req, res) => {
     if (reason) order.rejectionReason = reason;
     saveData(ORDERS_FILE, ordersDB);
 
-    // Send Mail based on status
     if (order.email) {
       if (status === 'ACCEPTED') {
         sendEmail(order.email, `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`, `<h2>সুসংবাদ ${order.customerName}!</h2><p>আপনার অর্ডারটি (#${orderId}) সফলভাবে এপ্রুভ করা হয়েছে এবং রান্নার প্রস্তুতি চলছে।</p>`);
@@ -549,7 +575,6 @@ app.post('/api/admin/special-request/action', (req, res) => {
     reqItem.pricePerPlate = Number(pricePerPlate);
     reqItem.totalAmount = Number(pricePerPlate) * reqItem.qty;
 
-    // 7) Mail to user with price to pay
     if (reqItem.email) {
       sendEmail(
         reqItem.email,
@@ -561,7 +586,6 @@ app.post('/api/admin/special-request/action', (req, res) => {
     reqItem.status = 'REJECTED';
     if (reason) reqItem.rejectionReason = reason;
 
-    // 9) Special Order Rejection Mail
     if (reqItem.email) {
       sendEmail(
         reqItem.email,
