@@ -1,5 +1,5 @@
 /* ==========================================================
-   ASWADAN FOOD SERVICES - FINAL STYLESHEET
+   ASWADAN FOOD SERVICES - FINAL REFINED STYLESHEET
    ========================================================== */
 
 :root {
@@ -41,10 +41,11 @@ body {
   to { opacity: 1; }
 }
 
+/* --- DESKTOP BRAND HERO (BALANCED PADDING SO LOGO IS NOT TOO HIGH OR TOO LOW) --- */
 .brand-hero {
   animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
-  margin-top: 55px;
-  padding-top: 90px;
+  margin-top: 20px;
+  padding-top: 85px; /* Perfect desktop spacing below the fixed navbar */
 }
 
 .hero-split-section {
@@ -165,11 +166,11 @@ body {
   }
 }
 
-/* --- PERFECT COMPACT FIXED UPPER-RIGHT NAVBAR --- */
+/* --- SMALL & COMPACT FIXED UPPER-RIGHT DESKTOP NAVBAR --- */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
-  padding: max(12px, env(safe-area-inset-top, 12px)) 20px 0 0;
+  padding: max(10px, env(safe-area-inset-top, 10px)) 20px 0 0;
   position: fixed;
   top: 0;
   right: 0;
@@ -203,11 +204,11 @@ body {
   background: transparent;
   border: none;
   color: var(--text-main);
-  font-size: 0.78rem;
+  font-size: 0.78rem; /* Small & compact nav links */
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  padding: 4px 10px;
+  padding: 4px 10px; /* Small compact padding */
   border-radius: 16px;
   transition: all 0.25s ease;
   display: inline-flex;
@@ -614,11 +615,11 @@ body {
 
 .toast-popup.show { bottom: 20px; }
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES (OPTIMIZED FOR PHONES ONLY) --- */
 @media (max-width: 768px) {
   .brand-hero {
-    margin-top: 35px;
-    padding-top: 75px;
+    margin-top: 0px !important;
+    padding-top: 55px !important; /* Fixed mobile layout for zero overflow & perfect logo placement */
   }
 
   .top-nav-container {
@@ -633,26 +634,27 @@ body {
   }
 
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 4px 7px !important;
-    font-size: 0.7rem !important;
+    padding: 3px 6px !important;
+    font-size: 0.68rem !important;
   }
 
   .brand-logo {
-    max-width: 200px;
+    max-width: 190px;
   }
 
   .hero-split-section {
     grid-template-columns: 1fr;
-    padding: 20px 15px;
-    gap: 20px;
+    padding: 15px 12px;
+    gap: 15px;
+    margin-top: 10px;
   }
 
   .hero-left-content h1 {
-    font-size: 1.65rem;
+    font-size: 1.5rem;
   }
 
   .hero-left-content p {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
   }
 
   .modal-content {
@@ -662,13 +664,18 @@ body {
 }
 
 @media (max-width: 420px) {
+  .brand-hero {
+    margin-top: 0px !important;
+    padding-top: 48px !important;
+  }
+
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 3px 6px !important;
-    font-size: 0.66rem !important;
+    padding: 3px 5px !important;
+    font-size: 0.64rem !important;
   }
   
   .tagline-badge {
-    font-size: 0.78rem;
-    padding: 4px 10px;
+    font-size: 0.75rem;
+    padding: 3px 10px;
   }
 }
