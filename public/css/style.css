@@ -1,5 +1,5 @@
 /* ==========================================================
-   ASWADAN FOOD SERVICES - FINAL PRODUCTION STYLESHEET
+   ASWADAN FOOD SERVICES - FINAL STYLESHEET
    ========================================================== */
 
 :root {
@@ -30,9 +30,9 @@ html {
 body {
   background-color: var(--bg-dark);
   color: var(--text-main);
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
-  padding-bottom: 40px;
+  padding-bottom: 80px;
   animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -43,6 +43,8 @@ body {
 
 .brand-hero {
   animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
+  margin-top: 55px;
+  padding-top: 90px;
 }
 
 .hero-split-section {
@@ -163,77 +165,59 @@ body {
   }
 }
 
-/* --- TOP NAVIGATION & LANGUAGE SWITCHER RESPONSIVE FIXES --- */
-.auto-lang-container {
-  position: fixed;
-  top: max(14px, env(safe-area-inset-top, 14px));
-  left: 14px;
-  z-index: 10000;
-}
-
-.auto-lang-btn {
-  background: rgba(18, 17, 25, 0.92);
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  color: #e5c158;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-  transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  touch-action: manipulation;
-}
-
-.auto-lang-btn:hover {
-  background: var(--gold-gradient);
-  color: #000;
-}
-
+/* --- PERFECT COMPACT FIXED UPPER-RIGHT NAVBAR --- */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
-  padding: max(16px, env(safe-area-inset-top, 16px)) 20px 0 0;
-  position: relative;
-  z-index: 100;
+  padding: max(12px, env(safe-area-inset-top, 12px)) 20px 0 0;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 10000;
+  width: 100%;
+  pointer-events: none;
 }
 
 .top-nav-bar {
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba(18, 17, 25, 0.92);
+  gap: 2px;
+  padding: 3px 6px;
+  background: rgba(18, 17, 25, 0.95);
   border: 1px solid var(--border-gold);
-  border-radius: 30px;
+  border-radius: 25px;
   backdrop-filter: blur(12px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
   max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
 }
 
-.top-nav-link {
+.top-nav-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.top-nav-link, .auto-lang-btn-inline {
   background: transparent;
   border: none;
   color: var(--text-main);
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 4px 10px;
+  border-radius: 16px;
   transition: all 0.25s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   white-space: nowrap;
   touch-action: manipulation;
 }
 
-.top-nav-link:hover {
+.top-nav-link:hover, .auto-lang-btn-inline:hover {
   color: var(--gold-bright);
   background: rgba(212, 175, 55, 0.12);
 }
@@ -249,9 +233,9 @@ body {
   background: var(--red-accent);
   color: #fff;
   font-weight: bold;
-  padding: 1px 7px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-size: 0.7rem;
   margin-left: 2px;
 }
 
@@ -303,7 +287,7 @@ body {
 
 .brand-hero {
   text-align: center;
-  padding: 0 15px 10px;
+  padding: 10px 15px;
   position: relative;
   z-index: 2;
 }
@@ -315,7 +299,7 @@ body {
 }
 
 .brand-logo {
-  max-width: 330px;
+  max-width: 310px;
   width: 100%;
   height: auto;
   display: block;
@@ -630,40 +614,31 @@ body {
 
 .toast-popup.show { bottom: 20px; }
 
-/* --- MOBILE SPECIFIC MEDIA QUERIES (iOS & ANDROID PHONES) --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES --- */
 @media (max-width: 768px) {
-  .auto-lang-container {
-    top: max(10px, env(safe-area-inset-top, 10px));
-    left: 8px;
-  }
-  
-  .auto-lang-btn {
-    font-size: 0.72rem;
-    padding: 4px 8px;
+  .brand-hero {
+    margin-top: 35px;
+    padding-top: 75px;
   }
 
   .top-nav-container {
-    justify-content: center !important;
-    padding: max(10px, env(safe-area-inset-top, 10px)) 5px 0 !important;
-    width: 100vw;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    justify-content: flex-end !important;
+    padding: max(8px, env(safe-area-inset-top, 8px)) 8px 0 0 !important;
   }
 
   .top-nav-bar {
-    padding: 3px 6px !important;
+    padding: 2px 4px !important;
     gap: 2px !important;
-    flex-wrap: nowrap !important;
-    white-space: nowrap !important;
+    max-width: 100%;
   }
 
-  .top-nav-link {
-    padding: 5px 8px !important;
-    font-size: 0.75rem !important;
+  .top-nav-link, .auto-lang-btn-inline {
+    padding: 4px 7px !important;
+    font-size: 0.7rem !important;
   }
 
   .brand-logo {
-    max-width: 220px;
+    max-width: 200px;
   }
 
   .hero-split-section {
@@ -673,7 +648,7 @@ body {
   }
 
   .hero-left-content h1 {
-    font-size: 1.75rem;
+    font-size: 1.65rem;
   }
 
   .hero-left-content p {
@@ -687,13 +662,13 @@ body {
 }
 
 @media (max-width: 420px) {
-  .top-nav-link {
-    padding: 4px 6px;
-    font-size: 0.7rem;
+  .top-nav-link, .auto-lang-btn-inline {
+    padding: 3px 6px !important;
+    font-size: 0.66rem !important;
   }
   
   .tagline-badge {
-    font-size: 0.8rem;
-    padding: 4px 12px;
+    font-size: 0.78rem;
+    padding: 4px 10px;
   }
 }

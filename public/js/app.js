@@ -1,66 +1,5 @@
-// --- GLOBAL AUTO-INJECTED LANGUAGE SWITCHER ---
+// --- GLOBAL AUTO-INJECTED LANGUAGE SWITCHER AT THE END OF NAVBAR ---
 (function() {
-  const style = document.createElement('style');
-  style.innerHTML = `
-    .auto-lang-container {
-      position: fixed;
-      top: max(12px, env(safe-area-inset-top, 12px));
-      left: 12px;
-      z-index: 10000;
-    }
-    .auto-lang-btn {
-      background: rgba(18, 17, 25, 0.92);
-      border: 1px solid rgba(212, 175, 55, 0.35);
-      color: #e5c158;
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 5px 10px;
-      border-radius: 20px;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-      transition: all 0.25s ease;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .auto-lang-btn:hover {
-      background: linear-gradient(135deg, #d4af37 0%, #e5c158 50%, #aa820a 100%);
-      color: #000;
-    }
-    @media (max-width: 768px) {
-      .top-nav-container {
-        justify-content: center !important;
-        padding: max(10px, env(safe-area-inset-top, 10px)) 5px 0 !important;
-        width: 100vw;
-        overflow-x: auto;
-      }
-      .top-nav-bar {
-        padding: 3px 6px !important;
-        gap: 2px !important;
-        flex-wrap: nowrap !important;
-        white-space: nowrap !important;
-      }
-      .top-nav-link {
-        padding: 5px 8px !important;
-        font-size: 0.75rem !important;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-
-  if (!document.getElementById('global-lang-btn-box')) {
-    const langDiv = document.createElement('div');
-    langDiv.id = 'global-lang-btn-box';
-    langDiv.className = 'auto-lang-container';
-    langDiv.innerHTML = `
-      <button class="auto-lang-btn" onclick="window.toggleGlobalLanguage()">
-        🌐 <span id="global-lang-label">English</span>
-      </button>
-    `;
-    document.body.prepend(langDiv);
-  }
-
   window.currentLang = localStorage.getItem('aswadan_lang') || 'bn';
 
   window.applyGlobalLanguage = function(lang) {
@@ -91,6 +30,17 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     window.applyGlobalLanguage(window.currentLang);
+
+    // Automatically inject language switcher directly into the top-nav-bar as the LAST item (beside Admin)
+    const navBar = document.querySelector('.top-nav-bar');
+    if (navBar && !document.getElementById('global-lang-btn-box')) {
+      const langBtn = document.createElement('button');
+      langBtn.id = 'global-lang-btn-box';
+      langBtn.className = 'auto-lang-btn-inline';
+      langBtn.innerHTML = `🌐 <span id="global-lang-label">${window.currentLang === 'bn' ? 'English' : 'বাংলা'}</span>`;
+      langBtn.onclick = window.toggleGlobalLanguage;
+      navBar.appendChild(langBtn); // Appended at the end beside Admin
+    }
   });
 })();
 
