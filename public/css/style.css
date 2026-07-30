@@ -1,3 +1,7 @@
+/* ==========================================================
+   ASWADAN FOOD SERVICES - FINAL PRODUCTION STYLESHEET
+   ========================================================== */
+
 :root {
   --bg-dark: #09080c;
   --card-bg: #111017;
@@ -159,6 +163,37 @@ body {
   }
 }
 
+/* --- TOP NAVIGATION & LANGUAGE SWITCHER RESPONSIVE FIXES --- */
+.auto-lang-container {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top, 14px));
+  left: 14px;
+  z-index: 10000;
+}
+
+.auto-lang-btn {
+  background: rgba(18, 17, 25, 0.92);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #e5c158;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  touch-action: manipulation;
+}
+
+.auto-lang-btn:hover {
+  background: var(--gold-gradient);
+  color: #000;
+}
+
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
@@ -195,6 +230,7 @@ body {
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .top-nav-link:hover {
@@ -348,10 +384,15 @@ body {
   border: none;
   cursor: pointer;
   transition: transform 0.2s ease;
+  touch-action: manipulation;
 }
 
 .btn-cta:hover {
   transform: translateY(-2px);
+}
+
+.btn-cta:active {
+  transform: scale(0.96);
 }
 
 /* --- SIDE-BY-SIDE SLIDING ANIMATION & HOVER GOLDEN GLOW FOR TILES --- */
@@ -372,7 +413,6 @@ body {
   box-shadow: 0 0 25px rgba(212, 175, 55, 0.3), inset 0 0 15px rgba(212, 175, 55, 0.1);
 }
 
-/* Side-by-side smooth sliding classes */
 .hero-spotlight-card.slide-out-left {
   animation: slideOutLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -439,10 +479,15 @@ body {
   border-radius: 6px;
   cursor: pointer;
   transition: transform 0.2s ease;
+  touch-action: manipulation;
 }
 
 .btn-add-tile:hover {
   transform: scale(1.05);
+}
+
+.btn-add-tile:active {
+  transform: scale(0.95);
 }
 
 .pincode-notice-card {
@@ -483,6 +528,7 @@ body {
   cursor: pointer;
   font-size: 0.85rem;
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .dash-tab-btn.active {
@@ -542,6 +588,11 @@ body {
   font-size: 1rem;
   cursor: pointer;
   margin-top: 12px;
+  touch-action: manipulation;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
 }
 
 /* PWA App Install Banner */
@@ -579,20 +630,36 @@ body {
 
 .toast-popup.show { bottom: 20px; }
 
+/* --- MOBILE SPECIFIC MEDIA QUERIES (iOS & ANDROID PHONES) --- */
 @media (max-width: 768px) {
+  .auto-lang-container {
+    top: max(10px, env(safe-area-inset-top, 10px));
+    left: 8px;
+  }
+  
+  .auto-lang-btn {
+    font-size: 0.72rem;
+    padding: 4px 8px;
+  }
+
   .top-nav-container {
-    justify-content: center;
-    padding: max(12px, env(safe-area-inset-top, 12px)) 10px 0;
+    justify-content: center !important;
+    padding: max(10px, env(safe-area-inset-top, 10px)) 5px 0 !important;
+    width: 100vw;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .top-nav-bar {
-    padding: 3px 6px;
-    gap: 2px;
+    padding: 3px 6px !important;
+    gap: 2px !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
   }
 
   .top-nav-link {
-    padding: 6px 9px;
-    font-size: 0.8rem;
+    padding: 5px 8px !important;
+    font-size: 0.75rem !important;
   }
 
   .brand-logo {
@@ -621,8 +688,8 @@ body {
 
 @media (max-width: 420px) {
   .top-nav-link {
-    padding: 5px 7px;
-    font-size: 0.75rem;
+    padding: 4px 6px;
+    font-size: 0.7rem;
   }
   
   .tagline-badge {

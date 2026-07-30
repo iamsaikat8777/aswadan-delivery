@@ -4,17 +4,17 @@
   style.innerHTML = `
     .auto-lang-container {
       position: fixed;
-      top: max(16px, env(safe-area-inset-top, 16px));
-      left: 20px;
+      top: max(12px, env(safe-area-inset-top, 12px));
+      left: 12px;
       z-index: 10000;
     }
     .auto-lang-btn {
       background: rgba(18, 17, 25, 0.92);
       border: 1px solid rgba(212, 175, 55, 0.35);
       color: #e5c158;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 20px;
       cursor: pointer;
       backdrop-filter: blur(12px);
@@ -22,11 +22,29 @@
       transition: all 0.25s ease;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
     .auto-lang-btn:hover {
       background: linear-gradient(135deg, #d4af37 0%, #e5c158 50%, #aa820a 100%);
       color: #000;
+    }
+    @media (max-width: 768px) {
+      .top-nav-container {
+        justify-content: center !important;
+        padding: max(10px, env(safe-area-inset-top, 10px)) 5px 0 !important;
+        width: 100vw;
+        overflow-x: auto;
+      }
+      .top-nav-bar {
+        padding: 3px 6px !important;
+        gap: 2px !important;
+        flex-wrap: nowrap !important;
+        white-space: nowrap !important;
+      }
+      .top-nav-link {
+        padding: 5px 8px !important;
+        font-size: 0.75rem !important;
+      }
     }
   `;
   document.head.appendChild(style);
@@ -635,7 +653,6 @@ async function loadUserSpecialRequests() {
     const data = await res.json();
     const container = document.getElementById('user-special-requests-list');
     if (container && data.success) {
-      // Mark priced/rejected requests as seen when user opens this tab
       const actionedRequests = data.requests.filter(r => r.status === 'PRICED' || r.status === 'REJECTED');
       if (actionedRequests.length > 0) {
         const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
@@ -871,7 +888,6 @@ async function loadHomeSpotlight() {
         const item = menu[idx];
         const icon = getFoodIcon(item.name);
         
-        // Apply horizontal slide out animation, switch content, then slide in
         slidingCard.classList.remove('slide-in-right');
         slidingCard.classList.add('slide-out-left');
 
@@ -918,4 +934,44 @@ async function loadHomeSpotlight() {
   } catch (err) { console.error(err); }
 }
 
-function checkPWAInstallPrompt() {}
+// --- PWA INSTALL PROMPT FIX FOR MOBILE DEVICES ---
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+  }
+});
+
+function triggerPWAInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      deferredPrompt = null;
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.style.display = 'none';
+    });
+  } else {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      alert('আইওএস (iOS) ব্রাউজারে অ্যাপ ইন্সটল করতে সাফারি মেনু থেকে শেয়ার (Share) আইকনে ক্লিক করে "Add to Home Screen" সিলেক্ট করুন।');
+    } else {
+      alert('আপনার ব্রাউজার মেনু (তিনটি ডট) থেকে "Add to Home Screen" বা "Install App" অপশনটি সিলেক্ট করুন।');
+    }
+  }
+}
+
+window.addEventListener('appinstalled', (evt) => {
+  console.log('Aswadan PWA was installed successfully');
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.style.display = 'none';
+});
