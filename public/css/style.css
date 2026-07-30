@@ -614,10 +614,10 @@ body {
 
 .toast-popup.show { bottom: 20px; }
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES (FIXED BOTTOM CONTENT CLIP OVER MOBILE ADDRESS BAR) --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES (FIXED BOTTOM OVERLAP & FULLY PRESERVED AMBIENT GLOW) --- */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 160px !important; /* Generous bottom padding to ensure the last food card and button never overlap the mobile address bar */
+    padding-bottom: 210px !important; /* Generous bottom padding to ensure the last card/button never clips over mobile address bar */
   }
 
   .brand-hero {
@@ -668,7 +668,7 @@ body {
 
 @media (max-width: 420px) {
   body {
-    padding-bottom: 160px !important;
+    padding-bottom: 210px !important;
   }
 
   .brand-hero {
