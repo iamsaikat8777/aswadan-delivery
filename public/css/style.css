@@ -595,6 +595,11 @@ body {
     transform: translateY(0) !important;
   }
 
+  /* Release bottom constraint on mobile so toast-popup respects JS button-anchored top positioning */
+  .toast-popup.show {
+    bottom: auto !important;
+  }
+
   /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
   .modal {
     display: none;
