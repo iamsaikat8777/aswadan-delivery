@@ -564,12 +564,10 @@ body {
     white-space: nowrap !important;
   }
 
-  /* Disable hover trigger on touch devices for user dropdown to allow proper tap toggle */
   .nav-user-dropdown:hover .user-dropdown-menu {
     display: none !important;
   }
 
-  /* Perfectly bound mobile user dropdown menu inside screen bounds */
   .nav-user-dropdown.active-dropdown .user-dropdown-menu {
     display: block !important;
     top: calc(100% + 8px) !important;
@@ -580,6 +578,34 @@ body {
     max-width: calc(100vw - 30px) !important;
     opacity: 1 !important;
     transform: translateY(0) !important;
+  }
+
+  /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
+  .modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.88) !important;
+    backdrop-filter: blur(6px) !important;
+    z-index: 999999 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 15px !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal-content {
+    margin: auto !important;
+    max-height: 85vh !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
   }
 
   .brand-logo {
@@ -599,11 +625,6 @@ body {
 
   .hero-left-content p {
     font-size: 0.9rem;
-  }
-
-  .modal-content {
-    padding: 16px;
-    max-height: 92vh;
   }
 }
 
