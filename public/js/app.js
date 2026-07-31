@@ -166,16 +166,36 @@ window.addEventListener('click', (e) => {
 });
 
 let toastTimer = null;
-function showToast(msg) {
+function showToast(msg, targetBtn) {
   const toast = document.getElementById('toast-msg');
-  if (toast) {
-    toast.innerText = msg;
-    toast.classList.add('show');
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toast.classList.remove('show');
-    }, 2500);
+  if (!toast) return;
+
+  toast.innerText = msg;
+
+  if (window.innerWidth <= 768 && targetBtn) {
+    const rect = targetBtn.getBoundingClientRect();
+    toast.style.position = 'fixed';
+    
+    let topPos = rect.top - 45;
+    if (topPos < 50) topPos = rect.bottom + 10;
+    
+    toast.style.top = `${topPos}px`;
+    toast.style.left = `${rect.left + (rect.width / 2)}px`;
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.bottom = 'auto';
+  } else {
+    toast.style.position = 'fixed';
+    toast.style.top = 'auto';
+    toast.style.bottom = '30px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
   }
+
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2200);
 }
 
 function closeModal(modalId) {
@@ -1096,7 +1116,7 @@ async function confirmSpecialPayment() {
   }
 }
 
-// --- CART MANAGEMENT WITH ITEM ADDED SOFT FLASH POPUP ---
+// --- CART MANAGEMENT WITH BUTTON-ANCHORED FLOATING TOAST POPUP ---
 function addToCart(id, name, price, desc) {
   const existing = cart.find(item => item.id === id);
   if (existing) {
@@ -1105,7 +1125,9 @@ function addToCart(id, name, price, desc) {
     cart.push({ id, name, price, desc, qty: 1 });
   }
   updateCartCount();
-  showToast('🛒 কার্টে যোগ করা হয়েছে!');
+  
+  const clickedBtn = window.event ? window.event.target.closest('button') : null;
+  showToast('🛒 কার্টে যোগ করা হয়েছে!', clickedBtn);
 }
 
 function openCartModal() {
