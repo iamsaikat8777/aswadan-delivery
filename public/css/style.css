@@ -499,7 +499,7 @@ body {
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 
-/* --- TOAST POPUP STYLES --- */
+/* --- TOAST POPUP STYLES (DEFAULT DESKTOP) --- */
 .toast-popup {
   position: fixed;
   bottom: -80px;
@@ -582,9 +582,16 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Force Toast Popup clearly visible on mobile view */
+  /* Force Toast Popup to appear clearly at the top (below navbar) on mobile view */
+  .toast-popup {
+    bottom: auto !important;
+    top: -60px !important;
+    transition: top 0.25s ease !important;
+  }
+
   .toast-popup.show {
-    bottom: 85px !important;
+    top: 75px !important;
+    bottom: auto !important;
   }
 
   /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
