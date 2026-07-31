@@ -43,6 +43,34 @@
   });
 })();
 
+// --- MOBILE LOADING OVERLAY HELPERS ---
+function injectLoadingOverlayIfNeeded() {
+  if (!document.getElementById('mobile-loading-overlay')) {
+    const overlay = document.createElement('div');
+    overlay.id = 'mobile-loading-overlay';
+    overlay.innerHTML = `
+      <div class="spinner-box">
+        <div class="spinner-ring"></div>
+        <p style="color:var(--gold-bright); font-weight:bold; font-size:0.95rem;">অনুগ্রহ করে অপেক্ষা করুন... ⏳</p>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+}
+
+function showMobileLoading() {
+  if (window.innerWidth <= 768) {
+    injectLoadingOverlayIfNeeded();
+    const overlay = document.getElementById('mobile-loading-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+}
+
+function hideMobileLoading() {
+  const overlay = document.getElementById('mobile-loading-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
 // --- STRICT DD/MM/YYYY FORMATTER ---
 function formatDateDDMMYYYY(dateInput) {
   if (!dateInput) return '';
@@ -83,7 +111,7 @@ function updateCartCount() {
   localStorage.setItem('aswadan_cart', JSON.stringify(cart));
 }
 
-// --- STRICT LOGIN STATE NAVBAR & FIXED DROPDOWN UI ---
+// --- STRICT LOGIN STATE NAVBAR & FIXED MOBILE DROPDOWN TOGGLE ---
 function updateAuthNavUI() {
   const btn = document.getElementById('profile-nav-btn');
   const wrapper = document.getElementById('user-nav-wrapper');
@@ -99,7 +127,6 @@ function updateAuthNavUI() {
       wrapper.style.position = 'relative';
     }
     if (dropdownMenu) {
-      dropdownMenu.style.display = '';
       dropdownMenu.style.position = 'absolute';
       dropdownMenu.style.right = '0';
       dropdownMenu.style.top = '100%';
@@ -126,7 +153,9 @@ function toggleUserDropdown(e) {
   if (e) e.stopPropagation();
   injectUserDashboardModalIfNeeded();
   const wrapper = document.getElementById('user-nav-wrapper');
-  if (wrapper) wrapper.classList.toggle('active-dropdown');
+  if (wrapper) {
+    wrapper.classList.toggle('active-dropdown');
+  }
 }
 
 window.addEventListener('click', (e) => {
@@ -168,6 +197,7 @@ async function loginUser() {
   const password = document.getElementById('login-password').value.trim();
   if (!identifier || !password) return alert('সমস্ত ফিল্ড পূরণ করুন।');
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -175,6 +205,7 @@ async function loginUser() {
       body: JSON.stringify({ identifier, password })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       currentUser = data.user;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
@@ -186,6 +217,7 @@ async function loginUser() {
       alert(data.message);
     }
   } catch (err) {
+    hideMobileLoading();
     alert('সার্ভার ত্রুটি!');
   }
 }
@@ -203,6 +235,7 @@ async function signupUser() {
     return alert('সমস্ত প্রয়োজনীয় ফিল্ড পূরণ করুন।');
   }
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
@@ -210,6 +243,7 @@ async function signupUser() {
       body: JSON.stringify({ name, phone, email, password, address, location, pincode })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       currentUser = data.user;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
@@ -221,6 +255,7 @@ async function signupUser() {
       alert(data.message);
     }
   } catch (err) {
+    hideMobileLoading();
     alert('সার্ভার ত্রুটি!');
   }
 }
@@ -233,7 +268,7 @@ function logoutUser() {
   location.reload();
 }
 
-// --- AUTO-INJECT CART MODAL WITH DD/MM/YYYY FORMATTER ---
+// --- AUTO-INJECT CART MODAL WITH DD/MM/YYYY FORMATTER & COD PAYMENT OPTION ---
 function injectCartModalIfNeeded() {
   if (!document.getElementById('cart-modal')) {
     const cartModalDiv = document.createElement('div');
@@ -614,6 +649,7 @@ async function submitOrderCancellationWithRefund() {
 }
 
 async function executeOrderCancellation(orderId, refundInfo) {
+  showMobileLoading();
   try {
     const res = await fetch('/api/orders/cancel', {
       method: 'POST',
@@ -621,6 +657,7 @@ async function executeOrderCancellation(orderId, refundInfo) {
       body: JSON.stringify({ orderId, phone: currentUser.phone, refundInfo })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       showToast(data.message);
       loadUserOrderHistory();
@@ -629,6 +666,7 @@ async function executeOrderCancellation(orderId, refundInfo) {
       alert(data.message);
     }
   } catch (err) {
+    hideMobileLoading();
     alert('অর্ডার ক্যানসেল করতে সমস্যা হয়েছে।');
   }
 }
@@ -639,6 +677,7 @@ async function confirmAndDeleteUserHistory() {
   const userConfirmed = confirm('⚠️ আপনি কি নিশ্চিত যে আপনার সমস্ত অর্ডার হিস্ট্রি এবং স্পেশাল অর্ডার রিকুয়েস্ট স্থায়ীভাবে মুছে ফেলতে চান? এই কাজটি আর ফিরিয়ে আনা যাবে না।');
   if (!userConfirmed) return;
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/user/delete-history', {
       method: 'POST',
@@ -646,6 +685,7 @@ async function confirmAndDeleteUserHistory() {
       body: JSON.stringify({ phone: currentUser.phone })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       showToast(data.message);
       closeModal('user-dashboard-modal');
@@ -653,6 +693,7 @@ async function confirmAndDeleteUserHistory() {
       alert(data.message || 'ডেটা ডিলিট করতে সমস্যা হয়েছে।');
     }
   } catch (err) {
+    hideMobileLoading();
     console.error(err);
     alert('সার্ভার ত্রুটি!');
   }
@@ -744,6 +785,7 @@ async function saveUserProfile() {
   const address = document.getElementById('prof-address').value.trim();
   const pincode = document.getElementById('prof-pincode').value.trim();
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/user/profile', {
       method: 'POST',
@@ -751,13 +793,17 @@ async function saveUserProfile() {
       body: JSON.stringify({ phone: currentUser.phone, name, email, address, pincode })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       currentUser = data.user;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       showToast('প্রোফাইল আপডেট হয়েছে!');
       updateAuthNavUI();
     }
-  } catch (err) { alert('সার্ভার ত্রুটি!'); }
+  } catch (err) {
+    hideMobileLoading();
+    alert('সার্ভার ত্রুটি!');
+  }
 }
 
 function canCancelOrder(order) {
@@ -894,6 +940,7 @@ async function savePreferredMenu() {
   if (!currentUser) return;
   const checkboxes = document.querySelectorAll('.pref-chk:checked');
   const preferredItems = Array.from(checkboxes).map(chk => Number(chk.value));
+  showMobileLoading();
   try {
     const res = await fetch('/api/user/preferred-menu', {
       method: 'POST',
@@ -901,12 +948,16 @@ async function savePreferredMenu() {
       body: JSON.stringify({ phone: currentUser.phone, preferredItems })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       currentUser.preferredItems = data.preferredItems;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       showToast('প্রেফার্ড মেনু সেভ হয়েছে!');
     }
-  } catch (err) { alert('সার্ভার ত্রুটি!'); }
+  } catch (err) {
+    hideMobileLoading();
+    alert('সার্ভার ত্রুটি!');
+  }
 }
 
 async function submitSpecialFoodRequest(e) {
@@ -917,6 +968,7 @@ async function submitSpecialFoodRequest(e) {
   const qty = document.getElementById('spec-item-qty').value;
   const description = document.getElementById('spec-item-desc').value.trim();
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/special-request', {
       method: 'POST',
@@ -924,6 +976,7 @@ async function submitSpecialFoodRequest(e) {
       body: JSON.stringify({ phone: currentUser.phone, customerName: currentUser.name, email: currentUser.email, itemName, description, qty })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       showToast(data.message);
       document.getElementById('special-request-form').reset();
@@ -931,7 +984,10 @@ async function submitSpecialFoodRequest(e) {
     } else {
       alert(data.message);
     }
-  } catch (err) { alert('সার্ভার ত্রুটি!'); }
+  } catch (err) {
+    hideMobileLoading();
+    alert('সার্ভার ত্রুটি!');
+  }
 }
 
 async function loadUserSpecialRequests() {
@@ -1010,6 +1066,7 @@ async function confirmSpecialPayment() {
     finalScreenshot = specPaymentScreenshotBase64;
   }
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/special-request/pay', {
       method: 'POST',
@@ -1021,6 +1078,7 @@ async function confirmSpecialPayment() {
       })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       showToast(data.message);
       document.getElementById('special-payment-modal').style.display = 'none';
@@ -1028,10 +1086,13 @@ async function confirmSpecialPayment() {
     } else {
       alert(data.message);
     }
-  } catch (err) { alert('পেমেন্ট সাবমিট করতে ত্রুটি হয়েছে।'); }
+  } catch (err) {
+    hideMobileLoading();
+    alert('পেমেন্ট সাবমিট করতে ত্রুটি হয়েছে।');
+  }
 }
 
-// --- CART MANAGEMENT ---
+// --- CART MANAGEMENT WITH ITEM ADDED SOFT FLASH POPUP ---
 function addToCart(id, name, price, desc) {
   const existing = cart.find(item => item.id === id);
   if (existing) {
@@ -1172,6 +1233,7 @@ async function placeOrder() {
   const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
   const finalScreenshot = (paymentMethod === 'cod') ? 'CASH ON DELIVERY' : paymentScreenshotBase64;
 
+  showMobileLoading();
   try {
     const res = await fetch('/api/orders', {
       method: 'POST',
@@ -1189,6 +1251,7 @@ async function placeOrder() {
       })
     });
     const data = await res.json();
+    hideMobileLoading();
     if (data.success) {
       alert(`🎉 অর্ডার #${data.order.orderId} সফলভাবে জমা হয়েছে!`);
       cart = [];
@@ -1205,6 +1268,7 @@ async function placeOrder() {
       }
     }
   } catch (err) {
+    hideMobileLoading();
     alert('অর্ডার প্লেস করতে সমস্যা হয়েছে।');
     isOrderSubmitting = false;
     if (orderBtn) {
