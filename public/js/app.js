@@ -1105,9 +1105,7 @@ function addToCart(id, name, price, desc) {
     cart.push({ id, name, price, desc, qty: 1 });
   }
   updateCartCount();
-  
-  const clickedBtn = (window.event && window.event.target) ? (window.event.target.closest('button') || window.event.target) : null;
-  showToast('🛒 কার্টে যোগ করা হয়েছে!', clickedBtn);
+  showToast('🛒 কার্টে যোগ করা হয়েছে!');
 }
 
 function openCartModal() {
