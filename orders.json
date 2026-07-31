@@ -1,6 +1,6 @@
 [
   {
-    "orderId": "ASW-950402",
+    "orderId": "ASW-437331",
     "phone": "8777866113",
     "customerName": "Saikat Dutta",
     "email": "iamsaikatdutta@gmail.com",
@@ -8,29 +8,54 @@
     "location": "https://maps.google.com/?q=22.631933402541677,88.3703461289406",
     "items": [
       {
-        "id": 1,
-        "name": "রুই মাছের থালি (Rui Fish Thali)",
-        "price": 110,
-        "desc": "ভাত, ডাল, ভাজা, রুই মাছের ঝোল ও চাটনি",
-        "qty": 1
+        "id": 2,
+        "name": "কাতলা মাছের থালি (Katla Fish Thali)",
+        "price": 140,
+        "desc": "ভাত, ডাল, ভাজা, কাতলা কালিয়া ও চাটনি",
+        "qty": 2
       },
       {
-        "id": 3,
-        "name": "চিকেন থালি (Chicken Thali)",
-        "price": 150,
-        "desc": "ভাত, ডাল, ভাজা, কষা মুরগির মাংস ও চাটনি",
-        "qty": 1
+        "id": 4,
+        "name": "ডিম থালি (Egg Thali)",
+        "price": 100,
+        "desc": "ভাত, ডাল, ভাজা, ডিমের ঝোল (২টি ডিম) ও চাটনি",
+        "qty": 2
       }
     ],
-    "totalAmount": 260,
-    "paymentScreenshot": "",
-    "deliveryDate": "2026-07-30",
-    "status": "PENDING",
-    "orderDate": "2026-07-29",
-    "createdAt": "7/29/2026, 7:34:41 PM"
+    "totalAmount": 480,
+    "paymentScreenshot": "CASH ON DELIVERY",
+    "deliveryDate": "2026-08-01",
+    "status": "REJECTED",
+    "orderDate": "2026-07-31",
+    "createdAt": "7/31/2026, 6:22:04 PM",
+    "rejectionReason": "not possible empltykit"
   },
   {
-    "orderId": "ASW-111799",
+    "orderId": "ASW-113979",
+    "phone": "8777866113",
+    "customerName": "Saikat Dutta",
+    "email": "iamsaikatdutta@gmail.com",
+    "address": "baranagar",
+    "location": "https://maps.google.com/?q=22.631933402541677,88.3703461289406",
+    "items": [
+      {
+        "id": 4,
+        "name": "ডিম থালি (Egg Thali)",
+        "price": 100,
+        "desc": "ভাত, ডাল, ভাজা, ডিমের ঝোল (২টি ডিম) ও চাটনি",
+        "qty": 2
+      }
+    ],
+    "totalAmount": 200,
+    "paymentScreenshot": "CASH ON DELIVERY",
+    "deliveryDate": "2026-08-01",
+    "status": "REJECTED",
+    "orderDate": "2026-07-31",
+    "createdAt": "7/31/2026, 6:26:49 PM",
+    "rejectionReason": "no gas"
+  },
+  {
+    "orderId": "ASW-197186",
     "phone": "8777866113",
     "customerName": "Saikat Dutta",
     "email": "iamsaikatdutta@gmail.com",
@@ -46,14 +71,14 @@
       }
     ],
     "totalAmount": 280,
-    "paymentScreenshot": "",
-    "deliveryDate": "2026-07-30",
+    "paymentScreenshot": "CASH ON DELIVERY",
+    "deliveryDate": "2026-08-01",
     "status": "PENDING",
-    "orderDate": "2026-07-29",
-    "createdAt": "7/29/2026, 7:39:47 PM"
+    "orderDate": "2026-07-31",
+    "createdAt": "7/31/2026, 6:48:31 PM"
   },
   {
-    "orderId": "ASW-242927",
+    "orderId": "ASW-387753",
     "phone": "8777866113",
     "customerName": "Saikat Dutta",
     "email": "iamsaikatdutta@gmail.com",
@@ -61,18 +86,64 @@
     "location": "https://maps.google.com/?q=22.631933402541677,88.3703461289406",
     "items": [
       {
-        "id": 3,
-        "name": "চিকেন থালি (Chicken Thali)",
-        "price": 150,
-        "desc": "ভাত, ডাল, ভাজা, কষা মুরগির মাংস ও চাটনি",
+        "id": 1,
+        "name": "রুই মাছের থালি (Rui Fish Thali)",
+        "price": 110,
+        "desc": "ভাত, ডাল, ভাজা, রুই মাছের ঝোল ও চাটনি",
         "qty": 2
       }
     ],
-    "totalAmount": 300,
-    "paymentScreenshot": "data:image/png;base64,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",
-    "deliveryDate": "2026-07-30",
+    "totalAmount": 220,
+    "paymentScreenshot": "CASH ON DELIVERY",
+    "deliveryDate": "2026-08-01",
     "status": "PENDING",
-    "orderDate": "2026-07-29",
-    "createdAt": "7/29/2026, 7:40:23 PM"
+    "orderDate": "2026-07-31",
+    "createdAt": "7/31/2026, 6:51:57 PM"
+  },
+  {
+    "orderId": "ASW-374080",
+    "phone": "8777866113",
+    "customerName": "Saikat Dutta",
+    "email": "iamsaikatdutta@gmail.com",
+    "address": "baranagar",
+    "location": "https://maps.google.com/?q=22.631933402541677,88.3703461289406",
+    "items": [
+      {
+        "id": 1,
+        "name": "রুই মাছের থালি (Rui Fish Thali)",
+        "price": 110,
+        "desc": "ভাত, ডাল, ভাজা, রুই মাছের ঝোল ও চাটনি",
+        "qty": 2
+      }
+    ],
+    "totalAmount": 220,
+    "paymentScreenshot": "CASH ON DELIVERY",
+    "deliveryDate": "2026-08-01",
+    "status": "PENDING",
+    "orderDate": "2026-07-31",
+    "createdAt": "7/31/2026, 6:54:49 PM"
+  },
+  {
+    "orderId": "ASW-964347",
+    "phone": "8777866113",
+    "customerName": "Saikat Dutta",
+    "email": "iamsaikatdutta@gmail.com",
+    "address": "baranagar",
+    "location": "https://maps.google.com/?q=22.631933402541677,88.3703461289406",
+    "items": [
+      {
+        "id": 1,
+        "name": "রুই মাছের থালি (Rui Fish Thali)",
+        "price": 110,
+        "desc": "ভাত, ডাল, ভাজা, রুই মাছের ঝোল ও চাটনি",
+        "qty": 2
+      }
+    ],
+    "totalAmount": 220,
+    "paymentScreenshot": "CASH ON DELIVERY",
+    "deliveryDate": "2026-08-01",
+    "status": "PENDING",
+    "orderDate": "2026-07-31",
+    "createdAt": "7/31/2026, 6:57:56 PM"
   }
 ]

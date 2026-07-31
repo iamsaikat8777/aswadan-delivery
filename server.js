@@ -107,6 +107,33 @@ usersDB = syncUsersFromOrders(usersDB, ordersDB);
 const resend = new Resend(process.env.EMAIL_PASSWORD || '');
 const OWNER_NOTIFY_EMAIL = process.env.OWNER_EMAIL || 'iammadhuchanda@gmail.com';
 
+// --- BRANDED EMAIL TEMPLATE WITH SOLID BLACK LOGO CONTAINER ---
+function createBrandEmail(heading, htmlBody) {
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b10; color: #ffffff; padding: 30px; border-radius: 16px; border: 1px solid #d4af37; max-width: 600px; margin: 0 auto; box-shadow: 0 8px 24px rgba(0,0,0,0.6);">
+      <div style="text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.3); padding-bottom: 20px; margin-bottom: 25px;">
+        <div style="display: inline-block; background: #000000; border: 2px solid #d4af37; border-radius: 50%; width: 75px; height: 75px; line-height: 75px; text-align: center; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(212,175,55,0.4);">
+          <img src="https://aaswadanfoodservices.com/logo.png" alt="Aswadan Logo" style="width: 55px; height: 55px; vertical-align: middle; object-fit: contain;" />
+        </div>
+        <h1 style="color: #d4af37; margin: 0; font-size: 26px; letter-spacing: 0.5px; font-weight: 800;">আস্বাদন (Aswadan Food Services)</h1>
+        <p style="color: #a0a0b0; font-size: 13px; margin: 6px 0 0 0; letter-spacing: 0.5px;">Authentic & Pure Homemade Food Delivery</p>
+      </div>
+      
+      <h2 style="color: #e5c158; font-size: 20px; margin-top: 0; border-left: 4px solid #d4af37; padding-left: 10px;">${heading}</h2>
+      
+      <div style="font-size: 15px; line-height: 1.7; color: #e0e0e8; background: #181824; padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+        ${htmlBody}
+      </div>
+      
+      <div style="margin-top: 35px; border-top: 1px solid rgba(212, 175, 55, 0.3); padding-top: 20px; text-align: center;">
+        <p style="color: #d4af37; font-weight: bold; margin: 0; font-size: 15px;">আন্তরিক ধন্যবাদসহ,</p>
+        <p style="color: #ffffff; margin: 6px 0 0 0; font-size: 14px; font-weight: 600;">ম্যানেজমেন্ট টিম, আস্বাদন (Aswadan Admin)</p>
+        <p style="color: #777788; font-size: 11px; margin-top: 15px;">এটি একটি স্বয়ংক্রিয় নোটিফিকেশন ইমেল, দয়া করে সরাসরি এই ঠিকানায় রিপ্লাই করবেন না।</p>
+      </div>
+    </div>
+  `;
+}
+
 async function sendEmail(to, subject, htmlContent) {
   if (!to) return;
   try {
@@ -171,12 +198,16 @@ app.post('/api/reviews', (req, res) => {
   res.json({ success: true, message: 'আপনার মূল্যবান রিভিউটি সফলভাবে জমা হয়েছে!', review: newReview });
 });
 
-// 6) Special Request Placed
+// 6) Special request order place mail to user & admin with location link
 app.post('/api/special-request', (req, res) => {
   const { phone, customerName, email, itemName, description, qty } = req.body;
   if (!phone || !itemName || !qty) {
     return res.status(400).json({ success: false, message: 'খাবারের নাম ও পরিমাণ উল্লেখ করুন।' });
   }
+
+  usersDB = loadData(USERS_FILE, []);
+  const userRecord = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+  const locationLink = userRecord && userRecord.location ? (userRecord.location.startsWith('http') ? userRecord.location : `https://maps.google.com/?q=${userRecord.location}`) : 'লোকেশন দেওয়া হয়নি';
 
   specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
   const reqId = 'SRQ-' + Math.floor(100000 + Math.random() * 900000);
@@ -199,18 +230,27 @@ app.post('/api/special-request', (req, res) => {
   saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
 
   if (email) {
-    sendEmail(
-      email,
-      `✨ আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে জমা হয়েছে: #${reqId}`,
-      `<h2>স্বাগতম ${customerName}!</h2><p>আপনার স্পেশাল ফুড রিকুয়েস্ট সফলভাবে গ্রহণ করা হয়েছে।</p><p><b>Request ID:</b> ${reqId}</p><p><b>খাবার:</b> ${itemName} (${qty} প্লেট)</p>`
+    const userHtml = createBrandEmail(
+      `✨ আপনার স্পেশাল ফুড রিকুয়েস্ট জমা হয়েছে: #${reqId}`,
+      `<p>নমস্কার <b>${customerName}</b>,</p>
+       <p>আপনার কাস্টম / স্পেশাল ফুড রিকুয়েস্ট সফলভাবে আমাদের কাছে পৌঁছেছে। এডমিন এটি যাচাই করে শীঘ্রই মূল্য নির্ধারণ করবেন।</p>
+       <p><b>Request ID:</b> <span style="color:#d4af37;">#${reqId}</span><br>
+          <b>খাবার:</b> ${itemName} (${qty} প্লেট)<br>
+          <b>বিবরণ:</b> ${description || 'N/A'}</p>`
     );
+    sendEmail(email, `✨ স্পেশাল ফুড রিকুয়েস্ট সফলভাবে জমা হয়েছে: #${reqId}`, userHtml);
   }
 
-  sendEmail(
-    OWNER_NOTIFY_EMAIL,
+  const adminHtml = createBrandEmail(
     `🌟 নতুন স্পেশাল ফুড রিকুয়েস্ট: #${reqId}`,
-    `<h2>নতুন স্পেশাল আইটেম রিকুয়েস্ট জমা পড়েছে</h2><p><b>Request ID:</b> ${reqId}</p><p><b>গ্রাহক:</b> ${customerName} (${phone})</p><p><b>খাবারের নাম:</b> ${itemName} (${qty} প্লেট)</p>`
+    `<p>একজন গ্রাহক নতুন স্পেশাল ফুড রিকুয়েস্ট করেছেন:</p>
+     <p><b>Request ID:</b> #${reqId}<br>
+        <b>গ্রাহক:</b> ${customerName} (${phone})<br>
+        <b>খাবারের নাম:</b> ${itemName} (${qty} প্লেট)<br>
+        <b>বিবরণ:</b> ${description || 'N/A'}<br>
+        <b>গুগল ম্যাপ লোকেশন:</b> <a href="${locationLink}" target="_blank" style="color:#d4af37;">🗺️ View Location on Map</a></p>`
   );
+  sendEmail(OWNER_NOTIFY_EMAIL, `🌟 নতুন স্পেশাল ফুড রিকুয়েস্ট: #${reqId}`, adminHtml);
 
   res.json({ success: true, message: 'আপনার স্পেশাল রিকুয়েস্ট পাঠানো হয়েছে!', request: newReq });
 });
@@ -255,22 +295,30 @@ app.post('/api/special-request/pay', (req, res) => {
   saveData(ORDERS_FILE, ordersDB);
 
   if (reqItem.email) {
-    sendEmail(
-      reqItem.email,
+    const userHtml = createBrandEmail(
       `📦 স্পেশাল অর্ডার প্লেস হয়েছে: #${orderId}`,
-      `<h2>ধন্যবাদ ${reqItem.customerName}!</h2><p>আপনার স্পেশাল অর্ডারের পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।</p><p><b>Order ID:</b> ${orderId}</p><p><b>মোট মূল্য:</b> ₹${reqItem.totalAmount}</p>`
+      `<p>ধন্যবাদ <b>${reqItem.customerName}</b>,</p>
+       <p>আপনার স্পেশাল অর্ডারের পেমেন্ট সফলভাবে সম্পন্ন হয়েছে এবং অর্ডারটি নিশ্চিত করা হয়েছে।</p>
+       <p><b>Order ID:</b> <span style="color:#d4af37;">#${orderId}</span><br>
+          <b>মোট মূল্য:</b> ₹${reqItem.totalAmount}<br>
+          <b>ডেলিভারির তারিখ:</b> ${deliveryDate}</p>`
     );
+    sendEmail(reqItem.email, `📦 স্পেশাল অর্ডার প্লেস হয়েছে: #${orderId}`, userHtml);
   }
-  sendEmail(
-    OWNER_NOTIFY_EMAIL,
+
+  const adminHtml = createBrandEmail(
     `💰 নতুন স্পেশাল অর্ডার পেমেন্ট প্রাপ্তি: #${orderId}`,
-    `<h2>স্পেশাল অর্ডার প্লেস হয়েছে</h2><p><b>Order ID:</b> ${orderId}</p><p><b>গ্রাহক:</b> ${reqItem.customerName} (${reqItem.phone})</p><p><b>মূল্য:</b> ₹${reqItem.totalAmount}</p>`
+    `<p>একটি স্পেশাল অর্ডারের পেমেন্ট সম্পন্ন হয়ে প্লেস হয়েছে:</p>
+     <p><b>Order ID:</b> #${orderId}<br>
+        <b>গ্রাহক:</b> ${reqItem.customerName} (${reqItem.phone})<br>
+        <b>মোট মূল্য:</b> ₹${reqItem.totalAmount}</p>`
   );
+  sendEmail(OWNER_NOTIFY_EMAIL, `💰 নতুন স্পেশাল অর্ডার পেমেন্ট প্রাপ্তি: #${orderId}`, adminHtml);
 
   res.json({ success: true, message: 'স্পেশাল অর্ডারের পেমেন্ট সফলভাবে জমা হয়েছে!', order: newOrder });
 });
 
-// 1) Signup with Welcome Mail
+// 1) Welcome mail on successful registration
 app.post('/api/auth/signup', (req, res) => {
   const { name, phone, email, password, address, location, pincode } = req.body;
   usersDB = loadData(USERS_FILE, []);
@@ -282,11 +330,13 @@ app.post('/api/auth/signup', (req, res) => {
   saveData(USERS_FILE, usersDB);
 
   if (email) {
-    sendEmail(
-      email,
+    const welcomeHtml = createBrandEmail(
       `🎉 আস্বাদন (Aswadan) পরিবারে আপনাকে স্বাগতম!`,
-      `<h2>নমস্কার ${name}!</h2><p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>`
+      `<p>নমস্কার <b>${name}</b>,</p>
+       <p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে অসংখ্য ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু এবং বিশুদ্ধ হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>
+       <p>আপনার সেবায় আমরা সর্বদা প্রস্তুত।</p>`
     );
+    sendEmail(email, `🎉 আস্বাদন পরিবারে আপনাকে স্বাগতম!`, welcomeHtml);
   }
 
   res.json({ success: true, user: newUser });
@@ -300,7 +350,6 @@ app.post('/api/auth/login', (req, res) => {
   res.json({ success: true, user });
 });
 
-// User Forgot Password OTP
 app.post('/api/auth/forgot-password', (req, res) => {
   const { email } = req.body;
   usersDB = loadData(USERS_FILE, []);
@@ -311,7 +360,15 @@ app.post('/api/auth/forgot-password', (req, res) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore[`user_otp_${user.phone}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
   
-  sendEmail(user.email, '🔑 আস্বাদন পাসওয়ার্ড রিসেট OTP', `<h3>আপনার পাসওয়ার্ড রিসেট OTP কোড হলো: <b>${otp}</b></h3>`);
+  const otpHtml = createBrandEmail(
+    `🔑 পাসওয়ার্ড রিসেট OTP কোড`,
+    `<p>আপনার পাসওয়ার্ড রিসেট করার জন্য নিচের OTP কোডটি ব্যবহার করুন:</p>
+     <div style="text-align: center; margin: 20px 0;">
+       <span style="font-size: 28px; font-weight: bold; color: #d4af37; background: #12121a; padding: 10px 20px; border-radius: 8px; border: 1px solid #d4af37; letter-spacing: 3px;">${otp}</span>
+     </div>
+     <p>এই কোডটি ১০ মিনিট পর্যন্ত কার্যকর থাকবে।</p>`
+  );
+  sendEmail(user.email, '🔑 আস্বাদন পাসওয়ার্ড রিসেট OTP', otpHtml);
   res.json({ success: true, message: 'আপনার রেজিস্টার্ড ইমেলে OTP পাঠানো হয়েছে।' });
 });
 
@@ -338,7 +395,63 @@ app.get('/api/orders/user/:phone', (req, res) => {
   res.json({ success: true, orders: userOrders });
 });
 
-// 2) Order Placed Mail to User and Admin
+app.post('/api/orders/cancel', (req, res) => {
+  const { orderId, phone, refundInfo } = req.body;
+  ordersDB = loadData(ORDERS_FILE, []);
+  const order = ordersDB.find(o => o.orderId === orderId && String(o.phone).trim() === String(phone).trim());
+
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'অর্ডারটি পাওয়া যায়নি।' });
+  }
+  if (order.status !== 'PENDING') {
+    return res.status(400).json({ success: false, message: 'এই অর্ডারটি আর ক্যানসেল করা সম্ভব নয়।' });
+  }
+
+  let orderDateStr = order.orderDate || new Date().toISOString().split('T')[0];
+  let orderDate = new Date(orderDateStr);
+  let endOfDay = new Date(orderDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  if (new Date() > endOfDay) {
+    return res.status(400).json({ success: false, message: 'অর্ডার ক্যানসেল করার সময়সীমা পার হয়ে গেছে।' });
+  }
+
+  order.status = 'CANCELLED';
+  if (refundInfo) {
+    order.refundInfo = refundInfo;
+  }
+  saveData(ORDERS_FILE, ordersDB);
+
+  let refundHtml = '';
+  if (refundInfo) {
+    if (refundInfo.type === 'UPI') {
+      refundHtml = `<p><b>রিফান্ড মাধ্যম:</b> UPI ID<br><b>UPI ID:</b> ${refundInfo.upiId}</p>`;
+    } else {
+      refundHtml = `<p><b>রিফান্ড মাধ্যম:</b> Bank Account<br><b>Account Name:</b> ${refundInfo.accountName}<br><b>Account Number:</b> ${refundInfo.accountNumber}<br><b>IFSC:</b> ${refundInfo.ifsc}<br><b>Branch:</b> ${refundInfo.branch}</p>`;
+    }
+  }
+
+  if (order.email) {
+    const cancelUserHtml = createBrandEmail(
+      `❌ অর্ডার ক্যানসেল করা হয়েছে: #${orderId}`,
+      `<p>নমস্কার <b>${order.customerName}</b>,</p>
+       <p>আপনার অর্ডারটি (#${orderId}) সফলভাবে ক্যানসেল করা হয়েছে।</p>${refundHtml}`
+    );
+    sendEmail(order.email, `❌ আপনার অর্ডার ক্যানসেল করা হয়েছে: #${orderId}`, cancelUserHtml);
+  }
+
+  const cancelAdminHtml = createBrandEmail(
+    `⚠️ গ্রাহক কর্তৃক অর্ডার ক্যানসেল ও রিফান্ড: #${orderId}`,
+    `<p>গ্রাহক অর্ডার ক্যানসেল করেছেন:</p>
+     <p><b>Order ID:</b> #${orderId}<br>
+        <b>গ্রাহক:</b> ${order.customerName} (${order.phone})</p>${refundHtml}`
+  );
+  sendEmail(OWNER_NOTIFY_EMAIL, `⚠️ গ্রাহক কর্তৃক অর্ডার ক্যানসেল ও রিফান্ড: #${orderId}`, cancelAdminHtml);
+
+  res.json({ success: true, message: 'অর্ডারটি সফলভাবে ক্যানসেল করা হয়েছে।' });
+});
+
+// 2) Order placement mail to user & admin with location link
 app.post('/api/orders', (req, res) => {
   const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
   ordersDB = loadData(ORDERS_FILE, []);
@@ -347,24 +460,38 @@ app.post('/api/orders', (req, res) => {
   ordersDB.push(newOrder);
   saveData(ORDERS_FILE, ordersDB);
 
+  const locationLink = location ? (location.startsWith('http') ? location : `https://maps.google.com/?q=${location}`) : 'লোকেশন দেওয়া হয়নি';
+  const itemsListStr = (items || []).map(i => `${i.name} x ${i.qty} (₹${i.price * i.qty})`).join('<br>');
+
   if (email) {
-    sendEmail(
-      email,
-      `📦 আপনার অর্ডার সফলভাবে জমা হয়েছে: #${orderId}`,
-      `<h2>ধন্যবাদ ${customerName}!</h2><p>আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে এবং পর্যালোচনার অপেক্ষায় রয়েছে।</p><p><b>Order ID:</b> ${orderId}</p><p><b>মোট মূল্য:</b> ₹${totalAmount}</p>`
+    const userHtml = createBrandEmail(
+      `📦 অর্ডার সফলভাবে জমা হয়েছে: #${orderId}`,
+      `<p>ধন্যবাদ <b>${customerName}</b>,</p>
+       <p>আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে এবং বর্তমানে পর্যালোচনার অপেক্ষায় রয়েছে।</p>
+       <p><b>Order ID:</b> <span style="color:#d4af37;">#${orderId}</span><br>
+          <b>ডেলিভারির তারিখ:</b> ${deliveryDate}<br>
+          <b>খাবারের তালিকা:</b><br>${itemsListStr}<br>
+          <b>মোট মূল্য:</b> ₹${totalAmount}</p>`
     );
+    sendEmail(email, `📦 অর্ডার সফলভাবে জমা হয়েছে: #${orderId}`, userHtml);
   }
 
-  sendEmail(
-    OWNER_NOTIFY_EMAIL,
+  const adminHtml = createBrandEmail(
     `🚨 নতুন অর্ডার এসেছে: #${orderId}`,
-    `<h2>নতুন অর্ডার প্লেস হয়েছে</h2><p><b>Order ID:</b> ${orderId}</p><p><b>গ্রাহক:</b> ${customerName} (${phone})</p><p><b>মোট মূল্য:</b> ₹${totalAmount}</p>`
+    `<p>একটি নতুন অর্ডার প্লেস হয়েছে:</p>
+     <p><b>Order ID:</b> #${orderId}<br>
+        <b>গ্রাহক:</b> ${customerName} (${phone})<br>
+        <b>ঠিকানা:</b> ${address}<br>
+        <b>ডেলিভারি তারিখ:</b> ${deliveryDate}<br>
+        <b>খাবারের তালিকা:</b><br>${itemsListStr}<br>
+        <b>মোট মূল্য:</b> ₹${totalAmount}<br>
+        <b>গুগল ম্যাপ লোকেশন:</b> <a href="${locationLink}" target="_blank" style="color:#d4af37;">🗺️ View Location on Map</a></p>`
   );
+  sendEmail(OWNER_NOTIFY_EMAIL, `🚨 নতুন অর্ডার এসেছে: #${orderId}`, adminHtml);
 
   res.json({ success: true, order: newOrder });
 });
 
-// --- USER PROFILE DATA PURGE ROUTE ---
 app.post('/api/user/delete-history', (req, res) => {
   const { phone } = req.body;
   if (!phone) {
@@ -405,7 +532,14 @@ app.post('/api/admin/forgot-password', (req, res) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore['admin_otp'] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
   
-  sendEmail(adminEmail, '🔑 এডমিন পাসওয়ার্ড রিসেট OTP', `<h3>আপনার এডমিন পাসওয়ার্ড রিসেট OTP কোড হলো: <b>${otp}</b></h3>`);
+  const adminOtpHtml = createBrandEmail(
+    `🔑 এডমিন পাসওয়ার্ড রিসেট OTP`,
+    `<p>আপনার এডমিন পাসওয়ার্ড রিসেট OTP কোড:</p>
+     <div style="text-align: center; margin: 20px 0;">
+       <span style="font-size: 28px; font-weight: bold; color: #d4af37; background: #12121a; padding: 10px 20px; border-radius: 8px; border: 1px solid #d4af37; letter-spacing: 3px;">${otp}</span>
+     </div>`
+  );
+  sendEmail(adminEmail, '🔑 এডমিন পাসওয়ার্ড রিসেট OTP', adminOtpHtml);
   res.json({ success: true, message: 'OTP পাঠানো হয়েছে।' });
 });
 
@@ -428,7 +562,15 @@ app.post('/api/admin/factory-settings/request-otp', (req, res) => {
   adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore[`admin_factory_${optionType}`] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
-  sendEmail(adminConfig.email, '⚠️ Factory Settings OTP', `<h3>OTP: ${otp}</h3>`);
+  
+  const factoryOtpHtml = createBrandEmail(
+    `⚠️ ফ্যাক্টরি সেটিংস OTP`,
+    `<p>ফ্যাক্টরি রিসেট বা ডেটা মুছে ফেলার জন্য আপনার OTP কোড:</p>
+     <div style="text-align: center; margin: 20px 0;">
+       <span style="font-size: 28px; font-weight: bold; color: #e63946; background: #12121a; padding: 10px 20px; border-radius: 8px; border: 1px solid #e63946; letter-spacing: 3px;">${otp}</span>
+     </div>`
+  );
+  sendEmail(adminConfig.email, '⚠️ Factory Settings OTP', factoryOtpHtml);
   res.json({ success: true, message: 'OTP পাঠানো হয়েছে।' });
 });
 
@@ -494,7 +636,7 @@ app.get('/api/admin/orders', (req, res) => {
   });
 });
 
-// 3, 4, 5, 10) Admin Order Status update (Accept, Reject with Reason, Delivered)
+// 3) Order approved, 4) Order rejected with reason, 5) Order marked delivered
 app.post('/api/admin/order-status', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const { orderId, status, reason } = req.body;
@@ -507,11 +649,28 @@ app.post('/api/admin/order-status', (req, res) => {
 
     if (order.email) {
       if (status === 'ACCEPTED') {
-        sendEmail(order.email, `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`, `<h2>সুসংবাদ ${order.customerName}!</h2><p>আপনার অর্ডারটি (#${orderId}) সফলভাবে এপ্রুভ করা হয়েছে এবং রান্নার প্রস্তুতি চলছে।</p>`);
+        const acceptHtml = createBrandEmail(
+          `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`,
+          `<p>সুসংবাদ <b>${order.customerName}</b>,</p>
+           <p>আপনার অর্ডারটি (#${orderId}) সফলভাবে এপ্রুভ করা হয়েছে এবং বর্তমানে আমাদের কিচেনে রান্নার প্রস্তুতি চলছে।</p>`
+        );
+        sendEmail(order.email, `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`, acceptHtml);
       } else if (status === 'REJECTED') {
-        sendEmail(order.email, `❌ আপনার অর্ডার বাতিল করা হয়েছে: #${orderId}`, `<h2>দুঃখিত ${order.customerName}</h2><p>আপনার অর্ডারটি (#${orderId}) বাতিল করা হয়েছে।</p><p><b>কারণ:</b> ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`);
+        const rejectHtml = createBrandEmail(
+          `❌ আপনার অর্ডার বাতিল করা হয়েছে: #${orderId}`,
+          `<p>দুঃখিত <b>${order.customerName}</b>,</p>
+           <p>অনাবশ্যক কারণবশত আপনার অর্ডারটি (#${orderId}) বাতিল করা হয়েছে।</p>
+           <p style="color: #ff6b6b; font-weight: bold;">বাতিলের কারণ: ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`
+        );
+        sendEmail(order.email, `❌ আপনার অর্ডার বাতিল করা হয়েছে: #${orderId}`, rejectHtml);
       } else if (status === 'DELIVERED') {
-        sendEmail(order.email, `🚚 আপনার অর্ডার ডেলিভারি করা হয়েছে: #${orderId}`, `<h2>ধন্যবাদ ${order.customerName}!</h2><p>আপনার অর্ডারটি (#${orderId}) সফলভাবে ডেলিভারি করা হয়েছে। আশা করি আপনার খাবার ভালো লেগেছে!</p>`);
+        const deliveredHtml = createBrandEmail(
+          `🚚 আপনার অর্ডার সফলভাবে ডেলিভারি হয়েছে: #${orderId}`,
+          `<p>ধন্যবাদ <b>${order.customerName}</b>,</p>
+           <p>আপনার অর্ডারটি (#${orderId}) সফলভাবে আপনার ঠিকানায় ডেলিভারি করা হয়েছে। আশা করি আপনার খাবার অত্যন্ত সুস্বাদু লেগেছে!</p>
+           <p>আমাদের ওয়েবসাইট থেকে আপনার মূল্যবান রিভিউ প্রদান করার অনুরোধ রইল।</p>`
+        );
+        sendEmail(order.email, `🚚 আপনার অর্ডার ডেলিভারি করা হয়েছে: #${orderId}`, deliveredHtml);
       }
     }
 
@@ -562,7 +721,7 @@ app.get('/api/admin/special-requests', (req, res) => {
   res.json({ success: true, requests: specialRequestsDB });
 });
 
-// 7, 8, 9) Admin Special Request Action (Priced, Rejected with Reason)
+// 7) Special request priced/update, 8) Special order approved, 9) Special request rejected with reason
 app.post('/api/admin/special-request/action', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const { requestId, action, pricePerPlate, reason } = req.body;
@@ -576,22 +735,29 @@ app.post('/api/admin/special-request/action', (req, res) => {
     reqItem.totalAmount = Number(pricePerPlate) * reqItem.qty;
 
     if (reqItem.email) {
-      sendEmail(
-        reqItem.email,
+      const pricedHtml = createBrandEmail(
         `✨ আপনার স্পেশাল রিকুয়েস্টের মূল্য নির্ধারিত হয়েছে: #${requestId}`,
-        `<h2>নমস্কার ${reqItem.customerName}!</h2><p>আপনার "${reqItem.itemName}" রিকুয়েস্টের মূল্য নির্ধারণ করা হয়েছে।</p><p><b>প্রতি প্লেট:</b> ₹${pricePerPlate}</p><p><b>মোট মূল্য:</b> ₹${reqItem.totalAmount}</p><p>দয়া করে আপনার ড্যাশবোর্ড থেকে পেমেন্ট সম্পন্ন করুন।</p>`
+        `<p>নমস্কার <b>${reqItem.customerName}</b>,</p>
+         <p>আপনার "${reqItem.itemName}" (${reqItem.qty} প্লেট) স্পেশাল রিকুয়েস্টটি যাচাই করে মূল্য নির্ধারণ করা হয়েছে।</p>
+         <p><b>প্রতি প্লেট মূল্য:</b> ₹${pricePerPlate}<br>
+            <b>মোট মূল্য:</b> ₹${reqItem.totalAmount}</p>
+         <p>দয়া করে আপনার ইউজার ড্যাশবোর্ডে গিয়ে পেমেন্ট সম্পন্ন করুন এবং অর্ডার কনফার্ম করুন।</p>`
       );
+      sendEmail(reqItem.email, `✨ আপনার স্পেশাল রিকুয়েস্টের মূল্য নির্ধারিত হয়েছে: #${requestId}`, pricedHtml);
     }
   } else if (action === 'REJECTED') {
     reqItem.status = 'REJECTED';
-    if (reason) reqItem.rejectionReason = reason;
+    reqItem.rejectionReason = reason ? reason.trim() : 'প্রশাসনিক সিদ্ধান্ত';
+    reqItem.reason = reqItem.rejectionReason;
 
     if (reqItem.email) {
-      sendEmail(
-        reqItem.email,
+      const rejectSpecHtml = createBrandEmail(
         `❌ আপনার স্পেশাল রিকুয়েস্ট বাতিল করা হয়েছে: #${requestId}`,
-        `<h2>দুঃখিত ${reqItem.customerName}</h2><p>আপনার স্পেশাল রিকুয়েস্টটি (#${requestId}) বাতিল করা হয়েছে।</p><p><b>কারণ:</b> ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`
+        `<p>দুঃখিত <b>${reqItem.customerName}</b>,</p>
+         <p>আপনার স্পেশাল রিকুয়েস্টটি (#${requestId}) অপূর্ণাঙ্গ বা অন্যান্য কারণবশত বাতিল করা হয়েছে।</p>
+         <p style="color: #ffb703; font-weight: bold;">বাতিলের কারণ: ${reqItem.rejectionReason}</p>`
       );
+      sendEmail(reqItem.email, `❌ আপনার স্পেশাল রিকুয়েস্ট বাতিল করা হয়েছে: #${requestId}`, rejectSpecHtml);
     }
   }
   
@@ -606,11 +772,34 @@ app.post('/api/admin/menu/save', (req, res) => {
   res.json({ success: true, message: 'মেনু আপডেট হয়েছে!' });
 });
 
+// 10) Special offer banner mail sent to all registered users when enabled/updated
 app.post('/api/admin/offer/save', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
-  offerDB = req.body;
+  const newOffer = req.body;
+  const wasDisabled = !offerDB.enabled;
+  offerDB = newOffer;
   saveData(OFFER_FILE, offerDB);
-  res.json({ success: true, message: 'অফার সেভ হয়েছে!' });
+
+  if (offerDB.enabled && (wasDisabled || offerDB.title !== newOffer.title || offerDB.desc !== newOffer.desc)) {
+    usersDB = loadData(USERS_FILE, []);
+    usersDB.forEach(u => {
+      if (u.email && !u.isBlocked) {
+        const offerHtml = createBrandEmail(
+          `🎉 বিশেষ অফার: ${offerDB.title}`,
+          `<p>নমস্কার <b>${u.name}</b>,</p>
+           <p>আমাদের পক্ষ থেকে আপনাদের জন্য নিয়ে এসেছি একটি দারুণ স্পেশাল অফার!</p>
+           <div style="background: #1c1c2e; padding: 15px; border-radius: 10px; border: 1px solid #d4af37; margin: 15px 0;">
+             <h3 style="color: #e5c158; margin-top: 0;">🏷️ অফারের শিরোনাম: ${offerDB.title}</h3>
+             <p style="color: #ffffff; margin-bottom: 0;">📝 অফারের বিবরণ: ${offerDB.desc}</p>
+           </div>
+           <p>আজই আমাদের ওয়েবসাইট ভিজিট করুন এবং উপভোগ করুন সুস্বাদু খাবার!</p>`
+        );
+        sendEmail(u.email, `🎉 আস্বাদন স্পেশাল অফার: ${offerDB.title}`, offerHtml);
+      }
+    });
+  }
+
+  res.json({ success: true, message: 'অফার সেভ ও ইউজারদের নোটিফিকেশন পাঠানো হয়েছে!' });
 });
 
 app.post('/api/admin/reviews/delete', (req, res) => {
