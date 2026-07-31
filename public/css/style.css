@@ -490,7 +490,7 @@ body {
 .pwa-banner-box {
   display: none;
   background: linear-gradient(135deg, #181724 0%, #252236 100%);
-  border: 1px solid var(--gold-bright);
+  border: 1px solid var(--border-gold);
   border-radius: 12px;
   padding: 12px 16px;
   margin: 10px auto 15px;
@@ -510,14 +510,16 @@ body {
   font-weight: bold;
   padding: 10px 20px;
   border-radius: 20px;
-  transition: bottom 0.25s ease;
+  transition: bottom 0.25s ease, opacity 0.25s ease;
   z-index: 999999;
   pointer-events: none;
   box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  opacity: 0;
 }
 
 .toast-popup.show { 
   bottom: 30px;
+  opacity: 1;
 }
 
 /* --- MOBILE RESPONSIVE OPTIMIZATION (ONLY FOR MOBILE VIEW) --- */
@@ -533,16 +535,26 @@ body {
   }
 
   .brand-hero {
-    margin-top: 15px !important;
-    padding-top: 125px !important;
+    margin-top: 5px !important;
+    padding-top: 15px !important;
   }
 
+  /* Sticky / Hovering Navbar on Mobile Scroll */
   .top-nav-container {
+    position: sticky !important;
+    top: 6px !important;
+    right: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    display: flex !important;
     justify-content: center !important;
-    padding: max(8px, env(safe-area-inset-top, 8px)) 10px 0 10px !important;
+    padding: 0 10px !important;
+    z-index: 10000 !important;
+    pointer-events: none;
   }
 
   .top-nav-bar {
+    pointer-events: auto;
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
@@ -556,6 +568,7 @@ body {
     gap: 6px !important;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8) !important;
     justify-content: center !important;
+    backdrop-filter: blur(12px);
   }
 
   .top-nav-link, .auto-lang-btn-inline {
@@ -582,16 +595,18 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Force Toast Popup to appear clearly at the top (below navbar) on mobile view */
+  /* Fixed Toast Popup Visibility & Smooth Slide Animation for Mobile View */
   .toast-popup {
     bottom: auto !important;
-    top: -60px !important;
-    transition: top 0.25s ease !important;
+    top: -90px !important;
+    opacity: 0 !important;
+    transition: top 0.3s ease, opacity 0.3s ease !important;
   }
 
   .toast-popup.show {
     top: 75px !important;
     bottom: auto !important;
+    opacity: 1 !important;
   }
 
   /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
