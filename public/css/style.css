@@ -595,9 +595,21 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Release CSS bottom constraint on mobile so JS button-anchored top positioning works perfectly */
+  /* Robust Mobile Toast Positioning as a Sleek Floating Banner above bottom/navbar */
+  .toast-popup {
+    position: fixed !important;
+    bottom: -80px !important;
+    top: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
+    opacity: 0 !important;
+  }
+
   .toast-popup.show {
-    bottom: auto !important;
+    bottom: 95px !important;
+    top: auto !important;
+    opacity: 1 !important;
   }
 
   /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
