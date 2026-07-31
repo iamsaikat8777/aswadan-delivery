@@ -176,8 +176,11 @@ function showToast(msg, targetBtn) {
     const rect = targetBtn.getBoundingClientRect();
     toast.style.position = 'fixed';
     
-    let topPos = rect.top - 45;
-    if (topPos < 50) topPos = rect.bottom + 10;
+    // Position toast cleanly right above the clicked button, or below if button is too close to top
+    let topPos = rect.top - 50;
+    if (topPos < 60) {
+      topPos = rect.bottom + 10;
+    }
     
     toast.style.top = `${topPos}px`;
     toast.style.left = `${rect.left + (rect.width / 2)}px`;
