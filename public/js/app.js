@@ -177,8 +177,8 @@ function showToast(msg, targetBtn) {
     toast.style.position = 'fixed';
     
     // Position toast cleanly right above the clicked button, or below if button is too close to top
-    let topPos = rect.top - 50;
-    if (topPos < 60) {
+    let topPos = rect.top - 48;
+    if (topPos < 70) {
       topPos = rect.bottom + 10;
     }
     
@@ -1120,7 +1120,7 @@ async function confirmSpecialPayment() {
 }
 
 // --- CART MANAGEMENT WITH BUTTON-ANCHORED FLOATING TOAST POPUP ---
-function addToCart(id, name, price, desc) {
+function addToCart(event, id, name, price, desc) {
   const existing = cart.find(item => item.id === id);
   if (existing) {
     existing.qty += 1;
@@ -1129,7 +1129,7 @@ function addToCart(id, name, price, desc) {
   }
   updateCartCount();
   
-  const clickedBtn = window.event ? window.event.target.closest('button') : null;
+  const clickedBtn = (event && event.target) ? (event.target.closest('button') || event.target) : null;
   showToast('🛒 কার্টে যোগ করা হয়েছে!', clickedBtn);
 }
 
@@ -1340,7 +1340,7 @@ async function loadHomeSpotlight() {
             <p class="tile-desc">${item.desc}</p>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
-              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
+              <button class="btn-add-tile" onclick="addToCart(event, ${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
             </div>
           `;
           slidingCard.classList.remove('slide-out-left');
@@ -1367,7 +1367,7 @@ async function loadHomeSpotlight() {
             </div>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
-              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add</button>
+              <button class="btn-add-tile" onclick="addToCart(event, ${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add</button>
             </div>
           </div>
         `).join('');
