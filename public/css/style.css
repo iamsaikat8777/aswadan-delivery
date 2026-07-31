@@ -102,7 +102,7 @@ body {
   }
 }
 
-/* --- PERFECT DESKTOP NAVBAR & WORKING DROPDOWN --- */
+/* --- PERFECT NAVBAR & WORKING DROPDOWN --- */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
@@ -516,42 +516,77 @@ body {
   bottom: 30px;
 }
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES (LARGER NAVBAR & PERFORMANCE) --- */
+/* --- MOBILE RESPONSIVE OPTIMIZATION (CLEAN FLOATING MOBILE DOCK BAR) --- */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 140px !important;
+    padding-bottom: 100px !important;
   }
 
   .brand-hero {
-    margin-top: 15px !important;
-    padding-top: 75px !important;
+    margin-top: 10px !important;
+    padding-top: 25px !important;
   }
 
   .top-nav-container {
-    justify-content: flex-end !important;
-    padding: max(6px, env(safe-area-inset-top, 6px)) 8px 0 0 !important;
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding: 0 10px 12px 10px !important;
+    display: flex !important;
+    justify-content: center !important;
+    z-index: 100000;
+    pointer-events: none;
   }
 
   .top-nav-bar {
-    padding: 6px 12px !important;
-    gap: 8px !important;
-    max-width: 100%;
-    border-radius: 35px;
+    pointer-events: auto;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    background: rgba(14, 13, 20, 0.95) !important;
+    border: 1px solid var(--border-gold) !important;
+    border-radius: 30px !important;
+    padding: 6px 4px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(16px);
   }
 
-  /* Noticeably larger mobile navigation bar for excellent touch UX */
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 9px 16px !important;
-    font-size: 0.95rem !important; 
+    flex: 1;
+    justify-content: center !important;
+    padding: 8px 4px !important;
+    font-size: 0.72rem !important;
+    border-radius: 20px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-dropdown-menu {
+    bottom: calc(100% + 12px) !important;
+    top: auto !important;
+    right: 50% !important;
+    transform: translateX(50%) translateY(6px) !important;
+  }
+
+  .nav-user-dropdown.active-dropdown .user-dropdown-menu {
+    transform: translateX(50%) translateY(0) !important;
   }
 
   .brand-logo {
-    max-width: 200px;
+    max-width: 220px;
   }
 
   .hero-split-section {
     grid-template-columns: 1fr;
-    padding: 18px 12px;
+    padding: 18px 14px;
     gap: 15px;
     margin-top: 10px;
   }
@@ -570,9 +605,9 @@ body {
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 380px) {
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 8px 13px !important;
-    font-size: 0.88rem !important;
+    font-size: 0.66rem !important;
+    padding: 7px 2px !important;
   }
 }
