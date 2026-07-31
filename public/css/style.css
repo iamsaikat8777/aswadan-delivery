@@ -595,20 +595,20 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Robust Mobile Toast Positioning as a Sleek Floating Banner above bottom/navbar */
+  /* Fixed Top-Center Toast Popup for Mobile View (Directly under navbar, always 100% visible instantly) */
   .toast-popup {
     position: fixed !important;
-    bottom: -80px !important;
-    top: auto !important;
+    top: -60px !important;
+    bottom: auto !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
+    transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
     opacity: 0 !important;
   }
 
   .toast-popup.show {
-    bottom: 95px !important;
-    top: auto !important;
+    top: 72px !important;
+    bottom: auto !important;
     opacity: 1 !important;
   }
 
