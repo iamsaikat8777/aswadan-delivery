@@ -499,7 +499,7 @@ body {
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 
-/* --- TOAST POPUP STYLES --- */
+/* --- TOAST POPUP STYLES (RESTORED DESKTOP MODE) --- */
 .toast-popup {
   position: fixed;
   bottom: -80px;
@@ -508,18 +508,17 @@ body {
   background: var(--gold-gradient);
   color: #000;
   font-weight: bold;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: bottom 0.25s ease, opacity 0.25s ease;
   z-index: 999999;
   pointer-events: none;
   box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-  font-size: 0.85rem;
-  white-space: nowrap;
   opacity: 0;
 }
 
 .toast-popup.show { 
+  bottom: 30px;
   opacity: 1;
 }
 
