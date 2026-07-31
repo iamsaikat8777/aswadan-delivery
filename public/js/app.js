@@ -165,12 +165,16 @@ window.addEventListener('click', (e) => {
   }
 });
 
+let toastTimer = null;
 function showToast(msg) {
   const toast = document.getElementById('toast-msg');
   if (toast) {
     toast.innerText = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2500);
   }
 }
 
