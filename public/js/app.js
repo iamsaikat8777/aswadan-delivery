@@ -166,34 +166,11 @@ window.addEventListener('click', (e) => {
 });
 
 let toastTimer = null;
-function showToast(msg, targetBtn) {
+function showToast(msg) {
   const toast = document.getElementById('toast-msg');
   if (!toast) return;
 
   toast.innerText = msg;
-
-  if (window.innerWidth <= 768 && targetBtn) {
-    const rect = targetBtn.getBoundingClientRect();
-    toast.style.position = 'fixed';
-    
-    // Position toast cleanly right above the clicked button, or below if button is too close to top
-    let topPos = rect.top - 48;
-    if (topPos < 70) {
-      topPos = rect.bottom + 10;
-    }
-    
-    toast.style.top = `${topPos}px`;
-    toast.style.left = `${rect.left + (rect.width / 2)}px`;
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.bottom = 'auto';
-  } else {
-    toast.style.position = 'fixed';
-    toast.style.top = 'auto';
-    toast.style.bottom = '30px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-  }
-
   toast.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
@@ -1120,7 +1097,7 @@ async function confirmSpecialPayment() {
 }
 
 // --- CART MANAGEMENT WITH BUTTON-ANCHORED FLOATING TOAST POPUP ---
-function addToCart(event, id, name, price, desc) {
+function addToCart(id, name, price, desc) {
   const existing = cart.find(item => item.id === id);
   if (existing) {
     existing.qty += 1;
@@ -1129,7 +1106,7 @@ function addToCart(event, id, name, price, desc) {
   }
   updateCartCount();
   
-  const clickedBtn = (event && event.target) ? (event.target.closest('button') || event.target) : null;
+  const clickedBtn = (window.event && window.event.target) ? (window.event.target.closest('button') || window.event.target) : null;
   showToast('🛒 কার্টে যোগ করা হয়েছে!', clickedBtn);
 }
 
@@ -1340,7 +1317,7 @@ async function loadHomeSpotlight() {
             <p class="tile-desc">${item.desc}</p>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
-              <button class="btn-add-tile" onclick="addToCart(event, ${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
+              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
             </div>
           `;
           slidingCard.classList.remove('slide-out-left');
@@ -1367,7 +1344,7 @@ async function loadHomeSpotlight() {
             </div>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
-              <button class="btn-add-tile" onclick="addToCart(event, ${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add</button>
+              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add</button>
             </div>
           </div>
         `).join('');
