@@ -499,7 +499,7 @@ body {
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 
-/* --- TOAST POPUP STYLES (RESTORED DESKTOP MODE) --- */
+/* --- TOAST POPUP STYLES (DESKTOP DEFAULT) --- */
 .toast-popup {
   position: fixed;
   bottom: -80px;
@@ -595,7 +595,7 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Release bottom constraint on mobile so toast-popup respects JS button-anchored top positioning */
+  /* Release CSS bottom constraint on mobile so JS button-anchored top positioning works perfectly */
   .toast-popup.show {
     bottom: auto !important;
   }
