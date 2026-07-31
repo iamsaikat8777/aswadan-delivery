@@ -595,20 +595,22 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Fixed Toast Popup Visibility at the BOTTOM of the viewport for Mobile View so it's always visible wherever scrolled */
+  /* Force Toast Popup to appear instantly in the EXACT CENTER of the mobile viewport wherever the user has scrolled */
   .toast-popup {
     position: fixed !important;
-    top: auto !important;
-    bottom: -80px !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translateX(-50%) !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) scale(0.85) !important;
     opacity: 0 !important;
-    transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease !important;
   }
 
   .toast-popup.show {
-    bottom: 25px !important;
-    top: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) scale(1) !important;
     opacity: 1 !important;
   }
 
