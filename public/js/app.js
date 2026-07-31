@@ -31,7 +31,6 @@
   window.addEventListener('DOMContentLoaded', () => {
     window.applyGlobalLanguage(window.currentLang);
 
-    // Automatically inject language switcher directly into the top-nav-bar as the LAST item (beside Admin)
     const navBar = document.querySelector('.top-nav-bar');
     if (navBar && !document.getElementById('global-lang-btn-box')) {
       const langBtn = document.createElement('button');
@@ -39,19 +38,31 @@
       langBtn.className = 'auto-lang-btn-inline';
       langBtn.innerHTML = `🌐 <span id="global-lang-label">${window.currentLang === 'bn' ? 'English' : 'বাংলা'}</span>`;
       langBtn.onclick = window.toggleGlobalLanguage;
-      navBar.appendChild(langBtn); // Appended at the end beside Admin
+      navBar.appendChild(langBtn);
     }
   });
 })();
+
+// --- STRICT DD/MM/YYYY FORMATTER ---
+function formatDateDDMMYYYY(dateInput) {
+  if (!dateInput) return '';
+  let str = String(dateInput).split('T')[0].trim();
+  if (str.includes('-')) {
+    const p = str.split('-');
+    if (p.length === 3) {
+      return `${p[2]}/${p[1]}/${p[0]}`;
+    }
+  }
+  return dateInput;
+}
 
 // --- CART & APP CORE LOGIC ---
 let cart = JSON.parse(localStorage.getItem('aswadan_cart') || '[]');
 let currentUser = JSON.parse(localStorage.getItem('aswadan_user') || localStorage.getItem('currentUser') || 'null');
 let paymentScreenshotBase64 = '';
 let specPaymentScreenshotBase64 = '';
-let mapPickerTargetInput = null;
-let leafletMapInstance = null;
-let selectedMarker = null;
+let isOrderSubmitting = false;
+let userSpecialRequestsCache = [];
 
 window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
@@ -61,17 +72,6 @@ window.addEventListener('DOMContentLoaded', () => {
   injectUserDashboardModalIfNeeded();
   injectCartModalIfNeeded();
   checkSpecialRequestNotificationBadge();
-  
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const delDateInput = document.getElementById('delivery-date');
-  if (delDateInput) {
-    delDateInput.value = tomorrow.toISOString().split('T')[0];
-  }
-  const specDelDateInput = document.getElementById('spec-delivery-date');
-  if (specDelDateInput) {
-    specDelDateInput.value = tomorrow.toISOString().split('T')[0];
-  }
 });
 
 function updateCartCount() {
@@ -83,7 +83,7 @@ function updateCartCount() {
   localStorage.setItem('aswadan_cart', JSON.stringify(cart));
 }
 
-// --- STRICT LOGIN STATE NAVBAR & DROPDOWN UI FIX ---
+// --- STRICT LOGIN STATE NAVBAR & FIXED DROPDOWN UI ---
 function updateAuthNavUI() {
   const btn = document.getElementById('profile-nav-btn');
   const wrapper = document.getElementById('user-nav-wrapper');
@@ -94,8 +94,17 @@ function updateAuthNavUI() {
       btn.innerText = `👤 ${currentUser.name ? currentUser.name.split(' ')[0] : 'Account'}`;
       btn.onclick = toggleUserDropdown;
     }
-    if (wrapper) wrapper.style.pointerEvents = 'auto';
-    if (dropdownMenu) dropdownMenu.style.display = '';
+    if (wrapper) {
+      wrapper.style.pointerEvents = 'auto';
+      wrapper.style.position = 'relative';
+    }
+    if (dropdownMenu) {
+      dropdownMenu.style.display = '';
+      dropdownMenu.style.position = 'absolute';
+      dropdownMenu.style.right = '0';
+      dropdownMenu.style.top = '100%';
+    }
+    injectUserDashboardModalIfNeeded();
   } else {
     if (btn) {
       btn.innerText = '👤 Sign In';
@@ -115,6 +124,7 @@ function toggleUserDropdown(e) {
     return;
   }
   if (e) e.stopPropagation();
+  injectUserDashboardModalIfNeeded();
   const wrapper = document.getElementById('user-nav-wrapper');
   if (wrapper) wrapper.classList.toggle('active-dropdown');
 }
@@ -223,7 +233,7 @@ function logoutUser() {
   location.reload();
 }
 
-// --- AUTO-INJECT CART MODAL IF MISSING ON ANY PAGE ---
+// --- AUTO-INJECT CART MODAL WITH DD/MM/YYYY FORMATTER ---
 function injectCartModalIfNeeded() {
   if (!document.getElementById('cart-modal')) {
     const cartModalDiv = document.createElement('div');
@@ -248,17 +258,41 @@ function injectCartModalIfNeeded() {
         </div>
         <div id="cart-step-2" style="display: none;">
           <button onclick="backToCartStep()" style="background:none; border:none; color:var(--gold-bright); cursor:pointer; font-weight:bold; margin-bottom:10px;">← কার্ট সংশোধন করুন</button>
-          <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center; margin-bottom:12px;">
-            <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%20Food%20Services%26cu=INR" alt="Aswadan UPI QR">
-            <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+          
+          <label class="input-label">📅 ডেলিভারির তারিখ (DD/MM/YYYY):</label>
+          <div style="position:relative;">
+            <input type="date" id="delivery-date" class="input-field" style="margin-bottom:12px;" onchange="syncDisplayDate('delivery-date', 'delivery-date-display')">
+            <input type="text" id="delivery-date-display" class="input-field" readonly style="position:absolute; top:0; left:0; width:100%; background:#1c1c28; pointer-events:none;" placeholder="DD/MM/YYYY">
           </div>
-          <label class="input-label">📅 ডেলিভারির তারিখ:</label>
-          <input type="date" id="delivery-date" class="input-field" style="margin-bottom:10px;">
-          <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
-          <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)" style="margin-bottom:8px;">
-          <img id="payment-screenshot-preview" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none; margin:8px auto; border:1px solid var(--border-gold);">
-          <button class="btn-primary" onclick="placeOrder()">অর্ডার নিশ্চিত করুন</button>
+
+          <div style="margin-bottom: 12px; background: #1c1c28; padding: 12px; border-radius: 10px; border: 1px solid var(--border-gold);">
+            <label style="color:var(--gold-bright); font-weight:bold; font-size:0.9rem; display:block; margin-bottom:8px;">পেমেন্ট পদ্ধতি বাছুন:</label>
+            <div style="display:flex; gap:15px;">
+              <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff;">
+                <input type="radio" name="payment-method" value="online" checked onchange="togglePaymentMethodUI()"> অনলাইন (UPI/QR)
+              </label>
+              <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff;">
+                <input type="radio" name="payment-method" value="cod" onchange="togglePaymentMethodUI()"> ক্যাশ অন ডেলিভারি (COD)
+              </label>
+            </div>
+          </div>
+
+          <div id="online-payment-section">
+            <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center; margin-bottom:12px;">
+              <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="Aswadan UPI QR">
+              <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+            </div>
+            <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
+            <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)" style="margin-bottom:8px;">
+            <img id="payment-screenshot-preview" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none; margin:8px auto; border:1px solid var(--border-gold);">
+          </div>
+
+          <div id="cod-payment-section" style="display:none; background:rgba(42,157,143,0.15); border:1px solid var(--green-accent); padding:12px; border-radius:8px; margin-bottom:12px; text-align:center;">
+            <p style="color:#4ade80; font-weight:bold; font-size:0.9rem;">💵 আপনি ক্যাশ অন ডেলিভারি (COD) সিলেক্ট করেছেন। স্ক্রিনশট ছাড়াই অর্ডার কনফার্ম করতে পারেন।</p>
+          </div>
+
+          <button id="place-order-btn" class="btn-primary" onclick="placeOrder()">অর্ডার নিশ্চিত করুন</button>
         </div>
       </div>
     `;
@@ -266,25 +300,45 @@ function injectCartModalIfNeeded() {
   }
 }
 
-// --- DEDUPLICATED AUTO-INJECT USER DASHBOARD MODAL WITH DELETE HISTORY BUTTON ---
+function syncDisplayDate(inputId, displayId) {
+  const input = document.getElementById(inputId);
+  const display = document.getElementById(displayId);
+  if (input && display && input.value) {
+    display.value = formatDateDDMMYYYY(input.value);
+  }
+}
+
+function togglePaymentMethodUI() {
+  const method = document.querySelector('input[name="payment-method"]:checked').value;
+  const onlineSec = document.getElementById('online-payment-section');
+  const codSec = document.getElementById('cod-payment-section');
+  if (method === 'cod') {
+    onlineSec.style.display = 'none';
+    codSec.style.display = 'block';
+  } else {
+    onlineSec.style.display = 'block';
+    codSec.style.display = 'none';
+  }
+}
+
+// --- PERSISTENT USER DASHBOARD & SPECIAL REQUEST LINK FIX ---
 function injectUserDashboardModalIfNeeded() {
   const dropdownMenu = document.getElementById('user-hover-menu');
   if (dropdownMenu) {
-    dropdownMenu.querySelectorAll('#dropdown-special-link').forEach(el => el.remove());
-    dropdownMenu.querySelectorAll('a[onclick*="openUserDashboard(\'special\')"]').forEach(el => el.remove());
-
-    const specialLink = document.createElement('a');
-    specialLink.id = 'dropdown-special-link';
-    specialLink.href = 'javascript:void(0)';
-    specialLink.onclick = () => openUserDashboard('special');
-    specialLink.style.cssText = 'color:var(--gold-bright); font-weight:bold; display:flex; justify-content:space-between; align-items:center;';
-    specialLink.innerHTML = `<span>✨ Special Order Request</span> <span id="dropdown-spec-badge" style="background:#e63946; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; display:none;">!</span>`;
-    
-    const logoutBtn = dropdownMenu.querySelector('a[onclick*="logoutUser"]');
-    if (logoutBtn) {
-      dropdownMenu.insertBefore(specialLink, logoutBtn);
-    } else {
-      dropdownMenu.appendChild(specialLink);
+    if (!document.getElementById('dropdown-special-link')) {
+      const specialLink = document.createElement('a');
+      specialLink.id = 'dropdown-special-link';
+      specialLink.href = 'javascript:void(0)';
+      specialLink.onclick = (e) => { e.preventDefault(); openUserDashboard('special'); };
+      specialLink.style.cssText = 'color:var(--gold-bright); font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:pointer;';
+      specialLink.innerHTML = `<span>✨ Special Order Request</span> <span id="dropdown-spec-badge" style="background:#e63946; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; display:none;">!</span>`;
+      
+      const logoutBtn = dropdownMenu.querySelector('a[onclick*="logoutUser"]') || dropdownMenu.querySelector('a:last-child');
+      if (logoutBtn) {
+        dropdownMenu.insertBefore(specialLink, logoutBtn);
+      } else {
+        dropdownMenu.appendChild(specialLink);
+      }
     }
   }
 
@@ -354,6 +408,57 @@ function injectUserDashboardModalIfNeeded() {
     document.body.appendChild(modalDiv);
   }
 
+  // Inject Smart Refund Modal for Prepaid Order Cancellations with Memory Notification
+  if (!document.getElementById('order-cancel-modal')) {
+    const cancelModal = document.createElement('div');
+    cancelModal.id = 'order-cancel-modal';
+    cancelModal.className = 'modal';
+    cancelModal.innerHTML = `
+      <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+          <h3 style="color:var(--gold-bright);">💰 রিফান্ড বিবরণ (Refund Details)</h3>
+          <button class="close-btn" onclick="closeModal('order-cancel-modal')">&times;</button>
+        </div>
+        
+        <div id="saved-refund-prompt" style="display:none; background:rgba(212,175,55,0.1); border:1px solid var(--border-gold); padding:12px; border-radius:10px; margin-bottom:12px;">
+          <p style="font-size:0.88rem; color:var(--gold-bright); margin-bottom:8px;">✨ আপনার পূর্বের সংরক্ষিত রিফান্ড তথ্য পাওয়া গেছে:</p>
+          <p id="saved-refund-desc" style="font-size:0.85rem; color:#fff; margin-bottom:10px;"></p>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-primary" onclick="useSavedRefundInfo()" style="margin:0; padding:8px 12px; font-size:0.85rem; background:var(--green-accent); color:#fff;">পূর্বেরটি ব্যবহার করুন</button>
+            <button class="btn-primary" onclick="useNewRefundInfo()" style="margin:0; padding:8px 12px; font-size:0.85rem; background:#333; color:var(--gold-bright); border:1px solid var(--border-gold);">নতুন তথ্য দিন</button>
+          </div>
+        </div>
+
+        <div id="new-refund-form-container">
+          <p style="font-size:0.9rem; color:#aaa; margin-bottom:12px;">রিফান্ড পাওয়ার জন্য মাধ্যম সিলেক্ট করুন:</p>
+          <div style="margin-bottom:12px; display:flex; gap:15px;">
+            <label style="cursor:pointer; color:#fff;"><input type="radio" name="refund-mode" value="UPI" checked onchange="toggleRefundModeUI()"> UPI ID</label>
+            <label style="cursor:pointer; color:#fff;"><input type="radio" name="refund-mode" value="BANK" onchange="toggleRefundModeUI()"> Bank Account</label>
+          </div>
+
+          <div id="refund-upi-box">
+            <label class="input-label">UPI ID:</label>
+            <input type="text" id="refund-upi-input" class="input-field" placeholder="e.g. username@ybl">
+          </div>
+
+          <div id="refund-bank-box" style="display:none;">
+            <label class="input-label">Account Name:</label>
+            <input type="text" id="refund-acc-name" class="input-field" placeholder="Account Holder Name">
+            <label class="input-label">Account Number:</label>
+            <input type="text" id="refund-acc-num" class="input-field" placeholder="Account Number">
+            <label class="input-label">IFSC Code:</label>
+            <input type="text" id="refund-ifsc" class="input-field" placeholder="IFSC Code">
+            <label class="input-label">Bank Branch:</label>
+            <input type="text" id="refund-branch" class="input-field" placeholder="Bank Branch Name">
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="submitOrderCancellationWithRefund()" style="margin-top:15px;">অর্ডার ক্যানসেল নিশ্চিত করুন</button>
+      </div>
+    `;
+    document.body.appendChild(cancelModal);
+  }
+
   if (!document.getElementById('special-payment-modal')) {
     const payModal = document.createElement('div');
     payModal.id = 'special-payment-modal';
@@ -365,22 +470,166 @@ function injectUserDashboardModalIfNeeded() {
           <button class="close-btn" onclick="closeModal('special-payment-modal')">&times;</button>
         </div>
         <p style="margin-bottom:8px;">নির্ধারিত মোট মূল্য: <b style="color:var(--gold-bright); font-size:1.2rem;">₹<span id="spec-pay-amount">0</span></b></p>
-        <div class="qr-box" style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px; display:inline-block;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="QR">
-          <p style="color:#111; font-weight:bold; margin-top:4px; font-size:0.8rem;">UPI: 8017969203@ybl</p>
-        </div>
         
+        <div style="margin-bottom: 12px; background: #1c1c28; padding: 12px; border-radius: 10px; border: 1px solid var(--border-gold);">
+          <label style="color:var(--gold-bright); font-weight:bold; font-size:0.9rem; display:block; margin-bottom:8px;">পেমেন্ট পদ্ধতি বাছুন:</label>
+          <div style="display:flex; gap:15px;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff;">
+              <input type="radio" name="spec-payment-method" value="online" checked onchange="toggleSpecPaymentMethodUI()"> অনলাইন (UPI/QR)
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff;">
+              <input type="radio" name="spec-payment-method" value="cod" onchange="toggleSpecPaymentMethodUI()"> ক্যাশ অন ডেলিভারি (COD)
+            </label>
+          </div>
+        </div>
+
+        <div id="spec-online-payment-section">
+          <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center; margin-bottom:12px;">
+            <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="Aswadan UPI QR">
+            <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+          </div>
+          <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
+          <input type="file" id="spec-payment-screenshot-input" accept="image/*" class="input-field" onchange="handleSpecScreenshotUpload(event)" style="margin-bottom:8px;">
+          <img id="spec-screenshot-preview" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none; margin:8px auto; border:1px solid var(--border-gold);">
+        </div>
+
+        <div id="spec-cod-payment-section" style="display:none; background:rgba(42,157,143,0.15); border:1px solid var(--green-accent); padding:12px; border-radius:8px; margin-bottom:12px; text-align:center;">
+          <p style="color:#4ade80; font-weight:bold; font-size:0.9rem;">💵 আপনি ক্যাশ অন ডেলিভারি (COD) সিলেক্ট করেছেন। স্ক্রিনশট ছাড়াই অর্ডার কনফার্ম করতে পারেন।</p>
+        </div>
+
         <label class="input-label" style="text-align:left;">📅 ডেলিভারির তারিখ:</label>
         <input type="date" id="spec-delivery-date" class="input-field" style="margin-bottom:10px;">
-
-        <label class="input-label" style="text-align:left;">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
-        <input type="file" id="spec-payment-screenshot-input" accept="image/*" class="input-field" onchange="handleSpecScreenshotUpload(event)" style="margin-bottom:8px;">
-        <img id="spec-screenshot-preview" src="" alt="Preview" style="max-width:140px; border-radius:8px; display:none; margin:0 auto 10px auto; border:1px solid var(--border-gold);">
 
         <button class="btn-primary" onclick="confirmSpecialPayment()">অর্ডার নিশ্চিত করুন</button>
       </div>
     `;
     document.body.appendChild(payModal);
+  }
+}
+
+function toggleRefundModeUI() {
+  const mode = document.querySelector('input[name="refund-mode"]:checked').value;
+  document.getElementById('refund-upi-box').style.display = (mode === 'UPI') ? 'block' : 'none';
+  document.getElementById('refund-bank-box').style.display = (mode === 'BANK') ? 'block' : 'none';
+}
+
+function toggleSpecPaymentMethodUI() {
+  const method = document.querySelector('input[name="spec-payment-method"]:checked').value;
+  const onlineSec = document.getElementById('spec-online-payment-section');
+  const codSec = document.getElementById('spec-cod-payment-section');
+  if (method === 'cod') {
+    onlineSec.style.display = 'none';
+    codSec.style.display = 'block';
+  } else {
+    onlineSec.style.display = 'block';
+    codSec.style.display = 'none';
+  }
+}
+
+let orderToCancelId = null;
+let useSavedRefund = false;
+
+function promptCancelOrder(orderId, isPrepaid) {
+  orderToCancelId = orderId;
+  useSavedRefund = false;
+  
+  if (isPrepaid) {
+    const savedRefundStr = localStorage.getItem(`aswadan_last_refund_${currentUser.phone}`);
+    const promptBox = document.getElementById('saved-refund-prompt');
+    const formContainer = document.getElementById('new-refund-form-container');
+
+    if (savedRefundStr) {
+      const savedInfo = JSON.parse(savedRefundStr);
+      promptBox.style.display = 'block';
+      formContainer.style.display = 'none';
+      
+      let descText = (savedInfo.type === 'UPI') ? `UPI ID: ${savedInfo.upiId}` : `Bank Account: ${savedInfo.accountName} (${savedInfo.accountNumber})`;
+      document.getElementById('saved-refund-desc').innerText = descText;
+    } else {
+      promptBox.style.display = 'none';
+      formContainer.style.display = 'block';
+      document.getElementById('refund-upi-input').value = '';
+      document.getElementById('refund-acc-name').value = '';
+      document.getElementById('refund-acc-num').value = '';
+      document.getElementById('refund-ifsc').value = '';
+      document.getElementById('refund-branch').value = '';
+      document.querySelector('input[name="refund-mode"][value="UPI"]').checked = true;
+      toggleRefundModeUI();
+    }
+    document.getElementById('order-cancel-modal').style.display = 'flex';
+  } else {
+    if (confirm(`আপনি কি নিশ্চিতভাবে অর্ডার #${orderId} ক্যানসেল করতে চান?`)) {
+      executeOrderCancellation(orderId, null);
+    }
+  }
+}
+
+function useSavedRefundInfo() {
+  useSavedRefund = true;
+  const savedRefundStr = localStorage.getItem(`aswadan_last_refund_${currentUser.phone}`);
+  if (savedRefundStr) {
+    const savedInfo = JSON.parse(savedRefundStr);
+    closeModal('order-cancel-modal');
+    executeOrderCancellation(orderToCancelId, savedInfo);
+  }
+}
+
+function useNewRefundInfo() {
+  useSavedRefund = false;
+  document.getElementById('saved-refund-prompt').style.display = 'none';
+  document.getElementById('new-refund-form-container').style.display = 'block';
+  document.getElementById('refund-upi-input').value = '';
+  document.getElementById('refund-acc-name').value = '';
+  document.getElementById('refund-acc-num').value = '';
+  document.getElementById('refund-ifsc').value = '';
+  document.getElementById('refund-branch').value = '';
+  document.querySelector('input[name="refund-mode"][value="UPI"]').checked = true;
+  toggleRefundModeUI();
+}
+
+async function submitOrderCancellationWithRefund() {
+  const mode = document.querySelector('input[name="refund-mode"]:checked').value;
+  let refundInfo = { type: mode };
+  if (mode === 'UPI') {
+    const upiId = document.getElementById('refund-upi-input').value.trim();
+    if (!upiId) return alert('সঠিক UPI ID লিখুন।');
+    refundInfo.upiId = upiId;
+  } else {
+    const accName = document.getElementById('refund-acc-name').value.trim();
+    const accNum = document.getElementById('refund-acc-num').value.trim();
+    const ifsc = document.getElementById('refund-ifsc').value.trim();
+    const branch = document.getElementById('refund-branch').value.trim();
+    if (!accName || !accNum || !ifsc || !branch) return alert('ব্যাংক অ্যাকাউন্ট সংক্রান্ত সমস্ত ফিল্ড পূরণ করুন।');
+    refundInfo.accountName = accName;
+    refundInfo.accountNumber = accNum;
+    refundInfo.ifsc = ifsc;
+    refundInfo.branch = branch;
+  }
+
+  localStorage.setItem(`aswadan_last_refund_${currentUser.phone}`, JSON.stringify(refundInfo));
+
+  closeModal('order-cancel-modal');
+  await executeOrderCancellation(orderToCancelId, refundInfo);
+}
+
+async function executeOrderCancellation(orderId, refundInfo) {
+  try {
+    const res = await fetch('/api/orders/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, phone: currentUser.phone, refundInfo })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message);
+      loadUserOrderHistory();
+      loadUserOrderStatus();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    alert('অর্ডার ক্যানসেল করতে সমস্যা হয়েছে।');
   }
 }
 
@@ -445,12 +694,18 @@ function handleSpecScreenshotUpload(event) {
   }
 }
 
-// --- USER DASHBOARD FUNCTIONS ---
+// --- USER DASHBOARD FUNCTIONS WITH WORKING DROPDOWN OPTIONS ---
 function openUserDashboard(tab) {
+  const wrapper = document.getElementById('user-nav-wrapper');
+  if (wrapper) wrapper.classList.remove('active-dropdown');
+
+  injectUserDashboardModalIfNeeded();
   const m = document.getElementById('user-dashboard-modal');
-  if (m) m.style.display = 'flex';
-  switchDashboardTab(tab || 'profile');
-  loadUserProfileData();
+  if (m) {
+    m.style.display = 'flex';
+    switchDashboardTab(tab || 'profile');
+    loadUserProfileData();
+  }
 }
 
 function switchDashboardTab(tab) {
@@ -505,18 +760,79 @@ async function saveUserProfile() {
   } catch (err) { alert('সার্ভার ত্রুটি!'); }
 }
 
+function canCancelOrder(order) {
+  if (order.status !== 'PENDING') return false;
+  let orderDateStr = order.orderDate || new Date().toISOString().split('T')[0];
+  let orderDate = new Date(orderDateStr);
+  let endOfDay = new Date(orderDate);
+  endOfDay.setHours(23, 59, 59, 999);
+  return new Date() <= endOfDay;
+}
+
+function getRemainingCancelSeconds(orderDateStr) {
+  let orderDate = new Date(orderDateStr || new Date().toISOString().split('T')[0]);
+  let endOfDay = new Date(orderDate);
+  endOfDay.setHours(23, 59, 59, 999);
+  let diff = endOfDay - new Date();
+  return Math.max(0, Math.floor(diff / 1000));
+}
+
 async function loadUserOrderHistory() {
   if (!currentUser) return;
   const res = await fetch(`/api/orders/user/${currentUser.phone}`);
   const data = await res.json();
   const container = document.getElementById('user-orders-history-list');
   if (container && data.success) {
-    container.innerHTML = data.orders.length === 0 ? '<p style="color:#aaa;">কোনো ইতিহাস নেই।</p>' : data.orders.map(o => `
-      <div style="background:#181824; border:1px solid var(--border-gold); padding:10px; border-radius:8px; margin-bottom:8px;">
-        <strong>#${o.orderId}</strong> - ${o.status} (₹${o.totalAmount})
-      </div>
-    `).join('');
+    container.innerHTML = data.orders.length === 0 ? '<p style="color:#aaa;">কোনো ইতিহাস নেই।</p>' : data.orders.map(o => {
+      const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt);
+      const formattedDelDate = formatDateDDMMYYYY(o.deliveryDate);
+      const showCancel = canCancelOrder(o);
+      const remSec = getRemainingCancelSeconds(o.orderDate);
+      const isPrepaid = o.paymentScreenshot && o.paymentScreenshot !== 'CASH ON DELIVERY';
+      
+      return `
+        <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:10px; margin-bottom:10px; position:relative;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--gold-bright);">#${o.orderId}</strong>
+            <span style="color:${o.status==='CANCELLED'?'#e63946':o.status==='DELIVERED'?'#2a9d8f':'var(--gold-primary)'}; font-weight:bold;">${o.status}</span>
+          </div>
+          <p style="font-size:0.85rem; color:#aaa; margin-top:4px;">অর্ডার তারিখ: ${formattedOrderDate} | ডেলিভারি তারিখ: ${formattedDelDate}</p>
+          <p style="font-size:0.9rem; margin-top:4px;">মোট মূল্য: <b>₹${o.totalAmount}</b></p>
+          
+          ${o.status === 'REJECTED' && (o.rejectionReason || o.reason) ? `<p style="color:#e63946; margin-top:6px;"><b>বাতিলের কারণ:</b> ${o.rejectionReason || o.reason}</p>` : ''}
+
+          ${showCancel ? `
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(230,57,70,0.1); border:1px solid var(--red-accent); padding:8px 12px; border-radius:8px;">
+              <span style="font-size:0.80rem; color:#ffb703;" id="countdown-${o.orderId}" data-seconds="${remSec}">⏳ ক্যানসেল করার সময় বাকি: গণনা হচ্ছে...</span>
+              <button onclick="promptCancelOrder('${o.orderId}', ${isPrepaid})" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">অর্ডার ক্যানসেল করুন</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    startLiveCountdowns();
   }
+}
+
+let countdownInterval = null;
+function startLiveCountdowns() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    document.querySelectorAll('[id^="countdown-"]').forEach(el => {
+      let sec = parseInt(el.getAttribute('data-seconds'), 10);
+      if (isNaN(sec) || sec <= 0) {
+        el.innerText = '⚠️ ক্যানসেল করার সময় শেষ';
+        return;
+      }
+      sec--;
+      el.setAttribute('data-seconds', sec);
+      let h = Math.floor(sec / 3600);
+      let m = Math.floor((sec % 3600) / 60);
+      let s = sec % 60;
+      el.innerText = `⏳ ক্যানসেল করার সময় বাকি: ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    });
+  }, 1000);
 }
 
 async function loadUserOrderStatus() {
@@ -525,12 +841,34 @@ async function loadUserOrderStatus() {
   const data = await res.json();
   const container = document.getElementById('current-orders-status-list');
   if (container && data.success) {
-    const active = data.orders.filter(o => o.status === 'PENDING' || o.status === 'ACCEPTED');
-    container.innerHTML = active.length === 0 ? '<p style="color:#aaa;">কোনো সক্রিয় অর্ডার নেই।</p>' : active.map(o => `
-      <div style="background:#181824; border:1px solid var(--border-gold); padding:10px; border-radius:8px; margin-bottom:8px;">
-        <strong>#${o.orderId}</strong> - <span style="color:#2a9d8f;">${o.status}</span>
-      </div>
-    `).join('');
+    const active = data.orders.filter(o => o.status === 'PENDING' || o.status === 'ACCEPTED' || o.status === 'REJECTED');
+    container.innerHTML = active.length === 0 ? '<p style="color:#aaa;">কোনো সক্রিয় অর্ডার নেই।</p>' : active.map(o => {
+      const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt);
+      const formattedDelDate = formatDateDDMMYYYY(o.deliveryDate);
+      const showCancel = canCancelOrder(o);
+      const remSec = getRemainingCancelSeconds(o.orderDate);
+      const isPrepaid = o.paymentScreenshot && o.paymentScreenshot !== 'CASH ON DELIVERY';
+
+      return `
+        <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:10px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--gold-bright);">#${o.orderId}</strong>
+            <span style="color:${o.status==='REJECTED'?'#e63946':o.status==='DELIVERED'?'#2a9d8f':'var(--gold-primary)'}; font-weight:bold;">${o.status}</span>
+          </div>
+          <p style="font-size:0.85rem; color:#aaa; margin-top:4px;">অর্ডার তারিখ: ${formattedOrderDate} | ডেলিভারি তারিখ: ${formattedDelDate}</p>
+          <p style="font-size:0.9rem; margin-top:4px;">মোট মূল্য: <b>₹${o.totalAmount}</b></p>
+
+          ${o.status === 'REJECTED' && (o.rejectionReason || o.reason) ? `<p style="color:#e63946; margin-top:6px;"><b>বাতিলের কারণ:</b> ${o.rejectionReason || o.reason}</p>` : ''}
+
+          ${showCancel ? `
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(230,57,70,0.1); border:1px solid var(--red-accent); padding:8px 12px; border-radius:8px;">
+              <span style="font-size:0.80rem; color:#ffb703;" id="countdown-status-${o.orderId}" data-seconds="${remSec}">⏳ সময় বাকি: গণনা হচ্ছে...</span>
+              <button onclick="promptCancelOrder('${o.orderId}', ${isPrepaid})" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">অর্ডার ক্যানসেল করুন</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
   }
 }
 
@@ -603,7 +941,8 @@ async function loadUserSpecialRequests() {
     const data = await res.json();
     const container = document.getElementById('user-special-requests-list');
     if (container && data.success) {
-      const actionedRequests = data.requests.filter(r => r.status === 'PRICED' || r.status === 'REJECTED');
+      userSpecialRequestsCache = data.requests || [];
+      const actionedRequests = userSpecialRequestsCache.filter(r => r.status === 'PRICED' || r.status === 'REJECTED');
       if (actionedRequests.length > 0) {
         const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
         actionedRequests.forEach(r => {
@@ -613,19 +952,20 @@ async function loadUserSpecialRequests() {
         checkSpecialRequestNotificationBadge();
       }
 
-      container.innerHTML = data.requests.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : data.requests.map(r => `
+      container.innerHTML = userSpecialRequestsCache.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : userSpecialRequestsCache.map(r => `
         <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between;">
             <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
             <span style="color:${r.status==='PRICED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
           </div>
           <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
+          
           ${r.status === 'REJECTED' ? `
-            <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
+            <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || r.reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
           ` : ''}
           ${r.status === 'PRICED' ? `
             <p style="color:var(--gold-bright); font-weight:bold; margin-top:5px;">মূল্য: ₹${r.totalAmount}</p>
-            <button onclick="openSpecialPaymentModal('${r.requestId}', ${r.totalAmount})" style="background:var(--green-accent); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও স্ক্রিনশট দিন</button>
+            <button onclick="openSpecialPaymentModal('${r.requestId}')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও অর্ডার কনফার্ম করুন</button>
           ` : ''}
         </div>
       `).join('');
@@ -634,19 +974,41 @@ async function loadUserSpecialRequests() {
 }
 
 let activeSpecialReqId = null;
-function openSpecialPaymentModal(requestId, totalAmount) {
+
+function openSpecialPaymentModal(requestId) {
   activeSpecialReqId = requestId;
+  const req = userSpecialRequestsCache.find(r => r.requestId === requestId);
+  
   specPaymentScreenshotBase64 = '';
+  const totalAmount = req ? req.totalAmount : 0;
   document.getElementById('spec-pay-amount').innerText = totalAmount;
-  document.getElementById('spec-screenshot-preview').style.display = 'none';
-  document.getElementById('spec-payment-screenshot-input').value = '';
+  
+  const onlineRadio = document.querySelector('input[name="spec-payment-method"][value="online"]');
+  if (onlineRadio) onlineRadio.checked = true;
+  toggleSpecPaymentMethodUI();
+  
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const specDelDateInput = document.getElementById('spec-delivery-date');
+  if (specDelDateInput) specDelDateInput.value = tomorrow.toISOString().split('T')[0];
+
   document.getElementById('special-payment-modal').style.display = 'flex';
 }
 
 async function confirmSpecialPayment() {
   const deliveryDate = document.getElementById('spec-delivery-date').value;
   if (!deliveryDate) return alert('ডেলিভারি তারিখ দিন।');
-  if (!specPaymentScreenshotBase64) return alert('পেমেন্ট স্ক্রিনশট আপলোড করুন।');
+
+  const method = document.querySelector('input[name="spec-payment-method"]:checked');
+  const val = method ? method.value : 'online';
+
+  let finalScreenshot = '';
+  if (val === 'cod') {
+    finalScreenshot = 'CASH ON DELIVERY';
+  } else {
+    if (!specPaymentScreenshotBase64) return alert('পেমেন্ট স্ক্রিনশট আপলোড করুন।');
+    finalScreenshot = specPaymentScreenshotBase64;
+  }
 
   try {
     const res = await fetch('/api/special-request/pay', {
@@ -654,7 +1016,7 @@ async function confirmSpecialPayment() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         requestId: activeSpecialReqId,
-        paymentScreenshot: specPaymentScreenshotBase64,
+        paymentScreenshot: finalScreenshot,
         deliveryDate
       })
     });
@@ -690,6 +1052,14 @@ function openCartModal() {
   const step2 = document.getElementById('cart-step-2');
   if (step1) step1.style.display = 'block';
   if (step2) step2.style.display = 'none';
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const delDateInput = document.getElementById('delivery-date');
+  if (delDateInput) {
+    delDateInput.value = tomorrow.toISOString().split('T')[0];
+    syncDisplayDate('delivery-date', 'delivery-date-display');
+  }
 }
 
 function renderCartItems() {
@@ -753,6 +1123,14 @@ function proceedToPaymentStep() {
   }
   document.getElementById('cart-step-1').style.display = 'none';
   document.getElementById('cart-step-2').style.display = 'block';
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const delDateInput = document.getElementById('delivery-date');
+  if (delDateInput) {
+    delDateInput.value = tomorrow.toISOString().split('T')[0];
+    syncDisplayDate('delivery-date', 'delivery-date-display');
+  }
 }
 
 function backToCartStep() {
@@ -774,14 +1152,25 @@ function handlePaymentScreenshotUpload(event) {
 }
 
 async function placeOrder() {
+  if (isOrderSubmitting) return;
+
   const deliveryDate = document.getElementById('delivery-date').value;
   if (!deliveryDate) return alert('তারিখ সিলেক্ট করুন।');
   
-  if (!paymentScreenshotBase64) {
-    return alert('⚠️ পেমেন্ট সম্পন্ন করে স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
+  const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+  if (paymentMethod === 'online' && !paymentScreenshotBase64) {
+    return alert('⚠️ অনলাইন পেমেন্টের জন্য স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
+  }
+
+  isOrderSubmitting = true;
+  const orderBtn = document.getElementById('place-order-btn');
+  if (orderBtn) {
+    orderBtn.disabled = true;
+    orderBtn.innerText = 'অর্ডার প্রসেসিং হচ্ছে... ⏳';
   }
 
   const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const finalScreenshot = (paymentMethod === 'cod') ? 'CASH ON DELIVERY' : paymentScreenshotBase64;
 
   try {
     const res = await fetch('/api/orders', {
@@ -795,7 +1184,7 @@ async function placeOrder() {
         location: currentUser.location || '',
         items: cart,
         totalAmount,
-        paymentScreenshot: paymentScreenshotBase64,
+        paymentScreenshot: finalScreenshot,
         deliveryDate
       })
     });
@@ -809,9 +1198,19 @@ async function placeOrder() {
       location.href = 'index.html';
     } else {
       alert(data.message);
+      isOrderSubmitting = false;
+      if (orderBtn) {
+        orderBtn.disabled = false;
+        orderBtn.innerText = 'অর্ডার নিশ্চিত করুন';
+      }
     }
   } catch (err) {
     alert('অর্ডার প্লেস করতে সমস্যা হয়েছে।');
+    isOrderSubmitting = false;
+    if (orderBtn) {
+      orderBtn.disabled = false;
+      orderBtn.innerText = 'অর্ডার নিশ্চিত করুন';
+    }
   }
 }
 

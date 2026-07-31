@@ -208,6 +208,19 @@
 
     if (adminToken) showDashboard();
 
+    // Strict DD/MM/YYYY Date Formatter
+    function formatDateDDMMYYYY(dateInput) {
+      if (!dateInput) return '';
+      let str = String(dateInput).split('T')[0].trim();
+      if (str.includes('-')) {
+        const p = str.split('-');
+        if (p.length === 3) {
+          return `${p[2]}/${p[1]}/${p[0]}`;
+        }
+      }
+      return dateInput;
+    }
+
     function showAdminLoginView() {
       document.getElementById('admin-forgot-email-input').value = '';
       document.getElementById('admin-view-login').style.display = 'block';
@@ -362,8 +375,11 @@
     }
 
     async function renderAdminTab() {
-      if (!adminData && !['menu', 'offer', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) return;
       const container = document.getElementById('admin-tab-content');
+      if (!adminData && !['menu', 'offer', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) {
+        container.innerHTML = '<p style="text-align:center; color:#aaa; padding:25px;">ডেটা লোড হচ্ছে...</p>';
+        return;
+      }
       const stats = adminData?.stats || { totalOrders: 0, pendingCount: 0, acceptedCount: 0, rejectedCount: 0, netRevenue: 0 };
       const pendingSpecialCount = specialReqsList ? specialReqsList.filter(r => r.status === 'PENDING').length : 0;
 
@@ -386,7 +402,6 @@
               <h3 style="color:var(--red-accent);">${stats.rejectedCount}</h3>
               <p style="color:#aaa;">Rejected</p>
             </div>
-            <!-- Special Request Tile counting accurately from synchronized specialReqsList -->
             <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(11)'), 'specialReqs')" style="cursor: pointer;">
               <h3 style="color:var(--gold-bright);">${pendingSpecialCount}</h3>
               <p style="color:#aaa;">Special Request</p>
@@ -407,7 +422,7 @@
         container.innerHTML = renderFilterHeader('history', '📜 সম্পূর্ণ অর্ডার ইতিহাস') + renderOrdersList(getFilteredList(adminData.orders, 'history'), false);
       } else if (currentTab === 'revenue') {
         const f = tabFilters.revenue;
-        const validOrders = (adminData.orders || []).filter(o => o.status === 'ACCEPTED' || o.status === 'DELIVERED');
+        const validOrders = (adminData && adminData.orders ? adminData.orders : []).filter(o => o.status === 'ACCEPTED' || o.status === 'DELIVERED');
         const filteredRevenueOrders = f.showAll ? validOrders : validOrders.filter(o => {
           let rawDate = o.orderDate || o.createdAt || '';
           let normalizedDate = '';
@@ -434,7 +449,7 @@
           
           <div class="stat-card" style="padding:25px; margin-bottom:20px;">
             <h1 style="color:var(--gold-bright); font-size:2.3rem;">₹${currentRevenue}</h1>
-            <p style="color:#aaa;">${f.showAll ? 'সর্বমোট রেভিনিউ (সমস্ত ডেটা)' : f.date + ' অর্ডার তারিখের রেভিনিউ'}</p>
+            <p style="color:#aaa;">${f.showAll ? 'সর্বমোট রেভিনিউ (সমস্ত ডেটা)' : formatDateDDMMYYYY(f.date) + ' অর্ডার তারিখের রেভিনিউ'}</p>
           </div>
 
           <div class="admin-section-box">
@@ -478,394 +493,20 @@
       }
     }
 
-    function renderSpecialRequestsManagement(container) {
-      if (!specialReqsList || specialReqsList.length === 0) {
-        container.innerHTML = `
-          <div class="admin-section-box">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <h3 style="color:var(--gold-bright); margin-bottom:15px;">✨ স্পেশাল ফুড রিকুয়েস্ট ম্যানেজমেন্ট</h3>
-              <button onclick="refreshSpecialReqsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
-            </div>
-            <p style="text-align:center; color:#aaa; padding:20px;">কোনো স্পেশাল রিকুয়েস্ট পাওয়া যায়নি।</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = `
-        <div class="admin-section-box">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3 style="color:var(--gold-bright); margin:0;">✨ স্পেশাল ফুড রিকুয়েস্ট তালিকা (${specialReqsList.length} টি)</h3>
-            <button onclick="refreshSpecialReqsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            ${specialReqsList.map(r => `
-              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; position:relative;">
-                <!-- Properly Aligned Status Badge on the Top Right -->
-                <div style="position:absolute; top:15px; right:15px;">
-                  <span style="background:${r.status==='PRICED'||r.status==='ORDERED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; color:#fff; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; display:inline-block;">${r.status}</span>
-                </div>
-
-                <div style="padding-right: 90px;">
-                  <strong style="color:var(--gold-bright); font-size:1.05rem; display:block; margin-bottom:4px;">${r.itemName} (${r.qty} প্লেট)</strong>
-                  <small style="color:#aaa;">গ্রাহক: ${r.customerName} (${r.phone}) | তারিখ: ${r.createdAt}</small>
-                  <p style="color:var(--text-main); font-size:0.9rem; margin-top:6px;"><b>বিবরণ:</b> ${r.description || 'N/A'}</p>
-                  
-                  ${r.status === 'REJECTED' && r.rejectionReason ? `<p style="color:#e63946; margin-top:6px;"><b>বাতিলের কারণ:</b> ${r.rejectionReason}</p>` : ''}
-
-                  ${r.status === 'PENDING' ? `
-                    <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                      <input type="number" id="price-input-${r.requestId}" class="input-field" placeholder="প্রতি প্লেট মূল্য (₹)" style="max-width:160px; margin:0;">
-                      <button onclick="actionSpecialReq('${r.requestId}', 'PRICED')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">দাম সেট করে এপ্রুভ করুন</button>
-                      <button onclick="rejectSpecialReqPrompt('${r.requestId}')" style="background:var(--red-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">রিজেক্ট</button>
-                    </div>
-                  ` : r.status !== 'REJECTED' ? `<p style="color:var(--gold-bright); font-weight:bold; margin-top:8px;">নির্ধারিত মূল্য প্রতি প্লেট: ₹${r.pricePerPlate} (মোট: ₹${r.totalAmount})</p>` : ''}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    async function refreshSpecialReqsTab() {
-      await fetchAdminSpecialReqs();
-      renderAdminTab();
-    }
-
-    async function actionSpecialReq(requestId, action, reason = '') {
-      let pricePerPlate = 0;
-      if (action === 'PRICED') {
-        const pInput = document.getElementById(`price-input-${requestId}`);
-        pricePerPlate = pInput ? Number(pInput.value) : 0;
-        if (!pricePerPlate || pricePerPlate <= 0) return alert('সঠিক মূল্য লিখুন।');
-      }
-
-      const res = await fetch('/api/admin/special-request/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-        body: JSON.stringify({ requestId, action, pricePerPlate, reason })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        await fetchAdminSpecialReqs();
-        renderAdminTab();
-      } else {
-        alert(data.message);
-      }
-    }
-
-    async function rejectSpecialReqPrompt(requestId) {
-      const reason = prompt('স্পেশাল অর্ডার বাতিলের কারণ লিখুন:');
-      if (reason === null) return;
-      await actionSpecialReq(requestId, 'REJECTED', 0, reason.trim() || 'অনাকাঙ্ক্ষিত কারণবশত');
-    }
-
-    function renderReviewsManagement(container) {
-      if (!reviewsList || reviewsList.length === 0) {
-        container.innerHTML = `
-          <div class="admin-section-box">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <h3 style="color:var(--gold-bright); margin-bottom:15px;">⭐ গ্রাহক রিভিউ ম্যানেজমেন্ট</h3>
-              <button onclick="refreshReviewsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
-            </div>
-            <p style="text-align:center; color:#aaa; padding:20px;">কোনো গ্রাহক রিভিউ পাওয়া যায়নি।</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = `
-        <div class="admin-section-box">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-            <h3 style="color:var(--gold-bright); margin:0;">⭐ গ্রাহক রিভিউ তালিকা (${reviewsList.length} টি)</h3>
-            <button onclick="refreshReviewsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            ${reviewsList.map(r => `
-              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <div>
-                  <strong style="color:var(--gold-bright); font-size:1.05rem;">${r.name}</strong> 
-                  <span style="color:#d4af37; margin-left:8px; font-size:1rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
-                  <span style="color:#aaa; font-size:0.78rem; margin-left:10px;">(${r.date})</span>
-                  <p style="color:var(--text-main); font-size:0.9rem; margin-top:6px;">${r.comment}</p>
-                </div>
-                <button onclick="deleteReviewPermanently('${r.id}')" style="background:var(--red-accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
-                  🗑️ ডিলিট
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    async function refreshReviewsTab() {
-      await fetchAdminReviews();
-      renderAdminTab();
-    }
-
-    async function deleteReviewPermanently(id) {
-      if (confirm('আপনি কি এই রিভিউটি স্থায়ীভাবে মুছে ফেলতে চান?')) {
-        try {
-          const res = await fetch('/api/admin/reviews/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-            body: JSON.stringify({ id })
-          });
-          const data = await res.json();
-          if (data.success) {
-            alert(data.message);
-            await fetchAdminReviews();
-            renderAdminTab();
-          } else {
-            alert(data.message || 'রিভিউ ডিলিট করতে সমস্যা হয়েছে।');
-          }
-        } catch (err) {
-          console.error(err);
-          alert('সার্ভার ত্রুটি!');
-        }
-      }
-    }
-
-    function renderFactorySettingsManagement(container) {
-      container.innerHTML = `
-        <div class="admin-section-box" style="border: 2px solid var(--red-accent); background: #181116;">
-          <h3 style="color: var(--red-accent); margin-bottom: 12px;">⚙️ Admin Factory Settings & Data Purge</h3>
-          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
-            সাবধান! এই সেকশনের অপশনগুলো সম্পূর্ণ ডেটা বা নির্দিষ্ট হিস্ট্রি মুছে ফেলে। প্রতিটি ডিলিট অ্যাকশনের জন্য এডমিন ইমেলে OTP পাঠানো হবে।
-          </p>
-
-          <div style="display: flex; flex-direction: column; gap: 12px; max-width: 550px;">
-            <button onclick="triggerAdminFactory(1)" style="background: #cc0000; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">1) Delete All Data History (সব ডেটা, ইউজার, অর্ডার ও স্পেশাল রিকুয়েস্ট)</button>
-            <button onclick="triggerAdminFactory(2)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">2) Delete All Order History (সমস্ত অর্ডার ও স্পেশাল রিকুয়েস্ট ইতিহাস)</button>
-            <button onclick="triggerAdminFactory(3)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">3) Delete All User Data (সমস্ত ইউজার ডেটা)</button>
-            <button onclick="triggerAdminFactory(4)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">4) Delete All Revenue Data (সমস্ত রেভিনিউ ডেটা)</button>
-          </div>
-
-          <div id="admin-factory-otp-box" style="display: none; margin-top: 20px; background: #12121a; border: 1px solid var(--border-gold); padding: 18px; border-radius: 12px; max-width: 550px;">
-            <p id="admin-factory-instruction" style="font-weight: bold; color: var(--gold-bright); margin-bottom: 12px; font-size: 0.95rem;"></p>
-            <label class="input-label">🔢 এডমিন ইমেলের ৬-সংখ্যার OTP কোড:</label>
-            <input type="text" id="admin-factory-otp-val" class="input-field" placeholder="Enter Admin OTP" maxlength="6">
-            <button class="btn-primary" onclick="executeAdminFactory()" style="background: var(--red-accent); color: #fff; margin-top: 12px;">চূড়ান্ত কনফার্ম ও এক্সিকিউট করুন</button>
-          </div>
-        </div>
-      `;
-    }
-
-    const factoryOptionNames = {
-      1: "All Data History (Users, Orders, Revenue, Special Requests)",
-      2: "All Order History (Pending, Accepted, Rejected orders & Special Requests)",
-      3: "All User Data",
-      4: "All Revenue Data"
-    };
-
-    async function triggerAdminFactory(optionType) {
-      activeFactoryOption = optionType;
-      const confirmed = confirm(`আপনি কি নিশ্চিত যে আপনি "${factoryOptionNames[optionType]}" ডিলিট করতে চান? এই কাজ অপরিবর্তনীয়।`);
-      if (!confirmed) return;
-
-      try {
-        const res = await fetch('/api/admin/factory-settings/request-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-          body: JSON.stringify({ optionType })
-        });
-        const data = await res.json();
-        alert(data.message);
-        if (data.success) {
-          document.getElementById('admin-factory-instruction').innerText = `অ্যাকশন: "${factoryOptionNames[optionType]}". এডমিন ইমেলে OTP পাঠানো হয়েছে, সেটি নিচে লিখুন:`;
-          document.getElementById('admin-factory-otp-box').style.display = 'block';
-        }
-      } catch (err) {
-        console.error(err);
-        alert('ফ্যাক্টরি সেটিংস OTP পাঠাতে সমস্যা হয়েছে।');
-      }
-    }
-
-    async function executeAdminFactory() {
-      const otp = document.getElementById('admin-factory-otp-val').value.trim();
-      if (!otp || otp.length !== 6) {
-        alert('দয়া করে সঠিক ৬-সংখ্যার OTP কোড লিখুন।');
-        return;
-      }
-
-      const finalConfirmed = confirm('OTP যাচাই সফল! আপনি কি নিশ্চিতভাবে এই ডেটা পার্মানেন্টলি ডিলিট করতে চান?');
-      if (!finalConfirmed) return;
-
-      try {
-        const res = await fetch('/api/admin/factory-settings/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-          body: JSON.stringify({ optionType: activeFactoryOption, otp })
-        });
-        const data = await res.json();
-        alert(data.message);
-        if (data.success) {
-          location.reload();
-        }
-      } catch (err) {
-        console.error(err);
-        alert('ফ্যাক্টরি সেটিংস এক্সিকিউট করতে সমস্যা হয়েছে।');
-      }
-    }
-
-    function updateGraphYear(val) {
-      selectedYearForGraph = val;
-      renderAdminTab();
-    }
-
-    function updateGraphMonth(val) {
-      selectedMonthForGraph = val;
-      renderAdminTab();
-    }
-
-    function renderYearlyLineChart(orders, year) {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthlyTotals = new Array(12).fill(0);
-
-      orders.forEach(o => {
-        let rawDate = o.orderDate || o.createdAt || '';
-        let normalizedDate = '';
-        if (rawDate.includes('T')) {
-          normalizedDate = rawDate.split('T')[0];
-        } else if (rawDate.includes('/')) {
-          const datePart = rawDate.split(',')[0].trim();
-          const parts = datePart.split('/');
-          if (parts.length === 3) {
-            let m = parts[0].padStart(2, '0');
-            let d = parts[1].padStart(2, '0');
-            let y = parts[2];
-            normalizedDate = `${y}-${m}-${d}`;
-          }
-        } else {
-          normalizedDate = rawDate.substring(0, 10);
-        }
-
-        if (normalizedDate.startsWith(year)) {
-          const m = parseInt(normalizedDate.substring(5, 7), 10);
-          if (m >= 1 && m <= 12) {
-            monthlyTotals[m - 1] += Number(o.totalAmount || 0);
-          }
-        }
-      });
-
-      const maxVal = Math.max(...monthlyTotals, 500);
-      const svgWidth = 700;
-      const svgHeight = 260;
-      const padding = 45;
-      const chartWidth = svgWidth - padding * 2;
-      const chartHeight = svgHeight - padding * 2;
-
-      let points = [];
-      monthlyTotals.forEach((val, idx) => {
-        const x = padding + (idx / 11) * chartWidth;
-        const y = (svgHeight - padding) - (val / maxVal) * chartHeight;
-        points.push({ x, y, val, label: monthNames[idx] });
-      });
-
-      const pathData = points.reduce((acc, pt, idx) => idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
-
-      return `
-        <div class="chart-container">
-          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; height:auto; overflow:visible;">
-            <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" class="chart-axis" />
-            <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" class="chart-grid" />
-            <line x1="${padding}" y1="${svgHeight/2}" x2="${svgWidth - padding}" y2="${svgHeight/2}" class="chart-grid" />
-            <path d="${pathData}" class="chart-line" />
-            ${points.map(pt => `
-              <g>
-                <circle cx="${pt.x}" cy="${pt.y}" r="5" class="chart-dot">
-                  <title>মাস: ${pt.label} ${year} | রেভিনিউ: ₹${pt.val}</title>
-                </circle>
-                <text x="${pt.x}" y="${svgHeight - padding + 18}" text-anchor="middle" class="chart-text">${pt.label}</text>
-                <text x="${pt.x}" y="${pt.y - 10}" text-anchor="middle" class="chart-text" style="font-size:10px; fill:#e5c158;">₹${pt.val}</text>
-              </g>
-            `).join('')}
-          </svg>
-        </div>
-      `;
-    }
-
-    function renderMonthlyLineChart(orders, yearMonth) {
-      const [year, month] = yearMonth.split('-').map(Number);
-      const daysInMonth = new Date(year, month, 0).getDate();
-      const dailyTotals = new Array(daysInMonth).fill(0);
-
-      orders.forEach(o => {
-        let rawDate = o.orderDate || o.createdAt || '';
-        let normalizedDate = '';
-        if (rawDate.includes('T')) {
-          normalizedDate = rawDate.split('T')[0];
-        } else if (rawDate.includes('/')) {
-          const datePart = rawDate.split(',')[0].trim();
-          const parts = datePart.split('/');
-          if (parts.length === 3) {
-            let m = parts[0].padStart(2, '0');
-            let d = parts[1].padStart(2, '0');
-            let y = parts[2];
-            normalizedDate = `${y}-${m}-${d}`;
-          }
-        } else {
-          normalizedDate = rawDate.substring(0, 10);
-        }
-
-        if (normalizedDate.startsWith(yearMonth)) {
-          const dayNum = parseInt(normalizedDate.substring(8, 10), 10);
-          if (dayNum >= 1 && dayNum <= daysInMonth) {
-            dailyTotals[dayNum - 1] += Number(o.totalAmount || 0);
-          }
-        }
-      });
-
-      const maxVal = Math.max(...dailyTotals, 500);
-      const svgWidth = 750;
-      const svgHeight = 260;
-      const padding = 45;
-      const chartWidth = svgWidth - padding * 2;
-      const chartHeight = svgHeight - padding * 2;
-
-      let points = [];
-      dailyTotals.forEach((val, idx) => {
-        const dayNum = idx + 1;
-        const x = padding + (idx / (daysInMonth - 1 || 1)) * chartWidth;
-        const y = (svgHeight - padding) - (val / maxVal) * chartHeight;
-        points.push({ x, y, val, label: dayNum });
-      });
-
-      const pathData = points.reduce((acc, pt, idx) => idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
-
-      return `
-        <div class="chart-container">
-          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; height:auto; overflow:visible;">
-            <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" class="chart-axis" />
-            <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" class="chart-grid" />
-            <line x1="${padding}" y1="${svgHeight/2}" x2="${svgWidth - padding}" y2="${svgHeight/2}" class="chart-grid" />
-            <path d="${pathData}" class="chart-line" />
-            ${points.map(pt => `
-              <g>
-                <circle cx="${pt.x}" cy="${pt.y}" r="4" class="chart-dot">
-                  <title>তারিখ: ${yearMonth}-${String(pt.label).padStart(2, '0')} | রেভিনিউ: ₹${pt.val}</title>
-                </circle>
-                ${pt.label % 3 === 0 || pt.label === 1 ? `<text x="${pt.x}" y="${svgHeight - padding + 18}" text-anchor="middle" class="chart-text">${pt.label}</text>` : ''}
-                ${pt.val > 0 ? `<text x="${pt.x}" y="${pt.y - 10}" text-anchor="middle" class="chart-text" style="font-size:9px; fill:#e5c158;">₹${pt.val}</text>` : ''}
-              </g>
-            `).join('')}
-          </svg>
-        </div>
-      `;
-    }
-
+    // Custom DD/MM/YYYY overlay for date filters
     function renderFilterHeader(tabKey, titleText) {
       const f = tabFilters[tabKey];
+      const displayDateStr = formatDateDDMMYYYY(f.date);
       return `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:12px; background:#12121a; padding:15px; border:1px solid var(--border-gold); border-radius:12px;">
           <h3 style="color:var(--gold-bright); margin:0;">${titleText}</h3>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:6px;">
               <label style="font-size:0.85rem; color:var(--gold-bright); font-weight:bold;">অর্ডার করার তারিখ:</label>
-              <input type="date" class="input-field" value="${f.date}" ${f.showAll ? 'disabled' : ''} onchange="updateTabDate('${tabKey}', this.value)" style="max-width:160px; padding:5px 8px;">
+              <div style="position:relative; display:inline-block; max-width:160px;">
+                <input type="date" value="${f.date}" ${f.showAll ? 'disabled' : ''} onchange="updateTabDate('${tabKey}', this.value)" style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; cursor:pointer;">
+                <input type="text" class="input-field" value="${displayDateStr}" ${f.showAll ? 'disabled' : ''} readonly style="background:#1c1c28; position:relative; z-index:1; pointer-events:none;" placeholder="DD/MM/YYYY">
+              </div>
             </div>
             <button onclick="toggleShowAll('${tabKey}')" style="background:${f.showAll ? 'var(--gold-gradient)' : 'rgba(229,193,88,0.1)'}; color:${f.showAll ? '#000' : 'var(--gold-bright)'}; border:1px solid var(--border-gold); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:0.82rem;">
               ${f.showAll ? '📅 অর্ডার তারিখ ফিল্টার' : '♾️ Show All Data'}
@@ -887,8 +528,8 @@
 
     function getFilteredList(list, tabKey) {
       const f = tabFilters[tabKey];
-      if (f.showAll) return list;
-      return list.filter(o => {
+      if (f.showAll) return list || [];
+      return (list || []).filter(o => {
         let rawDate = o.orderDate || o.createdAt || '';
         let normalizedDate = '';
         if (rawDate.includes('T')) {
@@ -910,9 +551,27 @@
     }
 
     function renderOrdersList(list, showActions) {
-      if (list.length === 0) return '<p style="text-align:center; color:#aaa; padding:25px;">কোনো অর্ডার পাওয়া যায়নি।</p>';
+      if (!list || list.length === 0) return '<p style="text-align:center; color:#aaa; padding:25px;">কোনো অর্ডার পাওয়া যায়নি।</p>';
       return list.map(o => {
         const mapsUrl = o.location ? (o.location.startsWith('http') ? o.location.split(' ')[0] : `https://maps.google.com/?q=${o.location}`) : '';
+        const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt);
+        const formattedDelDate = formatDateDDMMYYYY(o.deliveryDate);
+
+        let paymentDisplayHtml = '';
+        if (o.paymentScreenshot === 'CASH ON DELIVERY') {
+          paymentDisplayHtml = `<p style="color:var(--green-accent); font-weight:bold; margin:8px 0;">💳 Payment Mode: Cash On Delivery (COD) - No Screenshot Required</p>`;
+        } else if (o.paymentScreenshot) {
+          paymentDisplayHtml = `
+            <div style="margin:10px 0;">
+              <p><b>🖼️ পেমেন্ট স্ক্রিনশট:</b></p>
+              <img src="${o.paymentScreenshot}" alt="Payment Screenshot" style="max-width:180px; max-height:180px; border-radius:8px; border:1px solid var(--border-gold); cursor:pointer; margin-top:5px; object-fit:cover;" onclick="openImagePreview('${o.paymentScreenshot}')">
+              <p style="font-size:0.78rem; color:var(--gold-bright); cursor:pointer;" onclick="openImagePreview('${o.paymentScreenshot}')">🔍 ক্লিক করে বড় ছবি দেখুন</p>
+            </div>
+          `;
+        } else {
+          paymentDisplayHtml = `<p style="color:#e63946;"><b>পেমেন্ট স্ক্রিনশট পাওয়া যায়নি</b></p>`;
+        }
+
         return `
           <div class="tile-card" style="text-align:left; margin-bottom:12px; width:100%;">
             <div style="display:flex; justify-content:space-between;">
@@ -923,20 +582,14 @@
             <p><b>ইমেল:</b> ${o.email || 'N/A'}</p>
             <p><b>ঠিকানা:</b> ${o.address}</p>
             ${o.location ? `<p><b>📍 গুগল ম্যাপ লোকেশন:</b> <a href="${mapsUrl}" target="_blank" style="color:var(--gold-bright); text-decoration:underline; font-weight:bold;">🗺️ View Exact Location on Google Maps</a></p>` : ''}
-            <p><b>অর্ডার করার তারিখ (Order Date):</b> <span style="color:var(--gold-bright); font-weight:bold;">${o.orderDate || o.createdAt || 'N/A'}</span></p>
-            <p><b>ডেলিভারি তারিখ (Delivery Date):</b> ${o.deliveryDate}</p>
+            <p><b>অর্ডার করার তারিখ (Order Date):</b> <span style="color:var(--gold-bright); font-weight:bold;">${formattedOrderDate}</span></p>
+            <p><b>ডেলিভারি তারিখ (Delivery Date):</b> ${formattedDelDate}</p>
             <p><b>অর্ডারের তালিকা:</b> ${o.items.map(i => i.name + ' x ' + i.qty).join(', ')}</p>
             <p><b>মোট মূল্য:</b> ₹${o.totalAmount}</p>
 
             ${o.rejectionReason ? `<p style="color:#e63946;"><b>বাতিলের কারণ:</b> ${o.rejectionReason}</p>` : ''}
 
-            ${o.paymentScreenshot ? `
-              <div style="margin:10px 0;">
-                <p><b>🖼️ পেমেন্ট স্ক্রিনশট:</b></p>
-                <img src="${o.paymentScreenshot}" alt="Payment Screenshot" style="max-width:180px; max-height:180px; border-radius:8px; border:1px solid var(--border-gold); cursor:pointer; margin-top:5px; object-fit:cover;" onclick="openImagePreview('${o.paymentScreenshot}')">
-                <p style="font-size:0.78rem; color:var(--gold-bright); cursor:pointer;" onclick="openImagePreview('${o.paymentScreenshot}')">🔍 ক্লিক করে বড় ছবি দেখুন</p>
-              </div>
-            ` : '<p style="color:#e63946;"><b>পেমেন্ট স্ক্রিনশট পাওয়া যায়নি</b></p>'}
+            ${paymentDisplayHtml}
 
             ${showActions ? `
               <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -1238,6 +891,387 @@
           alert(data.message || 'ইউজার ডিলিট করতে সমস্যা হয়েছে।');
         }
       }
+    }
+
+    // --- MANAGE REVIEWS TAB ---
+    function renderReviewsManagement(container) {
+      if (!reviewsList || reviewsList.length === 0) {
+        container.innerHTML = `
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="color:var(--gold-bright); margin-bottom:15px;">⭐ গ্রাহক রিভিউ ম্যানেজমেন্ট</h3>
+              <button onclick="refreshReviewsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+            </div>
+            <p style="text-align:center; color:#aaa; padding:20px;">কোনো গ্রাহক রিভিউ পাওয়া যায়নি।</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+            <h3 style="color:var(--gold-bright); margin:0;">⭐ গ্রাহক রিভিউ তালিকা (${reviewsList.length} টি)</h3>
+            <button onclick="refreshReviewsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            ${reviewsList.map(r => `
+              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <strong style="color:var(--gold-bright); font-size:1.05rem;">${r.name}</strong> 
+                  <span style="color:#d4af37; margin-left:8px; font-size:1rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                  <span style="color:#aaa; font-size:0.78rem; margin-left:10px;">(${r.date})</span>
+                  <p style="color:var(--text-main); font-size:0.9rem; margin-top:6px;">${r.comment}</p>
+                </div>
+                <button onclick="deleteReviewPermanently('${r.id}')" style="background:var(--red-accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                  🗑️ ডিলিট
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function refreshReviewsTab() {
+      await fetchAdminReviews();
+      renderAdminTab();
+    }
+
+    async function deleteReviewPermanently(id) {
+      if (confirm('আপনি কি এই রিভিউটি স্থায়ীভাবে মুছে ফেলতে চান?')) {
+        try {
+          const res = await fetch('/api/admin/reviews/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+            body: JSON.stringify({ id })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert(data.message);
+            await fetchAdminReviews();
+            renderAdminTab();
+          } else {
+            alert(data.message || 'রিভিউ ডিলিট করতে সমস্যা হয়েছে।');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('সার্ভার ত্রুটি!');
+        }
+      }
+    }
+
+    // --- SPECIAL REQUESTS TAB (COD APPROVAL COMPLETELY REMOVED) ---
+    function renderSpecialRequestsManagement(container) {
+      if (!specialReqsList || specialReqsList.length === 0) {
+        container.innerHTML = `
+          <div class="admin-section-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="color:var(--gold-bright); margin-bottom:15px;">✨ স্পেশাল ফুড রিকুয়েস্ট ম্যানেজমেন্ট</h3>
+              <button onclick="refreshSpecialReqsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+            </div>
+            <p style="text-align:center; color:#aaa; padding:20px;">কোনো স্পেশাল রিকুয়েস্ট পাওয়া যায়নি।</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="color:var(--gold-bright); margin:0;">✨ স্পেশাল ফুড রিকুয়েস্ট তালিকা (${specialReqsList.length} টি)</h3>
+            <button onclick="refreshSpecialReqsTab()" style="background:var(--gold-gradient); color:#000; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            ${specialReqsList.map(r => `
+              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; position:relative;">
+                <div style="position:absolute; top:15px; right:15px;">
+                  <span style="background:${r.status==='PRICED'||r.status==='ORDERED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; color:#fff; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; display:inline-block;">${r.status}</span>
+                </div>
+
+                <div style="padding-right: 90px;">
+                  <strong style="color:var(--gold-bright); font-size:1.05rem; display:block; margin-bottom:4px;">${r.itemName} (${r.qty} প্লেট)</strong>
+                  <small style="color:#aaa;">গ্রাহক: ${r.customerName} (${r.phone}) | তারিখ: ${r.createdAt}</small>
+                  <p style="color:var(--text-main); font-size:0.9rem; margin-top:6px;"><b>বিবরণ:</b> ${r.description || 'N/A'}</p>
+                  
+                  ${r.status === 'REJECTED' && r.rejectionReason ? `<p style="color:#e63946; margin-top:6px;"><b>বাতিলের কারণ:</b> ${r.rejectionReason}</p>` : ''}
+
+                  ${r.status === 'PENDING' ? `
+                    <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                      <input type="number" id="price-input-${r.requestId}" class="input-field" placeholder="প্রতি প্লেট মূল্য (₹)" style="max-width:160px; margin:0;">
+                      <button onclick="actionSpecialReq('${r.requestId}', 'PRICED', 0, '')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">দাম সেট করে এপ্রুভ করুন</button>
+                      <button onclick="rejectSpecialReqPrompt('${r.requestId}')" style="background:var(--red-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">রিজেক্ট</button>
+                    </div>
+                  ` : r.status !== 'REJECTED' ? `<p style="color:var(--gold-bright); font-weight:bold; margin-top:8px;">নির্ধারিত মূল্য প্রতি প্লেট: ₹${r.pricePerPlate} (মোট: ₹${r.totalAmount})</p>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function refreshSpecialReqsTab() {
+      await fetchAdminSpecialReqs();
+      renderAdminTab();
+    }
+
+    async function actionSpecialReq(requestId, action, pricePerPlate = 0, reason = '') {
+      if (action === 'PRICED') {
+        const pInput = document.getElementById(`price-input-${requestId}`);
+        pricePerPlate = pInput ? Number(pInput.value) : 0;
+        if (!pricePerPlate || pricePerPlate <= 0) return alert('সঠিক মূল্য লিখুন।');
+      }
+
+      const res = await fetch('/api/admin/special-request/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify({ requestId, action, pricePerPlate, reason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        await fetchAdminSpecialReqs();
+        renderAdminTab();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    async function rejectSpecialReqPrompt(requestId) {
+      const reason = prompt('স্পেশাল অর্ডার বাতিলের কারণ লিখুন:');
+      if (reason === null) return;
+      await actionSpecialReq(requestId, 'REJECTED', 0, reason.trim() || 'অনাকাঙ্ক্ষিত কারণবশত');
+    }
+
+    // --- FACTORY SETTINGS TAB ---
+    function renderFactorySettingsManagement(container) {
+      container.innerHTML = `
+        <div class="admin-section-box" style="border: 2px solid var(--red-accent); background: #181116;">
+          <h3 style="color: var(--red-accent); margin-bottom: 12px;">⚙️ Admin Factory Settings & Data Purge</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+            সাবধান! এই সেকশনের অপশনগুলো সম্পূর্ণ ডেটা বা নির্দিষ্ট হিস্ট্রি মুছে ফেলে। প্রতিটি ডিলিট অ্যাকশনের জন্য এডমিন ইমেলে OTP পাঠানো হবে।
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; max-width: 550px;">
+            <button onclick="triggerAdminFactory(1)" style="background: #cc0000; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">1) Delete All Data History (সব ডেটা, ইউজার, অর্ডার ও স্পেশাল রিকুয়েস্ট)</button>
+            <button onclick="triggerAdminFactory(2)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">2) Delete All Order History (সমস্ত অর্ডার ও স্পেশাল রিকুয়েস্ট ইতিহাস)</button>
+            <button onclick="triggerAdminFactory(3)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">3) Delete All User Data (সমস্ত ইউজার ডেটা)</button>
+            <button onclick="triggerAdminFactory(4)" style="background: #e65c00; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: left;">4) Delete All Revenue Data (সমস্ত রেভিনিউ ডেটা)</button>
+          </div>
+
+          <div id="admin-factory-otp-box" style="display: none; margin-top: 20px; background: #12121a; border: 1px solid var(--border-gold); padding: 18px; border-radius: 12px; max-width: 550px;">
+            <p id="admin-factory-instruction" style="font-weight: bold; color: var(--gold-bright); margin-bottom: 12px; font-size: 0.95rem;"></p>
+            <label class="input-label">🔢 এডমিন ইমেলের ৬-সংখ্যার OTP কোড:</label>
+            <input type="text" id="admin-factory-otp-val" class="input-field" placeholder="Enter Admin OTP" maxlength="6">
+            <button class="btn-primary" onclick="executeAdminFactory()" style="background: var(--red-accent); color: #fff; margin-top: 12px;">চূড়ান্ত কনফার্ম ও এক্সিকিউট করুন</button>
+          </div>
+        </div>
+      `;
+    }
+
+    const factoryOptionNames = {
+      1: "All Data History (Users, Orders, Revenue, Special Requests)",
+      2: "All Order History (Pending, Accepted, Rejected orders & Special Requests)",
+      3: "All User Data",
+      4: "All Revenue Data"
+    };
+
+    async function triggerAdminFactory(optionType) {
+      activeFactoryOption = optionType;
+      const confirmed = confirm(`আপনি কি নিশ্চিত যে আপনি "${factoryOptionNames[optionType]}" ডিলিট করতে চান? এই কাজ অপরিবর্তনীয়।`);
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch('/api/admin/factory-settings/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ optionType })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+          document.getElementById('admin-factory-instruction').innerText = `অ্যাকশন: "${factoryOptionNames[optionType]}". এডমিন ইমেলে OTP পাঠানো হয়েছে, সেটি নিচে লিখুন:`;
+          document.getElementById('admin-factory-otp-box').style.display = 'block';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('ফ্যাক্টরি সেটিংস OTP পাঠাতে সমস্যা হয়েছে।');
+      }
+    }
+
+    async function executeAdminFactory() {
+      const otp = document.getElementById('admin-factory-otp-val').value.trim();
+      if (!otp || otp.length !== 6) {
+        alert('দয়া করে সঠিক ৬-সংখ্যার OTP কোড লিখুন।');
+        return;
+      }
+
+      const finalConfirmed = confirm('OTP যাচাই সফল! আপনি কি নিশ্চিতভাবে এই ডেটা পার্মানেন্টলি ডিলিট করতে চান?');
+      if (!finalConfirmed) return;
+
+      try {
+        const res = await fetch('/api/admin/factory-settings/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ optionType: activeFactoryOption, otp })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+          location.reload();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('ফ্যাক্টরি সেটিংস এক্সিকিউট করতে সমস্যা হয়েছে।');
+      }
+    }
+
+    // Graph functions for Net Revenue
+    function updateGraphYear(val) {
+      selectedYearForGraph = val;
+      renderAdminTab();
+    }
+
+    function updateGraphMonth(val) {
+      selectedMonthForGraph = val;
+      renderAdminTab();
+    }
+
+    function renderYearlyLineChart(orders, year) {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyTotals = new Array(12).fill(0);
+
+      (orders || []).forEach(o => {
+        let rawDate = o.orderDate || o.createdAt || '';
+        let normalizedDate = '';
+        if (rawDate.includes('T')) {
+          normalizedDate = rawDate.split('T')[0];
+        } else if (rawDate.includes('/')) {
+          const datePart = rawDate.split(',')[0].trim();
+          const parts = datePart.split('/');
+          if (parts.length === 3) {
+            let m = parts[0].padStart(2, '0');
+            let d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            normalizedDate = `${y}-${m}-${d}`;
+          }
+        } else {
+          normalizedDate = rawDate.substring(0, 10);
+        }
+
+        if (normalizedDate.startsWith(year)) {
+          const m = parseInt(normalizedDate.substring(5, 7), 10);
+          if (m >= 1 && m <= 12) {
+            monthlyTotals[m - 1] += Number(o.totalAmount || 0);
+          }
+        }
+      });
+
+      const maxVal = Math.max(...monthlyTotals, 500);
+      const svgWidth = 700;
+      const svgHeight = 260;
+      const padding = 45;
+      const chartWidth = svgWidth - padding * 2;
+      const chartHeight = svgHeight - padding * 2;
+
+      let points = [];
+      monthlyTotals.forEach((val, idx) => {
+        const x = padding + (idx / 11) * chartWidth;
+        const y = (svgHeight - padding) - (val / maxVal) * chartHeight;
+        points.push({ x, y, val, label: monthNames[idx] });
+      });
+
+      const pathData = points.reduce((acc, pt, idx) => idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
+
+      return `
+        <div class="chart-container">
+          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; height:auto; overflow:visible;">
+            <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" class="chart-axis" />
+            <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" class="chart-grid" />
+            <line x1="${padding}" y1="${svgHeight/2}" x2="${svgWidth - padding}" y2="${svgHeight/2}" class="chart-grid" />
+            <path d="${pathData}" class="chart-line" />
+            ${points.map(pt => `
+              <g>
+                <circle cx="${pt.x}" cy="${pt.y}" r="5" class="chart-dot">
+                  <title>মাস: ${pt.label} ${year} | রেভিনিউ: ₹${pt.val}</title>
+                </circle>
+                <text x="${pt.x}" y="${svgHeight - padding + 18}" text-anchor="middle" class="chart-text">${pt.label}</text>
+                <text x="${pt.x}" y="${pt.y - 10}" text-anchor="middle" class="chart-text" style="font-size:10px; fill:#e5c158;">₹${pt.val}</text>
+              </g>
+            `).join('')}
+          </svg>
+        </div>
+      `;
+    }
+
+    function renderMonthlyLineChart(orders, yearMonth) {
+      const [year, month] = yearMonth.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const dailyTotals = new Array(daysInMonth).fill(0);
+
+      (orders || []).forEach(o => {
+        let rawDate = o.orderDate || o.createdAt || '';
+        let normalizedDate = '';
+        if (rawDate.includes('T')) {
+          normalizedDate = rawDate.split('T')[0];
+        } else if (rawDate.includes('/')) {
+          const datePart = rawDate.split(',')[0].trim();
+          const parts = datePart.split('/');
+          if (parts.length === 3) {
+            let m = parts[0].padStart(2, '0');
+            let d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            normalizedDate = `${y}-${m}-${d}`;
+          }
+        } else {
+          normalizedDate = rawDate.substring(0, 10);
+        }
+
+        if (normalizedDate.startsWith(yearMonth)) {
+          const dayNum = parseInt(normalizedDate.substring(8, 10), 10);
+          if (dayNum >= 1 && dayNum <= daysInMonth) {
+            dailyTotals[dayNum - 1] += Number(o.totalAmount || 0);
+          }
+        }
+      });
+
+      const maxVal = Math.max(...dailyTotals, 500);
+      const svgWidth = 750;
+      const svgHeight = 260;
+      const padding = 45;
+      const chartWidth = svgWidth - padding * 2;
+      const chartHeight = svgHeight - padding * 2;
+
+      let points = [];
+      dailyTotals.forEach((val, idx) => {
+        const dayNum = idx + 1;
+        const x = padding + (idx / (daysInMonth - 1 || 1)) * chartWidth;
+        const y = (svgHeight - padding) - (val / maxVal) * chartHeight;
+        points.push({ x, y, val, label: dayNum });
+      });
+
+      const pathData = points.reduce((acc, pt, idx) => idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
+
+      return `
+        <div class="chart-container">
+          <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%; height:auto; overflow:visible;">
+            <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" class="chart-axis" />
+            <line x1="${padding}" y1="${padding}" x2="${svgWidth - padding}" y2="${padding}" class="chart-grid" />
+            <line x1="${padding}" y1="${svgHeight/2}" x2="${svgWidth - padding}" y2="${svgHeight/2}" class="chart-grid" />
+            <path d="${pathData}" class="chart-line" />
+            ${points.map(pt => `
+              <g>
+                <circle cx="${pt.x}" cy="${pt.y}" r="4" class="chart-dot">
+                  <title>তারিখ: ${yearMonth}-${String(pt.label).padStart(2, '0')} | রেভিনিউ: ₹${pt.val}</title>
+                </circle>
+                ${pt.label % 3 === 0 || pt.label === 1 ? `<text x="${pt.x}" y="${svgHeight - padding + 18}" text-anchor="middle" class="chart-text">${pt.label}</text>` : ''}
+                ${pt.val > 0 ? `<text x="${pt.x}" y="${pt.y - 10}" text-anchor="middle" class="chart-text" style="font-size:9px; fill:#e5c158;">₹${pt.val}</text>` : ''}
+              </g>
+            `).join('')}
+          </svg>
+        </div>
+      `;
     }
   </script>
 </body>

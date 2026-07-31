@@ -33,7 +33,7 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   padding-bottom: 90px;
-  animation: pageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes pageFadeIn {
@@ -42,37 +42,13 @@ body {
 }
 
 .brand-hero {
-  animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
   margin-top: 25px;
   padding-top: 95px;
 }
 
-.hero-split-section {
-  animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
-}
-
-.spotlight-showcase-grid, #menu-tiles-container {
-  animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
-}
-
-.pincode-notice-card {
-  animation: contentSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
-}
-
-@keyframes contentSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .modal {
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
 }
 
 .modal[style*="display: flex"] {
@@ -80,65 +56,26 @@ body {
 }
 
 .modal-content {
-  transform: scale(0.85) translateY(20px);
+  transform: scale(0.92);
   opacity: 0;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 .modal[style*="display: flex"] .modal-content {
-  transform: scale(1) translateY(0);
+  transform: scale(1);
   opacity: 1;
 }
 
-#login-form, #signup-form, #forgot-form, #reset-form {
-  animation: formSwitchFade 0.25s ease-out forwards;
-}
-
-@keyframes formSwitchFade {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-#admin-tab-content > * {
-  animation: adminTabSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes adminTabSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .stat-card {
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.2s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--gold-bright);
-  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.25);
-}
-
-.admin-tab-btn {
-  transition: all 0.2s ease;
-}
-
-.admin-tab-btn:hover {
-  border-color: var(--gold-bright);
   transform: translateY(-2px);
+  border-color: var(--gold-bright);
 }
 
+/* --- AMBIENT GLOW ANIMATION --- */
 .ambient-glow {
   position: absolute;
   top: -20px;
@@ -165,7 +102,7 @@ body {
   }
 }
 
-/* --- PERFECT DESKTOP NAVBAR --- */
+/* --- PERFECT DESKTOP NAVBAR & WORKING DROPDOWN --- */
 .top-nav-container {
   display: flex;
   justify-content: flex-end;
@@ -190,8 +127,9 @@ body {
   backdrop-filter: blur(12px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
   max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   white-space: nowrap;
 }
 
@@ -209,7 +147,7 @@ body {
   text-decoration: none;
   padding: 4px 10px;
   border-radius: 16px;
-  transition: all 0.25s ease;
+  transition: background 0.2s ease, color 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -248,18 +186,19 @@ body {
   display: none;
   position: absolute;
   right: 0;
-  top: 100%;
+  top: calc(100% + 10px);
   background: #13121b;
   border: 1px solid var(--border-gold);
-  min-width: 210px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
-  z-index: 1000;
+  min-width: 220px;
+  border-radius: 14px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.95);
+  z-index: 99999;
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  overflow: hidden;
-  padding: 6px 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  overflow: visible;
+  padding: 8px 0;
+  pointer-events: auto;
 }
 
 .nav-user-dropdown:hover .user-dropdown-menu,
@@ -271,17 +210,19 @@ body {
 
 .user-dropdown-menu a {
   color: var(--text-main);
-  padding: 10px 16px;
+  padding: 12px 18px;
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.88rem;
-  transition: background 0.2s ease, color 0.2s ease;
+  gap: 10px;
+  font-size: 0.92rem;
+  transition: background 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .user-dropdown-menu a:hover {
-  background: rgba(229, 193, 88, 0.15);
+  background: rgba(229, 193, 88, 0.18);
   color: var(--gold-bright);
 }
 
@@ -389,7 +330,7 @@ body {
   box-shadow: 0 8px 25px rgba(212, 175, 55, 0.18);
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .hero-spotlight-card:hover, .tile-card:hover {
@@ -398,33 +339,21 @@ body {
 }
 
 .hero-spotlight-card.slide-out-left {
-  animation: slideOutLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: slideOutLeft 0.3s ease forwards;
 }
 
 .hero-spotlight-card.slide-in-right {
-  animation: slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: slideInRight 0.3s ease forwards;
 }
 
 @keyframes slideOutLeft {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-50px);
-  }
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-30px); }
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .spotlight-showcase-grid {
@@ -442,11 +371,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.tile-card:hover {
-  transform: translateY(-3px);
+  transition: border-color 0.3s ease;
 }
 
 .tile-title { color: var(--gold-bright); font-size: 1.15rem; margin-bottom: 6px; }
@@ -462,16 +387,7 @@ body {
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  transition: transform 0.2s ease;
   touch-action: manipulation;
-}
-
-.btn-add-tile:hover {
-  transform: scale(1.05);
-}
-
-.btn-add-tile:active {
-  transform: scale(0.95);
 }
 
 .pincode-notice-card {
@@ -480,17 +396,11 @@ body {
   border-radius: 14px;
   padding: 18px;
   margin: 30px 0;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.pincode-notice-card:hover {
-  border-color: var(--gold-bright);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 .notice-header { font-weight: bold; color: var(--gold-bright); margin-bottom: 8px; }
 .notice-list { padding-left: 20px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
-.pincode-tag {background: var(--gold-primary); color: #000; font-weight: bold; padding: 1px 6px; border-radius: 4px; }
+.pincode-tag { background: var(--gold-primary); color: #000; font-weight: bold; padding: 1px 6px; border-radius: 4px; }
 
 /* Dashboard Popup Tabs */
 .dashboard-tabs {
@@ -527,7 +437,7 @@ body {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(4px);
   z-index: 1000;
   justify-content: center;
   align-items: center;
@@ -575,11 +485,6 @@ body {
   touch-action: manipulation;
 }
 
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-/* PWA App Install Banner */
 .pwa-banner-box {
   display: none;
   background: linear-gradient(135deg, #181724 0%, #252236 100%);
@@ -590,12 +495,6 @@ body {
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
-  animation: slideDown 0.4s ease;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .toast-popup {
@@ -608,7 +507,7 @@ body {
   font-weight: bold;
   padding: 10px 20px;
   border-radius: 20px;
-  transition: bottom 0.3s ease;
+  transition: bottom 0.25s ease;
   z-index: 20000;
   pointer-events: none;
 }
@@ -617,51 +516,52 @@ body {
   bottom: 30px;
 }
 
-/* --- MOBILE RESPONSIVE MEDIA QUERIES (OPTIMIZED MOBILE NAVBAR SIZE) --- */
+/* --- MOBILE RESPONSIVE MEDIA QUERIES (LARGER NAVBAR & PERFORMANCE) --- */
 @media (max-width: 768px) {
   body {
     padding-bottom: 140px !important;
   }
 
   .brand-hero {
-    margin-top: 25px !important;
-    padding-top: 95px !important;
+    margin-top: 15px !important;
+    padding-top: 75px !important;
   }
 
   .top-nav-container {
     justify-content: flex-end !important;
-    padding: max(8px, env(safe-area-inset-top, 8px)) 10px 0 0 !important;
+    padding: max(6px, env(safe-area-inset-top, 6px)) 8px 0 0 !important;
   }
 
   .top-nav-bar {
-    padding: 3px 6px !important;
-    gap: 3px !important;
+    padding: 6px 12px !important;
+    gap: 8px !important;
     max-width: 100%;
+    border-radius: 35px;
   }
 
-  /* Increased mobile navbar font size and padding slightly for perfect visibility */
+  /* Noticeably larger mobile navigation bar for excellent touch UX */
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 5px 10px !important;
-    font-size: 0.78rem !important; 
+    padding: 9px 16px !important;
+    font-size: 0.95rem !important; 
   }
 
   .brand-logo {
-    max-width: 190px;
+    max-width: 200px;
   }
 
   .hero-split-section {
     grid-template-columns: 1fr;
-    padding: 15px 12px;
+    padding: 18px 12px;
     gap: 15px;
     margin-top: 10px;
   }
 
   .hero-left-content h1 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .hero-left-content p {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 
   .modal-content {
@@ -671,22 +571,8 @@ body {
 }
 
 @media (max-width: 420px) {
-  body {
-    padding-bottom: 140px !important;
-  }
-
-  .brand-hero {
-    margin-top: 25px !important;
-    padding-top: 90px !important;
-  }
-
   .top-nav-link, .auto-lang-btn-inline {
-    padding: 4px 8px !important;
-    font-size: 0.74rem !important;
-  }
-  
-  .tagline-badge {
-    font-size: 0.75rem;
-    padding: 3px 10px;
+    padding: 8px 13px !important;
+    font-size: 0.88rem !important;
   }
 }
