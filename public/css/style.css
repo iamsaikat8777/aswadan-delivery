@@ -499,10 +499,10 @@ body {
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 
-/* --- TOAST POPUP STYLES --- */
+/* --- TOAST POPUP STYLES (DEFAULT DESKTOP) --- */
 .toast-popup {
   position: fixed;
-  bottom: -100px;
+  bottom: -80px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--gold-gradient);
@@ -510,7 +510,7 @@ body {
   font-weight: bold;
   padding: 10px 20px;
   border-radius: 20px;
-  transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+  transition: bottom 0.25s ease, opacity 0.25s ease;
   z-index: 999999;
   pointer-events: none;
   box-shadow: 0 5px 20px rgba(0,0,0,0.5);
@@ -595,17 +595,20 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Fixed Toast Popup Visibility & Smooth Slide Animation for Mobile View */
+  /* Fixed Toast Popup Visibility at the BOTTOM of the viewport for Mobile View so it's always visible wherever scrolled */
   .toast-popup {
-    bottom: auto !important;
-    top: -100px !important;
+    position: fixed !important;
+    top: auto !important;
+    bottom: -80px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     opacity: 0 !important;
-    transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
+    transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
   }
 
   .toast-popup.show {
-    top: 75px !important;
-    bottom: auto !important;
+    bottom: 25px !important;
+    top: auto !important;
     opacity: 1 !important;
   }
 
