@@ -20,6 +20,7 @@ const OFFER_FILE = path.join(__dirname, 'offer.json');
 const ADMIN_FILE = path.join(__dirname, 'admin.json');
 const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
 const SPECIAL_REQUESTS_FILE = path.join(__dirname, 'special_requests.json');
+const PINCODES_FILE = path.join(__dirname, 'pincodes.json');
 
 function loadData(filePath, defaultData = []) {
   try {
@@ -89,6 +90,8 @@ const defaultAdminConfig = {
   email: 'iammadhuchanda@gmail.com'
 };
 
+const defaultPincodes = ['700036'];
+
 let usersDB = loadData(USERS_FILE, []);
 let ordersDB = loadData(ORDERS_FILE, []);
 let menuDB = loadData(MENU_FILE, defaultMenu);
@@ -96,6 +99,7 @@ let offerDB = loadData(OFFER_FILE, defaultOffer);
 let adminConfig = loadData(ADMIN_FILE, defaultAdminConfig);
 let reviewsDB = loadData(REVIEWS_FILE, []);
 let specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
+let pincodesDB = loadData(PINCODES_FILE, defaultPincodes);
 const otpStore = {};
 
 if (!fs.existsSync(MENU_FILE)) saveData(MENU_FILE, menuDB);
@@ -103,6 +107,7 @@ if (!fs.existsSync(OFFER_FILE)) saveData(OFFER_FILE, offerDB);
 if (!fs.existsSync(ADMIN_FILE)) saveData(ADMIN_FILE, adminConfig);
 if (!fs.existsSync(REVIEWS_FILE)) saveData(REVIEWS_FILE, reviewsDB);
 if (!fs.existsSync(SPECIAL_REQUESTS_FILE)) saveData(SPECIAL_REQUESTS_FILE, specialRequestsDB);
+if (!fs.existsSync(PINCODES_FILE)) saveData(PINCODES_FILE, pincodesDB);
 
 usersDB = syncUsersFromOrders(usersDB, ordersDB);
 
@@ -160,6 +165,11 @@ app.get('/api/menu', (req, res) => {
 app.get('/api/offer', (req, res) => {
   offerDB = loadData(OFFER_FILE, defaultOffer);
   res.json({ success: true, offer: offerDB });
+});
+
+app.get('/api/pincodes', (req, res) => {
+  pincodesDB = loadData(PINCODES_FILE, defaultPincodes);
+  res.json({ success: true, pincodes: pincodesDB });
 });
 
 app.get('/api/reviews', (req, res) => {
@@ -246,7 +256,7 @@ app.post('/api/special-request', (req, res) => {
           <b>খাবার:</b> ${itemName} (${qty} প্লেট)<br>
           <b>বিবরণ:</b> ${description || 'N/A'}</p>`
     );
-    sendEmail(email, `✨ স্পেশাল ফুড রিকুয়েস্ট জমা হয়েছে: #${reqId}`, userHtml);
+    sendEmail(email, `✨ আপনার স্পেশাল ফুড রিকুয়েস্ট জমা হয়েছে: #${reqId}`, userHtml);
   }
 
   const adminHtml = createBrandEmail(
@@ -326,14 +336,17 @@ app.post('/api/special-request/pay', (req, res) => {
   res.json({ success: true, message: 'স্পেশাল অর্ডারের পেমেন্ট সফলভাবে জমা হয়েছে!', order: newOrder });
 });
 
-// --- UPDATED SIGNUP ROUTE ---
+// --- SIGNUP ROUTE WITH DYNAMIC PINCODE CHECK ---
 app.post('/api/auth/signup', (req, res) => {
   try {
     const { name, phone, email, password, address, location, lat, lng, pincode } = req.body;
-    usersDB = loadData(USERS_FILE, []);
-    if (pincode !== '700036') {
-      return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
+    pincodesDB = loadData(PINCODES_FILE, defaultPincodes);
+    
+    if (!pincodesDB.includes(pincode.trim())) {
+      return res.status(400).json({ success: false, message: `আমাদের পরিষেবা শুধুমাত্র নির্ধারিত পিনকোডসমূহে (${pincodesDB.join(', ')}) উপলব্ধ।` });
     }
+
+    usersDB = loadData(USERS_FILE, []);
     const existingUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim() || (email && u.email && u.email.toLowerCase() === email.trim().toLowerCase()));
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'এই মোবাইল নম্বর বা ইমেল দিয়ে ইতিমধ্যে অ্যাকাউন্ট রয়েছে।' });
@@ -358,17 +371,20 @@ app.post('/api/auth/signup', (req, res) => {
   }
 });
 
-// --- FIXED PROFILE UPDATE ROUTE ---
+// --- PROFILE UPDATE ROUTE WITH DYNAMIC PINCODE CHECK ---
 app.post('/api/user/profile', (req, res) => {
   try {
     const { phone, name, email, address, location, lat, lng, pincode } = req.body;
+    pincodesDB = loadData(PINCODES_FILE, defaultPincodes);
+
+    if (pincode && !pincodesDB.includes(pincode.trim())) {
+      return res.status(400).json({ success: false, message: `আমাদের পরিষেবা শুধুমাত্র নির্ধারিত পিনকোডসমূহে (${pincodesDB.join(', ')}) উপলব্ধ।` });
+    }
+
     usersDB = loadData(USERS_FILE, []);
     const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
     if (!user) {
       return res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
-    }
-    if (pincode && pincode !== '700036') {
-      return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
     }
     if (name) user.name = name;
     if (email) user.email = email;
@@ -499,7 +515,6 @@ app.post('/api/orders/cancel', (req, res) => {
 app.post('/api/orders', (req, res) => {
   const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
   
-  // Fetch latest user profile data to ensure updated address & GPS coordinates are used
   usersDB = loadData(USERS_FILE, []);
   const latestUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
   
@@ -772,17 +787,45 @@ app.post('/api/admin/users/toggle-block', (req, res) => {
 });
 
 app.post('/api/admin/users/delete', (req, res) => {
-  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   let users = loadData(USERS_FILE, []);
+  let orders = loadData(ORDERS_FILE, []);
+  const targetPhone = req.body.phone ? String(req.body.phone).trim() : null;
+  const targetEmail = req.body.email ? String(req.body.email).trim().toLowerCase() : null;
+
   const initialLen = users.length;
-  users = users.filter(u => String(u.phone).trim() !== String(req.body.phone).trim());
-  if (users.length < initialLen) {
-    usersDB = users;
-    saveData(USERS_FILE, usersDB);
-    res.json({ success: true, message: 'ইউজার মুছে ফেলা হয়েছে।' });
-  } else {
-    res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
+  users = users.filter(u => {
+    const uPhone = u.phone ? String(u.phone).trim() : '';
+    const uEmail = u.email ? String(u.email).trim().toLowerCase() : '';
+    if (targetPhone && uPhone === targetPhone) return false;
+    if (targetEmail && uEmail === targetEmail) return false;
+    return true;
+  });
+
+  orders = orders.filter(o => {
+    const oPhone = o.phone ? String(o.phone).trim() : '';
+    const oEmail = o.email ? String(o.email).trim().toLowerCase() : '';
+    if (targetPhone && oPhone === targetPhone) return false;
+    if (targetEmail && oEmail === targetEmail) return false;
+    return true;
+  });
+
+  usersDB = users;
+  ordersDB = orders;
+  saveData(USERS_FILE, usersDB);
+  saveData(ORDERS_FILE, ordersDB);
+
+  return res.json({ success: true, message: 'ইউজার সফলভাবে মুছে ফেলা হয়েছে।' });
+});
+
+app.post('/api/admin/pincodes/save', (req, res) => {
+  if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  const { pincodes } = req.body;
+  if (Array.isArray(pincodes)) {
+    pincodesDB = pincodes;
+    saveData(PINCODES_FILE, pincodesDB);
+    return res.json({ success: true, message: 'ডেলিভারি পিনকোড তালিকা সফলভাবে আপডেট হয়েছে!' });
   }
+  res.status(400).json({ success: false, message: 'অবৈধ পিনকোড ডেটা।' });
 });
 
 app.get('/api/admin/special-requests', (req, res) => {
