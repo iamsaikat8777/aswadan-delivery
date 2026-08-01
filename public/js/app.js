@@ -86,6 +86,9 @@ function formatDateDDMMYYYY(dateInput) {
 
 // --- CART & APP CORE LOGIC ---
 let cart = JSON.parse(localStorage.getItem('aswadan_cart') || '[]');
+// Ensure cart items have valid numeric prices
+cart = cart.map(i => ({ ...i, price: Number(i.price) || 0, qty: Number(i.qty) || 1 }));
+
 let currentUser = JSON.parse(localStorage.getItem('aswadan_user') || localStorage.getItem('currentUser') || 'null');
 let paymentScreenshotBase64 = '';
 let specPaymentScreenshotBase64 = '';
@@ -218,7 +221,7 @@ function openAuthModal() {
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-// --- AUTH MODAL WITH FORGOT PASSWORD, GPS & INTERACTIVE MAP ---
+// --- AUTH MODAL WITH ENTER KEY, FORGOT PASSWORD & MAP ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -243,11 +246,11 @@ function setupGlobalAuthModalFix() {
       <!-- LOGIN FORM -->
       <div id="login-form">
         <label class="input-label">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
-        <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" style="margin-bottom:12px;">
+        <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter') loginUser()">
         
         <label class="input-label">🔑 পাসওয়ার্ড:</label>
         <div style="position:relative; margin-bottom:6px;">
-          <input type="password" id="login-password" class="input-field" placeholder="Enter Password" style="padding-right:45px;">
+          <input type="password" id="login-password" class="input-field" placeholder="Enter Password" style="padding-right:45px;" onkeydown="if(event.key==='Enter') loginUser()">
           <span onclick="togglePasswordVisibility('login-password', 'login-eye-icon')" id="login-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
         </div>
         <div style="text-align:right; margin-bottom:15px;">
@@ -260,17 +263,17 @@ function setupGlobalAuthModalFix() {
       <!-- SIGNUP FORM -->
       <div id="signup-form" style="display:none;">
         <label class="input-label">👤 নাম:</label>
-        <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="margin-bottom:8px;">
+        <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter') signupUser()">
         
         <label class="input-label">📱 মোবাইল নম্বর:</label>
-        <input type="tel" id="signup-phone" class="input-field" placeholder="Mobile Number" style="margin-bottom:8px;">
+        <input type="tel" id="signup-phone" class="input-field" placeholder="Mobile Number" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter') signupUser()">
         
         <label class="input-label">📧 ইমেল:</label>
-        <input type="email" id="signup-email" class="input-field" placeholder="Email Address" style="margin-bottom:8px;">
+        <input type="email" id="signup-email" class="input-field" placeholder="Email Address" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter') signupUser()">
         
         <label class="input-label">🔑 পাসওয়ার্ড:</label>
         <div style="position:relative; margin-bottom:8px;">
-          <input type="password" id="signup-password" class="input-field" placeholder="Create Password" style="padding-right:45px;">
+          <input type="password" id="signup-password" class="input-field" placeholder="Create Password" style="padding-right:45px;" onkeydown="if(event.key==='Enter') signupUser()">
           <span onclick="togglePasswordVisibility('signup-password', 'signup-eye-icon')" id="signup-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
         </div>
 
@@ -287,7 +290,7 @@ function setupGlobalAuthModalFix() {
         <input type="hidden" id="signup-lng" value="">
 
         <label class="input-label">📍 পিনকোড:</label>
-        <input type="text" id="signup-pincode" class="input-field" value="700036" style="margin-bottom:15px;">
+        <input type="text" id="signup-pincode" class="input-field" value="700036" style="margin-bottom:15px;" onkeydown="if(event.key==='Enter') signupUser()">
 
         <button type="button" class="btn-primary" onclick="signupUser()">সাইন-আপ সম্পন্ন করুন</button>
       </div>
@@ -319,7 +322,7 @@ function setupGlobalAuthModalFix() {
     document.body.appendChild(mapModal);
   }
 
-  // Inject Forgot Password Modal
+  // Inject Forgot Password Modal with Eye Toggle
   if (!document.getElementById('forgot-pass-modal')) {
     const fpModal = document.createElement('div');
     fpModal.id = 'forgot-pass-modal';
@@ -332,14 +335,19 @@ function setupGlobalAuthModalFix() {
         </div>
         <div id="fp-step-1">
           <label class="input-label">📧 আপনার রেজিস্টার্ড ইমেল দিন:</label>
-          <input type="email" id="fp-email" class="input-field" placeholder="Enter your email" style="margin-bottom:12px;">
+          <input type="email" id="fp-email" class="input-field" placeholder="Enter your email" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter') requestPasswordResetOTP()">
           <button class="btn-primary" onclick="requestPasswordResetOTP()">OTP পাঠান</button>
         </div>
         <div id="fp-step-2" style="display:none;">
           <label class="input-label">🔑 ইমেলে প্রাপ্ত ৬-সংখ্যার OTP:</label>
           <input type="text" id="fp-otp" class="input-field" placeholder="Enter OTP" style="margin-bottom:12px;">
+          
           <label class="input-label">🔒 নতুন পাসওয়ার্ড:</label>
-          <input type="password" id="fp-new-pass" class="input-field" placeholder="New Password" style="margin-bottom:12px;">
+          <div style="position:relative; margin-bottom:12px;">
+            <input type="password" id="fp-new-pass" class="input-field" placeholder="New Password" style="padding-right:45px;" onkeydown="if(event.key==='Enter') executePasswordReset()">
+            <span onclick="togglePasswordVisibility('fp-new-pass', 'fp-eye-icon')" id="fp-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
+          </div>
+
           <button class="btn-primary" onclick="executePasswordReset()">পাসওয়ার্ড পরিবর্তন করুন</button>
         </div>
       </div>
