@@ -218,7 +218,7 @@ function openAuthModal() {
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-// --- FULLY RESTORED AUTH MODAL WITH INDEPENDENT GPS & INTERACTIVE LEAFLET MAP ---
+// --- AUTH MODAL WITH GPS & INTERACTIVE MAP ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -274,10 +274,9 @@ function setupGlobalAuthModalFix() {
         <label class="input-label">🏠 ঠিকানা (নিজের মতো করে লিখুন):</label>
         <textarea id="signup-address" class="input-field" rows="2" placeholder="Type your address here..." style="margin-bottom:8px;"></textarea>
 
-        <!-- INDEPENDENT GPS & INTERACTIVE MAP BUTTONS -->
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <button type="button" onclick="fetchUserCurrentLocationGPS()" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
-          <button type="button" onclick="openMapLocationPickerModal()" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
+          <button type="button" onclick="fetchUserCurrentLocationGPS('signup-lat', 'signup-lng', 'location-status-badge')" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
+          <button type="button" onclick="openMapLocationPickerModal('signup-lat', 'signup-lng', 'location-status-badge')" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
         </div>
         <div id="location-status-badge" style="font-size:0.8rem; color:#4ade80; margin-bottom:8px; display:none;"></div>
         <input type="hidden" id="signup-location" value="Kolkata">
@@ -303,11 +302,9 @@ function setupGlobalAuthModalFix() {
           <h3 style="color:var(--gold-bright);">🗺️ Tap & Drop Pin on Map</h3>
           <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
         </div>
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ বা ক্লিক করুন (পিনটি ড্র্যাগও করতে পারেন):</p>
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
         
-        <!-- Fully Interactive Leaflet Map Container -->
         <div id="interactive-leaflet-map" style="width:100%; height:260px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
-
         <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Pin Coordinates..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
 
         <div style="display:flex; gap:10px;">
@@ -360,8 +357,12 @@ function togglePasswordVisibility(fieldId, iconId) {
   }
 }
 
-// --- GPS LOCATION VERIFICATION ---
-function fetchUserCurrentLocationGPS() {
+// --- GPS & MAP LOCATION HELPERS ---
+let activeLatField = 'signup-lat';
+let activeLngField = 'signup-lng';
+let activeBadgeField = 'location-status-badge';
+
+function fetchUserCurrentLocationGPS(latId = 'signup-lat', lngId = 'signup-lng', badgeId = 'location-status-badge') {
   if (navigator.geolocation) {
     showMobileLoading();
     navigator.geolocation.getCurrentPosition(async (position) => {
@@ -369,10 +370,12 @@ function fetchUserCurrentLocationGPS() {
       const lon = position.coords.longitude;
       hideMobileLoading();
       
-      document.getElementById('signup-lat').value = lat;
-      document.getElementById('signup-lng').value = lon;
+      const latEl = document.getElementById(latId);
+      const lngEl = document.getElementById(lngId);
+      if (latEl) latEl.value = lat;
+      if (lngEl) lngEl.value = lon;
       
-      const badge = document.getElementById('location-status-badge');
+      const badge = document.getElementById(badgeId);
       if (badge) {
         badge.style.display = 'block';
         badge.innerText = `✅ GPS Verified (Lat: ${lat.toFixed(3)}, Lng: ${lon.toFixed(3)})`;
@@ -387,17 +390,20 @@ function fetchUserCurrentLocationGPS() {
   }
 }
 
-// --- INTERACTIVE LEAFLET MAP PICKER LOGIC ---
 let activeLeafletMap = null;
 let activeLeafletMarker = null;
 
-function openMapLocationPickerModal() {
+function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', badgeId = 'location-status-badge') {
+  activeLatField = latId;
+  activeLngField = lngId;
+  activeBadgeField = badgeId;
+
   const m = document.getElementById('map-picker-modal');
   if (m) {
     m.style.display = 'flex';
     setTimeout(() => {
-      let initLat = parseFloat(document.getElementById('signup-lat').value) || 22.5726;
-      let initLng = parseFloat(document.getElementById('signup-lng').value) || 88.3639;
+      let initLat = parseFloat(document.getElementById(latId).value) || 22.5726;
+      let initLng = parseFloat(document.getElementById(lngId).value) || 88.3639;
       initInteractiveLeafletMap(initLat, initLng);
     }, 250);
   }
@@ -439,15 +445,17 @@ function initInteractiveLeafletMap(lat, lng) {
 }
 
 function updateMapSelectionCoords(lat, lng) {
-  document.getElementById('signup-lat').value = lat;
-  document.getElementById('signup-lng').value = lng;
+  const latEl = document.getElementById(activeLatField);
+  const lngEl = document.getElementById(activeLngField);
+  if (latEl) latEl.value = lat;
+  if (lngEl) lngEl.value = lng;
   document.getElementById('map-selected-coords-desc').value = `Pin Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 }
 
 function confirmMapLocationSelection() {
-  const lat = document.getElementById('signup-lat').value;
-  const lng = document.getElementById('signup-lng').value;
-  const badge = document.getElementById('location-status-badge');
+  const lat = document.getElementById(activeLatField).value;
+  const lng = document.getElementById(activeLngField).value;
+  const badge = document.getElementById(activeBadgeField);
   if (badge) {
     badge.style.display = 'block';
     badge.innerText = `✅ Map Pin Confirmed (${Number(lat).toFixed(3)}, ${Number(lng).toFixed(3)})`;
@@ -491,7 +499,7 @@ async function signupUser() {
   const phone = document.getElementById('signup-phone').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
-  const address = document.getElementById('signup-address').value.trim(); // Manually typed address
+  const address = document.getElementById('signup-address').value.trim();
   const location = document.getElementById('signup-location').value.trim();
   const lat = document.getElementById('signup-lat').value.trim();
   const lng = document.getElementById('signup-lng').value.trim();
@@ -622,7 +630,7 @@ function togglePaymentMethodUI() {
   }
 }
 
-// --- PERSISTENT USER DASHBOARD & SPECIAL REQUEST LINK FIX ---
+// --- PERSISTENT USER DASHBOARD WITH RESTORED PROFILE GPS & MAP LOCATION ---
 function injectUserDashboardModalIfNeeded() {
   const dropdownMenu = document.getElementById('user-hover-menu');
   if (dropdownMenu) {
@@ -669,7 +677,18 @@ function injectUserDashboardModalIfNeeded() {
           <label class="input-label">📧 ইমেল:</label>
           <input type="email" id="prof-email" class="input-field">
           <label class="input-label">🏠 ঠিকানা:</label>
-          <textarea id="prof-address" class="input-field"></textarea>
+          <textarea id="prof-address" class="input-field" rows="2" placeholder="Update your address..."></textarea>
+
+          <!-- RESTORED FOR PROFILE UPDATE -->
+          <div style="display:flex; gap:8px; margin-bottom:8px; margin-top:8px;">
+            <button type="button" onclick="fetchUserCurrentLocationGPS('prof-lat', 'prof-lng', 'prof-location-status-badge')" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
+            <button type="button" onclick="openMapLocationPickerModal('prof-lat', 'prof-lng', 'prof-location-status-badge')" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
+          </div>
+          <div id="prof-location-status-badge" style="font-size:0.8rem; color:#4ade80; margin-bottom:8px; display:none;"></div>
+          <input type="hidden" id="prof-location" value="">
+          <input type="hidden" id="prof-lat" value="">
+          <input type="hidden" id="prof-lng" value="">
+
           <label class="input-label">📍 পিনকোড:</label>
           <input type="text" id="prof-pincode" class="input-field" value="700036">
           <button class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
@@ -1043,12 +1062,18 @@ function loadUserProfileData() {
   document.getElementById('prof-email').value = currentUser.email || '';
   document.getElementById('prof-address').value = currentUser.address || '';
   document.getElementById('prof-pincode').value = currentUser.pincode || '700036';
+  document.getElementById('prof-lat').value = currentUser.lat || '';
+  document.getElementById('prof-lng').value = currentUser.lng || '';
+  document.getElementById('prof-location').value = currentUser.location || '';
 }
 
 async function saveUserProfile() {
   const name = document.getElementById('prof-name').value.trim();
   const email = document.getElementById('prof-email').value.trim();
   const address = document.getElementById('prof-address').value.trim();
+  const lat = document.getElementById('prof-lat').value.trim();
+  const lng = document.getElementById('prof-lng').value.trim();
+  const location = document.getElementById('prof-location').value.trim();
   const pincode = document.getElementById('prof-pincode').value.trim();
 
   showMobileLoading();
@@ -1056,7 +1081,7 @@ async function saveUserProfile() {
     const res = await fetch('/api/user/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: currentUser.phone, name, email, address, pincode })
+      body: JSON.stringify({ phone: currentUser.phone, name, email, address, location, lat, lng, pincode })
     });
     const data = await res.json();
     hideMobileLoading();
@@ -1065,6 +1090,8 @@ async function saveUserProfile() {
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       showToast('প্রোফাইল আপডেট হয়েছে!');
       updateAuthNavUI();
+    } else {
+      alert(data.message);
     }
   } catch (err) {
     hideMobileLoading();
