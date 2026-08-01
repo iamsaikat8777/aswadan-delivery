@@ -166,11 +166,34 @@ window.addEventListener('click', (e) => {
 });
 
 let toastTimer = null;
-function showToast(msg) {
+function showToast(msg, targetBtn) {
   const toast = document.getElementById('toast-msg');
   if (!toast) return;
 
   toast.innerText = msg;
+
+  if (window.innerWidth <= 768 && targetBtn) {
+    const rect = targetBtn.getBoundingClientRect();
+    toast.style.position = 'fixed';
+    
+    // Position toast relative to where the button currently sits in viewport
+    let topPos = rect.top - 50;
+    if (topPos < 70) {
+      topPos = rect.bottom + 12; // If button is near top, show below it
+    }
+    
+    toast.style.top = `${topPos}px`;
+    toast.style.left = `${rect.left + (rect.width / 2)}px`;
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.bottom = 'auto';
+  } else {
+    toast.style.position = 'fixed';
+    toast.style.top = 'auto';
+    toast.style.bottom = '30px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+  }
+
   toast.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
@@ -1096,7 +1119,7 @@ async function confirmSpecialPayment() {
   }
 }
 
-// --- CART MANAGEMENT WITH BUTTON-ANCHORED FLOATING TOAST POPUP ---
+// --- CART MANAGEMENT WITH FIXED VIEWPORT-CENTERED TOAST POPUP ---
 function addToCart(id, name, price, desc) {
   const existing = cart.find(item => item.id === id);
   if (existing) {
