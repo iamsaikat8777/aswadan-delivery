@@ -123,7 +123,7 @@ function injectLeafletDependencies() {
 function updateCartCount() {
   const countEl = document.getElementById('cart-count');
   if (countEl) {
-    const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+    const totalQty = cart.reduce((sum, item) => sum + Number(item.qty || 1), 0);
     countEl.innerText = totalQty;
   }
   localStorage.setItem('aswadan_cart', JSON.stringify(cart));
@@ -542,7 +542,7 @@ function logoutUser() {
   location.reload();
 }
 
-// --- AUTO-INJECT CART MODAL WITH DD/MM/YYYY FORMATTER & COD PAYMENT OPTION ---
+// --- AUTO-INJECT CART MODAL WITH FIXED NaN PRICE GLITCH & COD ---
 function injectCartModalIfNeeded() {
   if (!document.getElementById('cart-modal')) {
     const cartModalDiv = document.createElement('div');
@@ -630,7 +630,7 @@ function togglePaymentMethodUI() {
   }
 }
 
-// --- PERSISTENT USER DASHBOARD WITH RESTORED PROFILE GPS & MAP LOCATION ---
+// --- PERSISTENT USER DASHBOARD WITH PROFILE MAP & GPS ---
 function injectUserDashboardModalIfNeeded() {
   const dropdownMenu = document.getElementById('user-hover-menu');
   if (dropdownMenu) {
@@ -1385,13 +1385,13 @@ async function confirmSpecialPayment() {
   }
 }
 
-// --- CART MANAGEMENT WITH BUTTON-ANCHORED FLOATING TOAST POPUP ---
+// --- CART MANAGEMENT WITH FIXED NaN PRICE GLITCH ---
 function addToCart(id, name, price, desc) {
-  const existing = cart.find(item => item.id === id);
+  const existing = cart.find(item => Number(item.id) === Number(id));
   if (existing) {
-    existing.qty += 1;
+    existing.qty = Number(existing.qty || 1) + 1;
   } else {
-    cart.push({ id, name, price, desc, qty: 1 });
+    cart.push({ id: Number(id), name, price: Number(price), desc: desc || '', qty: 1 });
   }
   updateCartCount();
   showToast('🛒 কার্টে যোগ করা হয়েছে!');
@@ -1430,19 +1430,21 @@ function renderCartItems() {
   }
 
   let total = 0;
-  let totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+  let totalQty = cart.reduce((sum, i) => sum + Number(i.qty || 1), 0);
 
   container.innerHTML = cart.map(item => {
-    total += item.price * item.qty;
+    let itemPrice = Number(item.price || 0);
+    let itemQty = Number(item.qty || 1);
+    total += itemPrice * itemQty;
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; background:#1c1c28; padding:10px; border-radius:8px; margin-bottom:8px;">
         <div>
           <strong style="color:var(--gold-bright); font-size:0.9rem;">${item.name}</strong><br>
-          <small style="color:#aaa;">₹${item.price} x ${item.qty}</small>
+          <small style="color:#aaa;">₹${itemPrice} x ${itemQty}</small>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
           <button onclick="changeQty(${item.id}, -1)" style="background:#333; color:#fff; border:none; width:26px; height:26px; border-radius:4px; cursor:pointer;">-</button>
-          <span style="font-weight:bold; width:20px; text-align:center;">${item.qty}</span>
+          <span style="font-weight:bold; width:20px; text-align:center;">${itemQty}</span>
           <button onclick="changeQty(${item.id}, 1)" style="background:var(--gold-gradient); color:#000; border:none; width:26px; height:26px; border-radius:4px; cursor:pointer; font-weight:bold;">+</button>
         </div>
       </div>
@@ -1454,17 +1456,19 @@ function renderCartItems() {
 }
 
 function changeQty(id, delta) {
-  const item = cart.find(i => i.id === id);
+  const item = cart.find(i => Number(i.id) === Number(id));
   if (item) {
-    item.qty += delta;
-    if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+    item.qty = Number(item.qty || 1) + Number(delta);
+    if (item.qty <= 0) {
+      cart = cart.filter(i => Number(i.id) !== Number(id));
+    }
   }
   updateCartCount();
   renderCartItems();
 }
 
 function proceedToPaymentStep() {
-  let totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+  let totalQty = cart.reduce((sum, i) => sum + Number(i.qty || 1), 0);
   if (totalQty < 2) {
     alert('⚠️ আমাদের সর্বনিম্ন অর্ডার ২ টি থালি / প্লেট।');
     return;
@@ -1523,7 +1527,7 @@ async function placeOrder() {
     orderBtn.innerText = 'অর্ডার প্রসেসিং হচ্ছে... ⏳';
   }
 
-  const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  const totalAmount = cart.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty || 1)), 0);
   const finalScreenshot = (paymentMethod === 'cod') ? 'CASH ON DELIVERY' : paymentScreenshotBase64;
 
   showMobileLoading();
