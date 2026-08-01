@@ -218,7 +218,7 @@ function openAuthModal() {
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-// --- AUTH MODAL WITH GPS & INTERACTIVE MAP ---
+// --- AUTH MODAL WITH FORGOT PASSWORD, GPS & INTERACTIVE MAP ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -246,9 +246,12 @@ function setupGlobalAuthModalFix() {
         <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" style="margin-bottom:12px;">
         
         <label class="input-label">🔑 পাসওয়ার্ড:</label>
-        <div style="position:relative; margin-bottom:15px;">
+        <div style="position:relative; margin-bottom:6px;">
           <input type="password" id="login-password" class="input-field" placeholder="Enter Password" style="padding-right:45px;">
           <span onclick="togglePasswordVisibility('login-password', 'login-eye-icon')" id="login-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
+        </div>
+        <div style="text-align:right; margin-bottom:15px;">
+          <a href="javascript:void(0)" onclick="openForgotPasswordModal()" style="color:var(--gold-bright); font-size:0.85rem; text-decoration:none;">পাসওয়ার্ড ভুলে গেছেন? (Forgot Password)</a>
         </div>
 
         <button type="button" class="btn-primary" onclick="loginUser()">লগইন করুন</button>
@@ -314,6 +317,96 @@ function setupGlobalAuthModalFix() {
       </div>
     `;
     document.body.appendChild(mapModal);
+  }
+
+  // Inject Forgot Password Modal
+  if (!document.getElementById('forgot-pass-modal')) {
+    const fpModal = document.createElement('div');
+    fpModal.id = 'forgot-pass-modal';
+    fpModal.className = 'modal';
+    fpModal.innerHTML = `
+      <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+          <h3 style="color:var(--gold-bright);">🔑 পাসওয়ার্ড পুনরুদ্ধার</h3>
+          <button class="close-btn" onclick="closeModal('forgot-pass-modal')">&times;</button>
+        </div>
+        <div id="fp-step-1">
+          <label class="input-label">📧 আপনার রেজিস্টার্ড ইমেল দিন:</label>
+          <input type="email" id="fp-email" class="input-field" placeholder="Enter your email" style="margin-bottom:12px;">
+          <button class="btn-primary" onclick="requestPasswordResetOTP()">OTP পাঠান</button>
+        </div>
+        <div id="fp-step-2" style="display:none;">
+          <label class="input-label">🔑 ইমেলে প্রাপ্ত ৬-সংখ্যার OTP:</label>
+          <input type="text" id="fp-otp" class="input-field" placeholder="Enter OTP" style="margin-bottom:12px;">
+          <label class="input-label">🔒 নতুন পাসওয়ার্ড:</label>
+          <input type="password" id="fp-new-pass" class="input-field" placeholder="New Password" style="margin-bottom:12px;">
+          <button class="btn-primary" onclick="executePasswordReset()">পাসওয়ার্ড পরিবর্তন করুন</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(fpModal);
+  }
+}
+
+function openForgotPasswordModal() {
+  closeModal('auth-modal');
+  const m = document.getElementById('forgot-pass-modal');
+  if (m) {
+    m.style.display = 'flex';
+    document.getElementById('fp-step-1').style.display = 'block';
+    document.getElementById('fp-step-2').style.display = 'none';
+  }
+}
+
+async function requestPasswordResetOTP() {
+  const email = document.getElementById('fp-email').value.trim();
+  if (!email) return alert('ইমেল আইডি লিখুন।');
+  showMobileLoading();
+  try {
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    hideMobileLoading();
+    if (data.success) {
+      showToast(data.message);
+      document.getElementById('fp-step-1').style.display = 'none';
+      document.getElementById('fp-step-2').style.display = 'block';
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    hideMobileLoading();
+    alert('সার্ভার ত্রুটি!');
+  }
+}
+
+async function executePasswordReset() {
+  const email = document.getElementById('fp-email').value.trim();
+  const otp = document.getElementById('fp-otp').value.trim();
+  const newPassword = document.getElementById('fp-new-pass').value.trim();
+  if (!otp || !newPassword) return alert('সমস্ত ফিল্ড পূরণ করুন।');
+  showMobileLoading();
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, newPassword })
+    });
+    const data = await res.json();
+    hideMobileLoading();
+    if (data.success) {
+      showToast(data.message);
+      closeModal('forgot-pass-modal');
+      openAuthModal();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    hideMobileLoading();
+    alert('সার্ভার ত্রুটি!');
   }
 }
 
@@ -542,7 +635,7 @@ function logoutUser() {
   location.reload();
 }
 
-// --- AUTO-INJECT CART MODAL WITH FIXED NaN PRICE GLITCH & COD ---
+// --- AUTO-INJECT CART MODAL WITH FIXED NaN PRICE GLITCH & VALID NUMBERS ---
 function injectCartModalIfNeeded() {
   if (!document.getElementById('cart-modal')) {
     const cartModalDiv = document.createElement('div');
@@ -1385,13 +1478,15 @@ async function confirmSpecialPayment() {
   }
 }
 
-// --- CART MANAGEMENT WITH FIXED NaN PRICE GLITCH ---
+// --- CART MANAGEMENT WITH ROBUST PRICE FIX ---
 function addToCart(id, name, price, desc) {
+  const numericPrice = Number(price) || 0;
   const existing = cart.find(item => Number(item.id) === Number(id));
   if (existing) {
+    existing.price = numericPrice;
     existing.qty = Number(existing.qty || 1) + 1;
   } else {
-    cart.push({ id: Number(id), name, price: Number(price), desc: desc || '', qty: 1 });
+    cart.push({ id: Number(id), name, price: numericPrice, desc: desc || '', qty: 1 });
   }
   updateCartCount();
   showToast('🛒 কার্টে যোগ করা হয়েছে!');
@@ -1451,7 +1546,7 @@ function renderCartItems() {
     `;
   }).join('');
 
-  if (totalEl) totalEl.innerText = total;
+  if (totalEl) totalEl.innerText = isNaN(total) ? 0 : total;
   if (noticeEl) noticeEl.style.display = (totalQty < 2) ? 'block' : 'none';
 }
 
@@ -1527,7 +1622,7 @@ async function placeOrder() {
     orderBtn.innerText = 'অর্ডার প্রসেসিং হচ্ছে... ⏳';
   }
 
-  const totalAmount = cart.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty || 1)), 0);
+  const totalAmount = cart.reduce((sum, i) => sum + (Number(i.price || 0) * Number(i.qty || 1)), 0);
   const finalScreenshot = (paymentMethod === 'cod') ? 'CASH ON DELIVERY' : paymentScreenshotBase64;
 
   showMobileLoading();
