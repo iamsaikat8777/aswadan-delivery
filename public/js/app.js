@@ -101,7 +101,24 @@ window.addEventListener('DOMContentLoaded', () => {
   injectCartModalIfNeeded();
   checkSpecialRequestNotificationBadge();
   setupGlobalAuthModalFix();
+  injectLeafletDependencies();
 });
+
+function injectLeafletDependencies() {
+  if (!document.getElementById('leaflet-css')) {
+    const link = document.createElement('link');
+    link.id = 'leaflet-css';
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+  }
+  if (!document.getElementById('leaflet-js')) {
+    const script = document.createElement('script');
+    script.id = 'leaflet-js';
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    document.head.appendChild(script);
+  }
+}
 
 function updateCartCount() {
   const countEl = document.getElementById('cart-count');
@@ -201,7 +218,7 @@ function openAuthModal() {
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-// --- FULLY RESTORED AUTH MODAL WITH INDEPENDENT GPS & LIVE MAP PICKER ---
+// --- FULLY RESTORED AUTH MODAL WITH INDEPENDENT GPS & INTERACTIVE LEAFLET MAP ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -257,7 +274,7 @@ function setupGlobalAuthModalFix() {
         <label class="input-label">🏠 ঠিকানা (নিজের মতো করে লিখুন):</label>
         <textarea id="signup-address" class="input-field" rows="2" placeholder="Type your address here..." style="margin-bottom:8px;"></textarea>
 
-        <!-- INDEPENDENT GPS & LIVE MAP CONFIRMATION BUTTONS -->
+        <!-- INDEPENDENT GPS & INTERACTIVE MAP BUTTONS -->
         <div style="display:flex; gap:8px; margin-bottom:8px;">
           <button type="button" onclick="fetchUserCurrentLocationGPS()" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
           <button type="button" onclick="openMapLocationPickerModal()" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
@@ -275,7 +292,7 @@ function setupGlobalAuthModalFix() {
     </div>
   `;
 
-  // Inject Improved Live Map Modal Picker with Search & Google Maps Direct Link
+  // Inject Interactive Leaflet Map Modal Picker
   if (!document.getElementById('map-picker-modal')) {
     const mapModal = document.createElement('div');
     mapModal.id = 'map-picker-modal';
@@ -283,23 +300,15 @@ function setupGlobalAuthModalFix() {
     mapModal.innerHTML = `
       <div class="modal-content" style="max-width:480px; text-align:center;">
         <div class="modal-header">
-          <h3 style="color:var(--gold-bright);">🗺️ Live Map Location Picker</h3>
+          <h3 style="color:var(--gold-bright);">🗺️ Tap & Drop Pin on Map</h3>
           <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
         </div>
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক লোকেশন সেট করতে নিচে আপনার এলাকার নাম সার্চ করুন অথবা সরাসরি গুগল ম্যাপে পিন করুন:</p>
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ বা ক্লিক করুন (পিনটি ড্র্যাগও করতে পারেন):</p>
         
-        <div style="display:flex; gap:6px; margin-bottom:10px;">
-          <input type="text" id="map-location-search-input" class="input-field" placeholder="Search area or landmark..." style="margin:0; font-size:0.9rem !important;">
-          <button type="button" class="btn-primary" onclick="searchLocationOnMap()" style="margin:0; width:90px; font-size:0.85rem;">Search</button>
-        </div>
+        <!-- Fully Interactive Leaflet Map Container -->
+        <div id="interactive-leaflet-map" style="width:100%; height:260px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
 
-        <div style="width:100%; height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--border-gold); margin-bottom:10px; position:relative;">
-          <iframe id="live-google-map-frame" width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen src="https://www.google.com/maps/embed/v1/place?key=&q=Kolkata"></iframe>
-        </div>
-
-        <div style="margin-bottom:12px;">
-          <a id="external-google-maps-link" href="https://maps.google.com" target="_blank" style="color:var(--gold-bright); font-size:0.85rem; text-decoration:underline; font-weight:bold;">🔗 Open in Google Maps (এলাকা সিলেক্ট করতে এখানে ক্লিক করুন)</a>
-        </div>
+        <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Pin Coordinates..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
 
         <div style="display:flex; gap:10px;">
           <button class="btn-primary" onclick="confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff;">লোকেশন নিশ্চিত করুন</button>
@@ -351,7 +360,7 @@ function togglePasswordVisibility(fieldId, iconId) {
   }
 }
 
-// --- GPS LOCATION VERIFICATION (DOES NOT OVERWRITE MANUAL ADDRESS) ---
+// --- GPS LOCATION VERIFICATION ---
 function fetchUserCurrentLocationGPS() {
   if (navigator.geolocation) {
     showMobileLoading();
@@ -378,46 +387,73 @@ function fetchUserCurrentLocationGPS() {
   }
 }
 
-// --- LIVE GOOGLE MAP PICKER MODAL ---
+// --- INTERACTIVE LEAFLET MAP PICKER LOGIC ---
+let activeLeafletMap = null;
+let activeLeafletMarker = null;
+
 function openMapLocationPickerModal() {
   const m = document.getElementById('map-picker-modal');
   if (m) {
     m.style.display = 'flex';
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
-        document.getElementById('external-google-maps-link').href = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-        document.getElementById('signup-lat').value = lat;
-        document.getElementById('signup-lng').value = lon;
-      }, () => {
-        document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=Kolkata&z=13&output=embed`;
-        document.getElementById('external-google-maps-link').href = `https://www.google.com/maps/search/?api=1&query=Kolkata`;
-      });
-    }
+    setTimeout(() => {
+      let initLat = parseFloat(document.getElementById('signup-lat').value) || 22.5726;
+      let initLng = parseFloat(document.getElementById('signup-lng').value) || 88.3639;
+      initInteractiveLeafletMap(initLat, initLng);
+    }, 250);
   }
 }
 
-function searchLocationOnMap() {
-  const query = document.getElementById('map-location-search-input').value.trim();
-  if (!query) return alert('অনুগ্রহ করে এলাকার নাম লিখুন।');
-  const encodedQuery = encodeURIComponent(query);
-  document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=${encodedQuery}&z=15&output=embed`;
-  document.getElementById('external-google-maps-link').href = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
-  document.getElementById('signup-location').value = query;
-  showToast('ম্যাপ আপডেট করা হয়েছে!');
+function initInteractiveLeafletMap(lat, lng) {
+  if (!window.L) {
+    setTimeout(() => initInteractiveLeafletMap(lat, lng), 300);
+    return;
+  }
+
+  const container = document.getElementById('interactive-leaflet-map');
+  if (!container) return;
+
+  if (!activeLeafletMap) {
+    activeLeafletMap = L.map('interactive-leaflet-map').setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(activeLeafletMap);
+
+    activeLeafletMarker = L.marker([lat, lng], { draggable: true }).addTo(activeLeafletMap);
+
+    activeLeafletMarker.on('dragend', function(e) {
+      const pos = activeLeafletMarker.getLatLng();
+      updateMapSelectionCoords(pos.lat, pos.lng);
+    });
+
+    activeLeafletMap.on('click', function(e) {
+      activeLeafletMarker.setLatLng(e.latlng);
+      updateMapSelectionCoords(e.latlng.lat, e.latlng.lng);
+    });
+  } else {
+    activeLeafletMap.setView([lat, lng], 15);
+    activeLeafletMarker.setLatLng([lat, lng]);
+    setTimeout(() => { activeLeafletMap.invalidateSize(); }, 150);
+  }
+  updateMapSelectionCoords(lat, lng);
+}
+
+function updateMapSelectionCoords(lat, lng) {
+  document.getElementById('signup-lat').value = lat;
+  document.getElementById('signup-lng').value = lng;
+  document.getElementById('map-selected-coords-desc').value = `Pin Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 }
 
 function confirmMapLocationSelection() {
-  const query = document.getElementById('map-location-search-input').value.trim() || 'Custom Map Pin';
+  const lat = document.getElementById('signup-lat').value;
+  const lng = document.getElementById('signup-lng').value;
   const badge = document.getElementById('location-status-badge');
   if (badge) {
     badge.style.display = 'block';
-    badge.innerText = `✅ Map Location Confirmed: ${query}`;
+    badge.innerText = `✅ Map Pin Confirmed (${Number(lat).toFixed(3)}, ${Number(lng).toFixed(3)})`;
   }
   closeModal('map-picker-modal');
-  showToast('ম্যাপ লোকেশন কনফার্ম হয়েছে!');
+  showToast('ম্যাপ লোকেশন সফলভাবে সেট হয়েছে!');
 }
 
 async function loginUser() {
@@ -455,7 +491,7 @@ async function signupUser() {
   const phone = document.getElementById('signup-phone').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
-  const address = document.getElementById('signup-address').value.trim(); // User types manually
+  const address = document.getElementById('signup-address').value.trim(); // Manually typed address
   const location = document.getElementById('signup-location').value.trim();
   const lat = document.getElementById('signup-lat').value.trim();
   const lng = document.getElementById('signup-lng').value.trim();
