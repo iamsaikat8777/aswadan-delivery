@@ -25,6 +25,7 @@
 
 html {
   background-color: #09080c;
+  touch-action: manipulation;
 }
 
 body {
@@ -33,46 +34,12 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   padding-bottom: 90px;
-  animation: pageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes pageFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  -webkit-text-size-adjust: 100%;
 }
 
 .brand-hero {
   margin-top: 25px;
   padding-top: 95px;
-}
-
-.modal {
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-
-.modal[style*="display: flex"] {
-  opacity: 1;
-}
-
-.modal-content {
-  transform: scale(0.92);
-  opacity: 0;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.modal[style*="display: flex"] .modal-content {
-  transform: scale(1);
-  opacity: 1;
-}
-
-.stat-card {
-  transition: transform 0.2s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--gold-bright);
 }
 
 /* --- AMBIENT GLOW ANIMATION --- */
@@ -92,14 +59,8 @@ body {
 }
 
 @keyframes glowPulse {
-  0% {
-    opacity: 0.6;
-    transform: translateX(-50%) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(-50%) scale(1.05);
-  }
+  0% { opacity: 0.6; transform: translateX(-50%) scale(0.95); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1.05); }
 }
 
 /* --- PERFECT DESKTOP NAVBAR & WORKING DROPDOWN --- */
@@ -314,13 +275,8 @@ body {
   touch-action: manipulation;
 }
 
-.btn-cta:hover {
-  transform: translateY(-2px);
-}
-
-.btn-cta:active {
-  transform: scale(0.96);
-}
+.btn-cta:hover { transform: translateY(-2px); }
+.btn-cta:active { transform: scale(0.96); }
 
 /* --- SIDE-BY-SIDE SLIDING ANIMATION & HOVER GOLDEN GLOW FOR TILES --- */
 .hero-spotlight-card {
@@ -340,13 +296,8 @@ body {
   box-shadow: 0 0 25px rgba(212, 175, 55, 0.3), inset 0 0 15px rgba(212, 175, 55, 0.1);
 }
 
-.hero-spotlight-card.slide-out-left {
-  animation: slideOutLeft 0.3s ease forwards;
-}
-
-.hero-spotlight-card.slide-in-right {
-  animation: slideInRight 0.3s ease forwards;
-}
+.hero-spotlight-card.slide-out-left { animation: slideOutLeft 0.3s ease forwards; }
+.hero-spotlight-card.slide-in-right { animation: slideInRight 0.3s ease forwards; }
 
 @keyframes slideOutLeft {
   from { opacity: 1; transform: translateX(0); }
@@ -433,7 +384,7 @@ body {
   font-weight: bold;
 }
 
-/* Modals */
+/* Modals (Desktop Default) */
 .modal {
   display: none;
   position: fixed;
@@ -470,7 +421,7 @@ body {
   border: 1px solid #333;
   border-radius: 8px;
   color: #fff;
-  font-size: 1rem !important; /* Prevents mobile auto-zoom on input focus */
+  font-size: 1rem;
 }
 
 .btn-primary {
@@ -524,19 +475,8 @@ body {
 
 /* --- MOBILE RESPONSIVE OPTIMIZATION (ONLY FOR MOBILE VIEW) --- */
 @media (max-width: 768px) {
-  html, body {
-    touch-action: manipulation;
-    -webkit-text-size-adjust: 100%;
-  }
-
   body {
     padding-bottom: 90px !important;
-    animation: mobilePageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-  }
-
-  @keyframes mobilePageFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
   }
 
   .brand-hero {
@@ -544,7 +484,7 @@ body {
     padding-top: 15px !important;
   }
 
-  /* Sticky / Hovering Navbar on Mobile Scroll */
+  /* Sticky Navbar on Mobile */
   .top-nav-container {
     position: sticky !important;
     top: 6px !important;
@@ -600,26 +540,19 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Fixed Perfect Center Screen Popup for Mobile View to prevent any misplacement */
+  /* FIX 1: Toast Popup will float dynamically right above/near the clicked button wherever user is on mobile */
   .toast-popup {
     position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
     bottom: auto !important;
-    transform: translate(-50%, -50%) scale(0.85) !important;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease !important;
+    transition: opacity 0.2s ease !important;
     opacity: 0 !important;
   }
 
   .toast-popup.show {
-    top: 50% !important;
-    left: 50% !important;
-    bottom: auto !important;
-    transform: translate(-50%, -50%) scale(1) !important;
     opacity: 1 !important;
   }
 
-  /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
+  /* FIX 2: Modals (Cart, Dashboard) perfectly centered relative to current active viewport */
   .modal {
     display: none;
     position: fixed !important;
@@ -658,13 +591,8 @@ body {
     margin-top: 10px;
   }
 
-  .hero-left-content h1 {
-    font-size: 1.6rem;
-  }
-
-  .hero-left-content p {
-    font-size: 0.9rem;
-  }
+  .hero-left-content h1 { font-size: 1.6rem; }
+  .hero-left-content p { font-size: 0.9rem; }
 }
 
 @media (max-width: 380px) {
