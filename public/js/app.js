@@ -188,7 +188,6 @@ function closeModal(modalId) {
   if (m) m.style.display = 'none';
 }
 
-// --- ROBUST AUTH MODAL & EYE TOGGLE CONTROLLER ---
 function openAuthModal() {
   setupGlobalAuthModalFix();
   const m = document.getElementById('auth-modal');
@@ -198,6 +197,11 @@ function openAuthModal() {
   }
 }
 
+// --- SVG EYE ICONS FOR PASSWORD TOGGLE ---
+const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
+// --- FULLY RESTORED AUTH MODAL WITH GOOGLE GPS & MAP LOCATION ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -207,15 +211,14 @@ function setupGlobalAuthModalFix() {
     document.body.appendChild(modal);
   }
 
-  // Always enforce proper HTML structure inside the modal to prevent missing elements
   modal.innerHTML = `
-    <div class="modal-content" style="max-width: 450px;">
+    <div class="modal-content" style="max-width: 460px;">
       <div class="modal-header">
         <h3 style="color:var(--gold-bright);">🔑 অ্যাকাউন্ট (Account)</h3>
         <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
       </div>
       
-      <div style="display:flex; gap:10px; margin-bottom:20px;">
+      <div style="display:flex; gap:10px; margin-bottom:18px;">
         <button type="button" id="tab-btn-login" onclick="switchAuthTab('login')" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border-gold); background:var(--gold-gradient); color:#000; font-weight:bold; cursor:pointer;">লগইন</button>
         <button type="button" id="tab-btn-signup" onclick="switchAuthTab('signup')" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border-gold); background:#1c1c28; color:var(--text-main); font-weight:bold; cursor:pointer;">নতুন সাইন-আপ</button>
       </div>
@@ -227,8 +230,8 @@ function setupGlobalAuthModalFix() {
         
         <label class="input-label">🔑 পাসওয়ার্ড:</label>
         <div style="position:relative; margin-bottom:15px;">
-          <input type="password" id="login-password" class="input-field" placeholder="Enter Password" style="padding-right:40px;">
-          <span onclick="togglePasswordVisibility('login-password', 'login-eye-icon')" id="login-eye-icon" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:1.2rem; z-index:10; pointer-events:auto;">👁️</span>
+          <input type="password" id="login-password" class="input-field" placeholder="Enter Password" style="padding-right:45px;">
+          <span onclick="togglePasswordVisibility('login-password', 'login-eye-icon')" id="login-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
         </div>
 
         <button type="button" class="btn-primary" onclick="loginUser()">লগইন করুন</button>
@@ -237,22 +240,29 @@ function setupGlobalAuthModalFix() {
       <!-- SIGNUP FORM -->
       <div id="signup-form" style="display:none;">
         <label class="input-label">👤 নাম:</label>
-        <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="margin-bottom:10px;">
+        <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="margin-bottom:8px;">
         
         <label class="input-label">📱 মোবাইল নম্বর:</label>
-        <input type="tel" id="signup-phone" class="input-field" placeholder="Mobile Number" style="margin-bottom:10px;">
+        <input type="tel" id="signup-phone" class="input-field" placeholder="Mobile Number" style="margin-bottom:8px;">
         
         <label class="input-label">📧 ইমেল:</label>
-        <input type="email" id="signup-email" class="input-field" placeholder="Email Address" style="margin-bottom:10px;">
+        <input type="email" id="signup-email" class="input-field" placeholder="Email Address" style="margin-bottom:8px;">
         
         <label class="input-label">🔑 পাসওয়ার্ড:</label>
-        <div style="position:relative; margin-bottom:10px;">
-          <input type="password" id="signup-password" class="input-field" placeholder="Create Password" style="padding-right:40px;">
-          <span onclick="togglePasswordVisibility('signup-password', 'signup-eye-icon')" id="signup-eye-icon" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:1.2rem; z-index:10; pointer-events:auto;">👁️</span>
+        <div style="position:relative; margin-bottom:8px;">
+          <input type="password" id="signup-password" class="input-field" placeholder="Create Password" style="padding-right:45px;">
+          <span onclick="togglePasswordVisibility('signup-password', 'signup-eye-icon')" id="signup-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
         </div>
 
         <label class="input-label">🏠 ঠিকানা:</label>
-        <textarea id="signup-address" class="input-field" rows="2" placeholder="Delivery Address" style="margin-bottom:10px;"></textarea>
+        <textarea id="signup-address" class="input-field" rows="2" placeholder="Delivery Address" style="margin-bottom:8px;"></textarea>
+
+        <!-- RESTORED: GOOGLE GET LOCATION & MAP POPUP BUTTONS -->
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <button type="button" onclick="fetchUserCurrentLocationGPS()" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
+          <button type="button" onclick="openMapLocationPickerModal()" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
+        </div>
+        <input type="hidden" id="signup-location" value="Kolkata">
 
         <label class="input-label">📍 পিনকোড:</label>
         <input type="text" id="signup-pincode" class="input-field" value="700036" style="margin-bottom:15px;">
@@ -261,6 +271,26 @@ function setupGlobalAuthModalFix() {
       </div>
     </div>
   `;
+
+  // Inject Map Picker Modal if not already present
+  if (!document.getElementById('map-picker-modal')) {
+    const mapModal = document.createElement('div');
+    mapModal.id = 'map-picker-modal';
+    mapModal.className = 'modal';
+    mapModal.innerHTML = `
+      <div class="modal-content" style="max-width:440px; text-align:center;">
+        <div class="modal-header">
+          <h3 style="color:var(--gold-bright);">🗺️ সিলেক্ট লোকেশন (Map)</h3>
+          <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
+        </div>
+        <p style="font-size:0.88rem; color:#aaa; margin-bottom:12px;">আপনার এলাকার ল্যান্ডমার্ক বা ঠিকানা টাইপ করে সিলেক্ট করুন:</p>
+        <input type="text" id="map-search-query" class="input-field" placeholder="e.g. Park Street, Kolkata" style="margin-bottom:10px;">
+        <button class="btn-primary" onclick="confirmMapLocationSelection()" style="margin-bottom:10px;">লোকেশন নিশ্চিত করুন</button>
+        <button onclick="closeModal('map-picker-modal')" style="background:none; border:none; color:#aaa; cursor:pointer; font-size:0.85rem;">বাতিল করুন</button>
+      </div>
+    `;
+    document.body.appendChild(mapModal);
+  }
 }
 
 function switchAuthTab(tab) {
@@ -288,19 +318,66 @@ function switchAuthTab(tab) {
   }
 }
 
-// --- BULLET-PROOF PASSWORD EYE TOGGLE ---
+// --- SVG EYE TOGGLE FUNCTION ---
 function togglePasswordVisibility(fieldId, iconId) {
   const field = document.getElementById(fieldId);
   const icon = document.getElementById(iconId);
   if (field && icon) {
     if (field.type === 'password') {
       field.type = 'text';
-      icon.innerText = '🙈';
+      icon.innerHTML = svgEyeClosed;
     } else {
       field.type = 'password';
-      icon.innerText = '👁️';
+      icon.innerHTML = svgEyeOpen;
     }
   }
+}
+
+// --- RESTORED: GPS & MAP LOCATION PICKER HELPERS ---
+function fetchUserCurrentLocationGPS() {
+  if (navigator.geolocation) {
+    showMobileLoading();
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        hideMobileLoading();
+        if (data && data.display_name) {
+          const addrField = document.getElementById('signup-address');
+          const locField = document.getElementById('signup-location');
+          if (addrField) addrField.value = data.display_name;
+          if (locField) locField.value = data.address.city || data.address.town || data.address.suburb || 'Kolkata';
+          showToast('GPS লোকেশন সফলভাবে নেওয়া হয়েছে!');
+        }
+      } catch (err) {
+        hideMobileLoading();
+        alert('লোকেশন ফেচ করতে সমস্যা হয়েছে।');
+      }
+    }, () => {
+      hideMobileLoading();
+      alert('লোকেশন পার্মিশন দেওয়া হয়নি।');
+    });
+  } else {
+    alert('আপনার ব্রাউজার জিওলোকেশন সাপোর্ট করে না।');
+  }
+}
+
+function openMapLocationPickerModal() {
+  const m = document.getElementById('map-picker-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function confirmMapLocationSelection() {
+  const query = document.getElementById('map-search-query').value.trim();
+  if (!query) return alert('ঠিকানা লিখুন।');
+  const addrField = document.getElementById('signup-address');
+  const locField = document.getElementById('signup-location');
+  if (addrField) addrField.value = query;
+  if (locField) locField.value = query;
+  closeModal('map-picker-modal');
+  showToast('ম্যাপ থেকে লোকেশন সেট হয়েছে!');
 }
 
 async function loginUser() {
@@ -1485,6 +1562,7 @@ function triggerPWAInstall() {
       if (banner) banner.style.display = 'none';
     });
   } else {
+    C
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS) {
       alert('আইওএস (iOS) ব্রাউজারে অ্যাপ ইন্সটল করতে সাফারি মেনু থেকে শেয়ার (Share) আইকনে ক্লিক করে "Add to Home Screen" সিলেক্ট করুন।');
