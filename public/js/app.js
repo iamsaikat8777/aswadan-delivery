@@ -86,7 +86,6 @@ function formatDateDDMMYYYY(dateInput) {
 
 // --- CART & APP CORE LOGIC ---
 let cart = JSON.parse(localStorage.getItem('aswadan_cart') || '[]');
-// Ensure cart items have valid numeric prices
 cart = cart.map(i => ({ ...i, price: Number(i.price) || 0, qty: Number(i.qty) || 1 }));
 
 let currentUser = JSON.parse(localStorage.getItem('aswadan_user') || localStorage.getItem('currentUser') || 'null');
@@ -104,6 +103,7 @@ window.addEventListener('DOMContentLoaded', () => {
   injectCartModalIfNeeded();
   checkSpecialRequestNotificationBadge();
   setupGlobalAuthModalFix();
+  injectGlobalMapPickerModalIfNeeded();
   injectLeafletDependencies();
 });
 
@@ -221,6 +221,33 @@ function openAuthModal() {
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
+// --- GUARANTEED GLOBAL MAP PICKER MODAL INJECTION ---
+function injectGlobalMapPickerModalIfNeeded() {
+  if (!document.getElementById('map-picker-modal')) {
+    const mapModal = document.createElement('div');
+    mapModal.id = 'map-picker-modal';
+    mapModal.className = 'modal';
+    mapModal.innerHTML = `
+      <div class="modal-content" style="max-width:480px; text-align:center;">
+        <div class="modal-header">
+          <h3 style="color:var(--gold-bright);">🗺️ Tap & Drop Pin on Map</h3>
+          <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
+        </div>
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
+        
+        <div id="interactive-leaflet-map" style="width:100%; height:260px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
+        <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Pin Coordinates..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
+
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn-primary" onclick="window.confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff;">লোকেশন নিশ্চিত করুন</button>
+          <button type="button" onclick="closeModal('map-picker-modal')" style="flex:1; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer; font-weight:bold;">বাতিল</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(mapModal);
+  }
+}
+
 // --- AUTH MODAL WITH ENTER KEY, FORGOT PASSWORD & MAP ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
@@ -297,30 +324,7 @@ function setupGlobalAuthModalFix() {
     </div>
   `;
 
-  // Inject Interactive Leaflet Map Modal Picker
-  if (!document.getElementById('map-picker-modal')) {
-    const mapModal = document.createElement('div');
-    mapModal.id = 'map-picker-modal';
-    mapModal.className = 'modal';
-    mapModal.innerHTML = `
-      <div class="modal-content" style="max-width:480px; text-align:center;">
-        <div class="modal-header">
-          <h3 style="color:var(--gold-bright);">🗺️ Tap & Drop Pin on Map</h3>
-          <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
-        </div>
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
-        
-        <div id="interactive-leaflet-map" style="width:100%; height:260px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
-        <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Pin Coordinates..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
-
-        <div style="display:flex; gap:10px;">
-          <button class="btn-primary" onclick="confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff;">লোকেশন নিশ্চিত করুন</button>
-          <button onclick="closeModal('map-picker-modal')" style="flex:1; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer; font-weight:bold;">বাতিল</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(mapModal);
-  }
+  injectGlobalMapPickerModalIfNeeded();
 
   // Inject Forgot Password Modal with Eye Toggle
   if (!document.getElementById('forgot-pass-modal')) {
@@ -336,11 +340,11 @@ function setupGlobalAuthModalFix() {
         <div id="fp-step-1">
           <label class="input-label">📧 আপনার রেজিস্টার্ড ইমেল দিন:</label>
           <input type="email" id="fp-email" class="input-field" placeholder="Enter your email" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter') requestPasswordResetOTP()">
-          <button class="btn-primary" onclick="requestPasswordResetOTP()">OTP পাঠান</button>
+          <button type="button" class="btn-primary" onclick="requestPasswordResetOTP()">OTP পাঠান</button>
         </div>
         <div id="fp-step-2" style="display:none;">
           <label class="input-label">🔑 ইমেলে প্রাপ্ত ৬-সংখ্যার OTP:</label>
-          <input type="text" id="fp-otp" class="input-field" placeholder="Enter OTP" style="margin-bottom:12px;">
+          <input type="text" id="fp-otp" class="input-field" placeholder="Enter OTP" style="margin-bottom:12px;" onkeydown="if(event.key==='Enter') executePasswordReset()">
           
           <label class="input-label">🔒 নতুন পাসওয়ার্ড:</label>
           <div style="position:relative; margin-bottom:12px;">
@@ -348,7 +352,7 @@ function setupGlobalAuthModalFix() {
             <span onclick="togglePasswordVisibility('fp-new-pass', 'fp-eye-icon')" id="fp-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
           </div>
 
-          <button class="btn-primary" onclick="executePasswordReset()">পাসওয়ার্ড পরিবর্তন করুন</button>
+          <button type="button" class="btn-primary" onclick="executePasswordReset()">পাসওয়ার্ড পরিবর্তন করুন</button>
         </div>
       </div>
     `;
@@ -499,12 +503,13 @@ function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', 
   activeLngField = lngId;
   activeBadgeField = badgeId;
 
+  injectGlobalMapPickerModalIfNeeded();
   const m = document.getElementById('map-picker-modal');
   if (m) {
     m.style.display = 'flex';
     setTimeout(() => {
-      let initLat = parseFloat(document.getElementById(latId).value) || 22.5726;
-      let initLng = parseFloat(document.getElementById(lngId).value) || 88.3639;
+      let initLat = parseFloat(document.getElementById(latId)?.value) || 22.5726;
+      let initLng = parseFloat(document.getElementById(lngId)?.value) || 88.3639;
       initInteractiveLeafletMap(initLat, initLng);
     }, 250);
   }
@@ -530,32 +535,33 @@ function initInteractiveLeafletMap(lat, lng) {
 
     activeLeafletMarker.on('dragend', function(e) {
       const pos = activeLeafletMarker.getLatLng();
-      updateMapSelectionCoords(pos.lat, pos.lng);
+      window.updateMapSelectionCoords(pos.lat, pos.lng);
     });
 
     activeLeafletMap.on('click', function(e) {
       activeLeafletMarker.setLatLng(e.latlng);
-      updateMapSelectionCoords(e.latlng.lat, e.latlng.lng);
+      window.updateMapSelectionCoords(e.latlng.lat, e.latlng.lng);
     });
   } else {
     activeLeafletMap.setView([lat, lng], 15);
     activeLeafletMarker.setLatLng([lat, lng]);
     setTimeout(() => { activeLeafletMap.invalidateSize(); }, 150);
   }
-  updateMapSelectionCoords(lat, lng);
+  window.updateMapSelectionCoords(lat, lng);
 }
 
-function updateMapSelectionCoords(lat, lng) {
+window.updateMapSelectionCoords = function(lat, lng) {
   const latEl = document.getElementById(activeLatField);
   const lngEl = document.getElementById(activeLngField);
   if (latEl) latEl.value = lat;
   if (lngEl) lngEl.value = lng;
-  document.getElementById('map-selected-coords-desc').value = `Pin Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-}
+  const descEl = document.getElementById('map-selected-coords-desc');
+  if (descEl) descEl.value = `Pin Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+};
 
-function confirmMapLocationSelection() {
-  const lat = document.getElementById(activeLatField).value;
-  const lng = document.getElementById(activeLngField).value;
+window.confirmMapLocationSelection = function() {
+  const lat = document.getElementById(activeLatField)?.value;
+  const lng = document.getElementById(activeLngField)?.value;
   const badge = document.getElementById(activeBadgeField);
   if (badge) {
     badge.style.display = 'block';
@@ -563,7 +569,7 @@ function confirmMapLocationSelection() {
   }
   closeModal('map-picker-modal');
   showToast('ম্যাপ লোকেশন সফলভাবে সেট হয়েছে!');
-}
+};
 
 async function loginUser() {
   const identifier = document.getElementById('login-identifier').value.trim();
@@ -792,10 +798,10 @@ function injectUserDashboardModalIfNeeded() {
 
           <label class="input-label">📍 পিনকোড:</label>
           <input type="text" id="prof-pincode" class="input-field" value="700036">
-          <button class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
+          <button type="button" class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
           
           <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            <button onclick="confirmAndDeleteUserHistory()" style="width: 100%; background: #e63946; color: #fff; font-weight: bold; padding: 12px; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.92rem; box-shadow: 0 4px 15px rgba(230,57,70,0.4);">
+            <button type="button" onclick="confirmAndDeleteUserHistory()" style="width: 100%; background: #e63946; color: #fff; font-weight: bold; padding: 12px; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.92rem; box-shadow: 0 4px 15px rgba(230,57,70,0.4);">
               🗑️ Delete All Data History
             </button>
           </div>
