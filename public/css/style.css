@@ -35,11 +35,46 @@ body {
   overflow-x: hidden;
   padding-bottom: 90px;
   -webkit-text-size-adjust: 100%;
+  animation: pageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .brand-hero {
   margin-top: 25px;
   padding-top: 95px;
+}
+
+.modal {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.modal[style*="display: flex"] {
+  opacity: 1;
+}
+
+.modal-content {
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.modal[style*="display: flex"] .modal-content {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.stat-card {
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold-bright);
 }
 
 /* --- AMBIENT GLOW ANIMATION --- */
@@ -384,7 +419,7 @@ body {
   font-weight: bold;
 }
 
-/* Modals (Desktop Default) */
+/* Modals */
 .modal {
   display: none;
   position: fixed;
@@ -479,6 +514,11 @@ body {
     padding-bottom: 90px !important;
   }
 
+  /* Prevent Mobile Auto-Zoom on inputs by forcing font-size >= 16px */
+  input, select, textarea, .input-field {
+    font-size: 16px !important;
+  }
+
   .brand-hero {
     margin-top: 5px !important;
     padding-top: 15px !important;
@@ -540,19 +580,24 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* FIX 1: Toast Popup will float dynamically right above/near the clicked button wherever user is on mobile */
+  /* Robust Fixed Floating Toast Popup at bottom center of viewport for Mobile View */
   .toast-popup {
     position: fixed !important;
-    bottom: auto !important;
-    transition: opacity 0.2s ease !important;
+    bottom: -80px !important;
+    top: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
     opacity: 0 !important;
   }
 
   .toast-popup.show {
+    bottom: 35px !important;
+    top: auto !important;
     opacity: 1 !important;
   }
 
-  /* FIX 2: Modals (Cart, Dashboard) perfectly centered relative to current active viewport */
+  /* Force all Modals / Popups (Cart & Dashboard) to Center Vertically and Horizontally without scrolling */
   .modal {
     display: none;
     position: fixed !important;
