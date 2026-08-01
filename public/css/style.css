@@ -470,7 +470,7 @@ body {
   border: 1px solid #333;
   border-radius: 8px;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 1rem !important; /* Prevents mobile auto-zoom on input focus */
 }
 
 .btn-primary {
@@ -524,6 +524,11 @@ body {
 
 /* --- MOBILE RESPONSIVE OPTIMIZATION (ONLY FOR MOBILE VIEW) --- */
 @media (max-width: 768px) {
+  html, body {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     padding-bottom: 90px !important;
     animation: mobilePageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
@@ -595,20 +600,22 @@ body {
     transform: translateY(0) !important;
   }
 
-  /* Fixed Top-Center Toast Popup for Mobile View (Directly under navbar, always 100% visible instantly) */
+  /* Fixed Perfect Center Screen Popup for Mobile View to prevent any misplacement */
   .toast-popup {
     position: fixed !important;
-    top: -60px !important;
-    bottom: auto !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translateX(-50%) !important;
-    transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) scale(0.85) !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease !important;
     opacity: 0 !important;
   }
 
   .toast-popup.show {
-    top: 72px !important;
+    top: 50% !important;
+    left: 50% !important;
     bottom: auto !important;
+    transform: translate(-50%, -50%) scale(1) !important;
     opacity: 1 !important;
   }
 
