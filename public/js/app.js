@@ -201,7 +201,7 @@ function openAuthModal() {
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-// --- FULLY RESTORED AUTH MODAL WITH GOOGLE GPS & MAP LOCATION ---
+// --- FULLY RESTORED AUTH MODAL WITH INDEPENDENT GPS & LIVE MAP PICKER ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -212,7 +212,7 @@ function setupGlobalAuthModalFix() {
   }
 
   modal.innerHTML = `
-    <div class="modal-content" style="max-width: 460px;">
+    <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
         <h3 style="color:var(--gold-bright);">🔑 অ্যাকাউন্ট (Account)</h3>
         <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
@@ -254,15 +254,18 @@ function setupGlobalAuthModalFix() {
           <span onclick="togglePasswordVisibility('signup-password', 'signup-eye-icon')" id="signup-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; display:flex; align-items:center;">${svgEyeOpen}</span>
         </div>
 
-        <label class="input-label">🏠 ঠিকানা:</label>
-        <textarea id="signup-address" class="input-field" rows="2" placeholder="Delivery Address" style="margin-bottom:8px;"></textarea>
+        <label class="input-label">🏠 ঠিকানা (নিজের মতো করে লিখুন):</label>
+        <textarea id="signup-address" class="input-field" rows="2" placeholder="Type your address here..." style="margin-bottom:8px;"></textarea>
 
-        <!-- RESTORED: GOOGLE GET LOCATION & MAP POPUP BUTTONS -->
+        <!-- INDEPENDENT GPS & LIVE MAP CONFIRMATION BUTTONS -->
         <div style="display:flex; gap:8px; margin-bottom:8px;">
           <button type="button" onclick="fetchUserCurrentLocationGPS()" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
           <button type="button" onclick="openMapLocationPickerModal()" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
         </div>
+        <div id="location-status-badge" style="font-size:0.8rem; color:#4ade80; margin-bottom:8px; display:none;"></div>
         <input type="hidden" id="signup-location" value="Kolkata">
+        <input type="hidden" id="signup-lat" value="">
+        <input type="hidden" id="signup-lng" value="">
 
         <label class="input-label">📍 পিনকোড:</label>
         <input type="text" id="signup-pincode" class="input-field" value="700036" style="margin-bottom:15px;">
@@ -272,21 +275,30 @@ function setupGlobalAuthModalFix() {
     </div>
   `;
 
-  // Inject Map Picker Modal if not already present
+  // Inject Live Google/Interactive Map Modal Picker if not present
   if (!document.getElementById('map-picker-modal')) {
     const mapModal = document.createElement('div');
     mapModal.id = 'map-picker-modal';
     mapModal.className = 'modal';
     mapModal.innerHTML = `
-      <div class="modal-content" style="max-width:440px; text-align:center;">
+      <div class="modal-content" style="max-width:500px; text-align:center;">
         <div class="modal-header">
-          <h3 style="color:var(--gold-bright);">🗺️ সিলেক্ট লোকেশন (Map)</h3>
+          <h3 style="color:var(--gold-bright);">🗺️ Live Map Location Picker</h3>
           <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
         </div>
-        <p style="font-size:0.88rem; color:#aaa; margin-bottom:12px;">আপনার এলাকার ল্যান্ডমার্ক বা ঠিকানা টাইপ করে সিলেক্ট করুন:</p>
-        <input type="text" id="map-search-query" class="input-field" placeholder="e.g. Park Street, Kolkata" style="margin-bottom:10px;">
-        <button class="btn-primary" onclick="confirmMapLocationSelection()" style="margin-bottom:10px;">লোকেশন নিশ্চিত করুন</button>
-        <button onclick="closeModal('map-picker-modal')" style="background:none; border:none; color:#aaa; cursor:pointer; font-size:0.85rem;">বাতিল করুন</button>
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">লাইভ ম্যাপে আপনার ডেলিভারি লোকেশন পিন করুন বা সিলেক্ট করুন:</p>
+        
+        <!-- Live Google Map Embed / Interactive Container -->
+        <div style="width:100%; height:260px; border-radius:10px; overflow:hidden; border:1px solid var(--border-gold); margin-bottom:12px; position:relative;">
+          <iframe id="live-google-map-frame" width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen src="https://www.google.com/maps/embed/v1/place?key=&q=Kolkata"></iframe>
+        </div>
+
+        <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Location details..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
+
+        <div style="display:flex; gap:10px;">
+          <button class="btn-primary" onclick="confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff;">লোকেশন নিশ্চিত করুন</button>
+          <button onclick="closeModal('map-picker-modal')" style="flex:1; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer; font-weight:bold;">বাতিল</button>
+        </div>
       </div>
     `;
     document.body.appendChild(mapModal);
@@ -318,7 +330,7 @@ function switchAuthTab(tab) {
   }
 }
 
-// --- SVG EYE TOGGLE FUNCTION ---
+// --- PASSWORD EYE TOGGLE ---
 function togglePasswordVisibility(fieldId, iconId) {
   const field = document.getElementById(fieldId);
   const icon = document.getElementById(iconId);
@@ -333,51 +345,63 @@ function togglePasswordVisibility(fieldId, iconId) {
   }
 }
 
-// --- RESTORED: GPS & MAP LOCATION PICKER HELPERS ---
+// --- GPS LOCATION VERIFICATION (DOES NOT OVERWRITE MANUAL ADDRESS) ---
 function fetchUserCurrentLocationGPS() {
   if (navigator.geolocation) {
     showMobileLoading();
     navigator.geolocation.getCurrentPosition(async (position) => {
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-        const data = await res.json();
-        hideMobileLoading();
-        if (data && data.display_name) {
-          const addrField = document.getElementById('signup-address');
-          const locField = document.getElementById('signup-location');
-          if (addrField) addrField.value = data.display_name;
-          if (locField) locField.value = data.address.city || data.address.town || data.address.suburb || 'Kolkata';
-          showToast('GPS লোকেশন সফলভাবে নেওয়া হয়েছে!');
-        }
-      } catch (err) {
-        hideMobileLoading();
-        alert('লোকেশন ফেচ করতে সমস্যা হয়েছে।');
+      hideMobileLoading();
+      
+      document.getElementById('signup-lat').value = lat;
+      document.getElementById('signup-lng').value = lon;
+      
+      const badge = document.getElementById('location-status-badge');
+      if (badge) {
+        badge.style.display = 'block';
+        badge.innerText = `✅ GPS Verified (Lat: ${lat.toFixed(3)}, Lng: ${lon.toFixed(3)})`;
       }
+      showToast('GPS লোকেশন সফলভাবে কনফার্ম হয়েছে!');
     }, () => {
       hideMobileLoading();
-      alert('লোকেশন পার্মিশন দেওয়া হয়নি।');
+      alert('লোকেশন পার্মিশন পাওয়া যায়নি।');
     });
   } else {
     alert('আপনার ব্রাউজার জিওলোকেশন সাপোর্ট করে না।');
   }
 }
 
+// --- LIVE GOOGLE MAP PICKER MODAL ---
 function openMapLocationPickerModal() {
   const m = document.getElementById('map-picker-modal');
-  if (m) m.style.display = 'flex';
+  if (m) {
+    m.style.display = 'flex';
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
+        document.getElementById('map-selected-coords-desc').value = `GPS Coords: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        document.getElementById('signup-lat').value = lat;
+        document.getElementById('signup-lng').value = lon;
+      }, () => {
+        document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=Kolkata&z=13&output=embed`;
+        document.getElementById('map-selected-coords-desc').value = `Kolkata, West Bengal`;
+      });
+    }
+  }
 }
 
 function confirmMapLocationSelection() {
-  const query = document.getElementById('map-search-query').value.trim();
-  if (!query) return alert('ঠিকানা লিখুন।');
-  const addrField = document.getElementById('signup-address');
-  const locField = document.getElementById('signup-location');
-  if (addrField) addrField.value = query;
-  if (locField) locField.value = query;
+  const desc = document.getElementById('map-selected-coords-desc').value;
+  const badge = document.getElementById('location-status-badge');
+  if (badge) {
+    badge.style.display = 'block';
+    badge.innerText = `✅ Map Location Verified: ${desc}`;
+  }
   closeModal('map-picker-modal');
-  showToast('ম্যাপ থেকে লোকেশন সেট হয়েছে!');
+  showToast('ম্যাপ লোকেশন কনফার্ম হয়েছে!');
 }
 
 async function loginUser() {
@@ -415,12 +439,14 @@ async function signupUser() {
   const phone = document.getElementById('signup-phone').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
-  const address = document.getElementById('signup-address').value.trim();
-  const location = document.getElementById('signup-location') ? document.getElementById('signup-location').value.trim() : 'Kolkata';
+  const address = document.getElementById('signup-address').value.trim(); // Manually typed address
+  const location = document.getElementById('signup-location').value.trim();
+  const lat = document.getElementById('signup-lat').value.trim();
+  const lng = document.getElementById('signup-lng').value.trim();
   const pincode = document.getElementById('signup-pincode').value.trim();
 
   if (!name || !phone || !email || !password || !address || !pincode) {
-    return alert('সমস্ত প্রয়োজনীয় ফিল্ড পূরণ করুন।');
+    return alert('সমস্ত প্রয়োজনীয় ফিল্ড পূরণ করুন (ঠিকানা নিজে লিখুন)।');
   }
 
   showMobileLoading();
@@ -428,7 +454,7 @@ async function signupUser() {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, email, password, address, location, pincode })
+      body: JSON.stringify({ name, phone, email, password, address, location, lat, lng, pincode })
     });
     const data = await res.json();
     hideMobileLoading();
@@ -1562,7 +1588,6 @@ function triggerPWAInstall() {
       if (banner) banner.style.display = 'none';
     });
   } else {
-    C
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS) {
       alert('আইওএস (iOS) ব্রাউজারে অ্যাপ ইন্সটল করতে সাফারি মেনু থেকে শেয়ার (Share) আইকনে ক্লিক করে "Add to Home Screen" সিলেক্ট করুন।');
