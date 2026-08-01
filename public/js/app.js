@@ -105,6 +105,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupGlobalAuthModalFix();
   injectGlobalMapPickerModalIfNeeded();
   injectLeafletDependencies();
+  checkAndShowSpecialOffer();
 });
 
 function injectLeafletDependencies() {
@@ -120,6 +121,43 @@ function injectLeafletDependencies() {
     script.id = 'leaflet-js';
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     document.head.appendChild(script);
+  }
+}
+
+// --- SPECIAL OFFER POPUP LOADER ---
+async function checkAndShowSpecialOffer() {
+  try {
+    const res = await fetch('/api/offer');
+    const data = await res.json();
+    if (data.success && data.offer && data.offer.enabled) {
+      const offer = data.offer;
+      injectSpecialOfferModalIfNeeded(offer);
+    }
+  } catch (err) {
+    console.error('Failed to load special offer banner:', err);
+  }
+}
+
+function injectSpecialOfferModalIfNeeded(offer) {
+  if (!document.getElementById('special-offer-popup-modal')) {
+    const modal = document.createElement('div');
+    modal.id = 'special-offer-popup-modal';
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 440px; text-align: center; background: #12121a; border: 2px solid var(--border-gold); position: relative;">
+        <button class="close-btn" onclick="closeModal('special-offer-popup-modal')" style="position: absolute; right: 15px; top: 12px;">&times;</button>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
+        <h2 style="color: var(--gold-bright); margin-bottom: 10px;">${offer.title || 'বিশেষ অফার!'}</h2>
+        ${offer.image ? `<img src="${offer.image}" alt="Offer Poster" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--border-gold); margin-bottom: 12px; object-fit: cover;">` : ''}
+        <p style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">${offer.desc || ''}</p>
+        <button class="btn-primary" onclick="closeModal('special-offer-popup-modal')">উপভোগ করুন / বন্ধ করুন</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } else {
+    const m = document.getElementById('special-offer-popup-modal');
+    m.style.display = 'flex';
   }
 }
 
