@@ -100,6 +100,7 @@ window.addEventListener('DOMContentLoaded', () => {
   injectUserDashboardModalIfNeeded();
   injectCartModalIfNeeded();
   checkSpecialRequestNotificationBadge();
+  injectAuthModalIfNeeded(); // Ensures Auth modal with Eye toggle and signup tab exists
 });
 
 function updateCartCount() {
@@ -188,16 +189,113 @@ function closeModal(modalId) {
 }
 
 function openAuthModal() {
+  injectAuthModalIfNeeded();
   const m = document.getElementById('auth-modal');
   if (m) m.style.display = 'flex';
   switchAuthTab('login');
 }
 
+// --- FULLY FIXED AUTH MODAL INJECTION WITH WORKING EYE TOGGLE & SIGNUP TAB ---
+function injectAuthModalIfNeeded() {
+  if (!document.getElementById('auth-modal')) {
+    const authDiv = document.createElement('div');
+    authDiv.id = 'auth-modal';
+    authDiv.className = 'modal';
+    authDiv.innerHTML = `
+      <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+          <h3 style="color:var(--gold-bright);">🔑 অ্যাকাউন্ট (Account)</h3>
+          <button class="close-btn" onclick="closeModal('auth-modal')">&times;</button>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+          <button id="tab-btn-login" onclick="switchAuthTab('login')" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border-gold); background:var(--gold-gradient); color:#000; font-weight:bold; cursor:pointer;">লগইন</button>
+          <button id="tab-btn-signup" onclick="switchAuthTab('signup')" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border-gold); background:#1c1c28; color:var(--text-main); font-weight:bold; cursor:pointer;">নতুন সাইন-আপ</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="login-form">
+          <label class="input-label">📱 মোবাইল নম্বর / ইমেল আইডি:</label>
+          <input type="text" id="login-identifier" class="input-field" placeholder="Mobile Number or Email ID" style="margin-bottom:12px;">
+          
+          <label class="input-label">🔑 পাসওয়ার্ড:</label>
+          <div style="position:relative; margin-bottom:15px;">
+            <input type="password" id="login-password" class="input-field" placeholder="Enter Password" style="padding-right:40px;">
+            <span onclick="togglePasswordVisibility('login-password', 'login-eye-icon')" id="login-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; font-size:1.1rem;">👁️</span>
+          </div>
+
+          <button class="btn-primary" onclick="loginUser()">লগইন করুন</button>
+        </div>
+
+        <!-- SIGNUP FORM -->
+        <div id="signup-form" style="display:none;">
+          <label class="input-label">👤 নাম:</label>
+          <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="margin-bottom:10px;">
+          
+          <label class="input-label">📱 মোবাইল নম্বর:</label>
+          <input type="tel" id="signup-phone" class="input-field" placeholder="Mobile Number" style="margin-bottom:10px;">
+          
+          <label class="input-label">📧 ইমেল:</label>
+          <input type="email" id="signup-email" class="input-field" placeholder="Email Address" style="margin-bottom:10px;">
+          
+          <label class="input-label">🔑 পাসওয়ার্ড:</label>
+          <div style="position:relative; margin-bottom:10px;">
+            <input type="password" id="signup-password" class="input-field" placeholder="Create Password" style="padding-right:40px;">
+            <span onclick="togglePasswordVisibility('signup-password', 'signup-eye-icon')" id="signup-eye-icon" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#a0a0b0; font-size:1.1rem;">👁️</span>
+          </div>
+
+          <label class="input-label">🏠 ঠিকানা:</label>
+          <textarea id="signup-address" class="input-field" rows="2" placeholder="Delivery Address" style="margin-bottom:10px;"></textarea>
+
+          <label class="input-label">📍 পিনকোড:</label>
+          <input type="text" id="signup-pincode" class="input-field" value="700036" style="margin-bottom:15px;">
+
+          <button class="btn-primary" onclick="signupUser()">সাইন-আপ সম্পন্ন করুন</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(authDiv);
+  }
+}
+
 function switchAuthTab(tab) {
   const loginForm = document.getElementById('login-form');
   const signupForm = document.getElementById('signup-form');
-  if (loginForm) loginForm.style.display = (tab === 'login') ? 'block' : 'none';
-  if (signupForm) signupForm.style.display = (tab === 'signup') ? 'block' : 'none';
+  const btnLogin = document.getElementById('tab-btn-login');
+  const btnSignup = document.getElementById('tab-btn-signup');
+
+  if (loginForm && signupForm && btnLogin && btnSignup) {
+    if (tab === 'login') {
+      loginForm.style.display = 'block';
+      signupForm.style.display = 'none';
+      btnLogin.style.background = 'var(--gold-gradient)';
+      btnLogin.style.color = '#000';
+      btnSignup.style.background = '#1c1c28';
+      btnSignup.style.color = 'var(--text-main)';
+    } else {
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+      btnSignup.style.background = 'var(--gold-gradient)';
+      btnSignup.style.color = '#000';
+      btnLogin.style.background = '#1c1c28';
+      btnLogin.style.color = 'var(--text-main)';
+    }
+  }
+}
+
+// --- PASSWORD EYE TOGGLE HELPER ---
+function togglePasswordVisibility(fieldId, iconId) {
+  const field = document.getElementById(fieldId);
+  const icon = document.getElementById(iconId);
+  if (field && icon) {
+    if (field.type === 'password') {
+      field.type = 'text';
+      icon.innerText = '🙈';
+    } else {
+      field.type = 'password';
+      icon.innerText = '👁️';
+    }
+  }
 }
 
 async function loginUser() {
@@ -236,7 +334,7 @@ async function signupUser() {
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
   const address = document.getElementById('signup-address').value.trim();
-  const location = document.getElementById('signup-location').value.trim();
+  const location = document.getElementById('signup-location').value.trim() || 'Kolkata';
   const pincode = document.getElementById('signup-pincode').value.trim();
 
   if (!name || !phone || !email || !password || !address || !pincode) {
@@ -1109,9 +1207,7 @@ function addToCart(id, name, price, desc) {
     cart.push({ id, name, price, desc, qty: 1 });
   }
   updateCartCount();
-  
-  const clickedBtn = (window.event && window.event.target) ? (window.event.target.closest('button') || window.event.target) : null;
-  showToast('🛒 কার্টে যোগ করা হয়েছে!', clickedBtn);
+  showToast('🛒 কার্টে যোগ করা হয়েছে!');
 }
 
 function openCartModal() {
