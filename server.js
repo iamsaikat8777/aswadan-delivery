@@ -107,7 +107,6 @@ usersDB = syncUsersFromOrders(usersDB, ordersDB);
 const resend = new Resend(process.env.EMAIL_PASSWORD || '');
 const OWNER_NOTIFY_EMAIL = process.env.OWNER_EMAIL || 'iammadhuchanda@gmail.com';
 
-// --- BRANDED EMAIL TEMPLATE WITH SOLID BLACK LOGO CONTAINER ---
 function createBrandEmail(heading, htmlBody) {
   return `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b10; color: #ffffff; padding: 30px; border-radius: 16px; border: 1px solid #d4af37; max-width: 600px; margin: 0 auto; box-shadow: 0 8px 24px rgba(0,0,0,0.6);">
@@ -198,7 +197,6 @@ app.post('/api/reviews', (req, res) => {
   res.json({ success: true, message: 'আপনার মূল্যবান রিভিউটি সফলভাবে জমা হয়েছে!', review: newReview });
 });
 
-// 6) Special request order place mail to user & admin with location link
 app.post('/api/special-request', (req, res) => {
   const { phone, customerName, email, itemName, description, qty } = req.body;
   if (!phone || !itemName || !qty) {
@@ -207,7 +205,14 @@ app.post('/api/special-request', (req, res) => {
 
   usersDB = loadData(USERS_FILE, []);
   const userRecord = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-  const locationLink = userRecord && userRecord.location ? (userRecord.location.startsWith('http') ? userRecord.location : `https://maps.google.com/?q=${userRecord.location}`) : 'লোকেশন দেওয়া হয়নি';
+  let locationLink = 'লোকেশন দেওয়া হয়নি';
+  if (userRecord) {
+    if (userRecord.lat && userRecord.lng) {
+      locationLink = `https://maps.google.com/?q=${userRecord.lat},${userRecord.lng}`;
+    } else if (userRecord.location) {
+      locationLink = userRecord.location.startsWith('http') ? userRecord.location : `https://maps.google.com/?q=${userRecord.location}`;
+    }
+  }
 
   specialRequestsDB = loadData(SPECIAL_REQUESTS_FILE, []);
   const reqId = 'SRQ-' + Math.floor(100000 + Math.random() * 900000);
@@ -318,14 +323,18 @@ app.post('/api/special-request/pay', (req, res) => {
   res.json({ success: true, message: 'স্পেশাল অর্ডারের পেমেন্ট সফলভাবে জমা হয়েছে!', order: newOrder });
 });
 
-// 1) Welcome mail on successful registration
+// --- UPDATED SIGNUP ROUTE ---
 app.post('/api/auth/signup', (req, res) => {
-  const { name, phone, email, password, address, location, pincode } = req.body;
+  const { name, phone, email, password, address, location, lat, lng, pincode } = req.body;
   usersDB = loadData(USERS_FILE, []);
   if (pincode !== '700036') {
     return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
   }
-  const newUser = { name, phone, email, password, address, location: location || '', pincode, isBlocked: false, preferredItems: [] };
+  const existingUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim() || (email && u.email && u.email.toLowerCase() === email.trim().toLowerCase()));
+  if (existingUser) {
+    return res.status(400).json({ success: false, message: 'এই মোবাইল নম্বর বা ইমেল দিয়ে ইতিমধ্যে অ্যাকাউন্ট রয়েছে।' });
+  }
+  const newUser = { name, phone, email, password, address, location: location || '', lat: lat || '', lng: lng || '', pincode, isBlocked: false, preferredItems: [] };
   usersDB.push(newUser);
   saveData(USERS_FILE, usersDB);
 
@@ -333,13 +342,35 @@ app.post('/api/auth/signup', (req, res) => {
     const welcomeHtml = createBrandEmail(
       `🎉 আস্বাদন (Aswadan) পরিবারে আপনাকে স্বাগতম!`,
       `<p>নমস্কার <b>${name}</b>,</p>
-       <p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে অসংখ্য ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু এবং বিশুদ্ধ হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>
-       <p>আপনার সেবায় আমরা সর্বদা প্রস্তুত।</p>`
+       <p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে অসংখ্য ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু এবং বিশুদ্ধ হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>`
     );
     sendEmail(email, `🎉 আস্বাদন পরিবারে আপনাকে স্বাগতম!`, welcomeHtml);
   }
 
   res.json({ success: true, user: newUser });
+});
+
+// --- NEW/FIXED PROFILE UPDATE ROUTE ---
+app.post('/api/user/profile', (req, res) => {
+  const { phone, name, email, address, location, lat, lng, pincode } = req.body;
+  usersDB = loadData(USERS_FILE, []);
+  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
+  }
+  if (pincode && pincode !== '700036') {
+    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
+  }
+  if (name) user.name = name;
+  if (email) user.email = email;
+  if (address) user.address = address;
+  if (location !== undefined) user.location = location;
+  if (lat !== undefined) user.lat = lat;
+  if (lng !== undefined) user.lng = lng;
+  if (pincode) user.pincode = pincode;
+
+  saveData(USERS_FILE, usersDB);
+  res.json({ success: true, message: 'প্রোফাইল সফলভাবে আপডেট হয়েছে!', user });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -451,7 +482,6 @@ app.post('/api/orders/cancel', (req, res) => {
   res.json({ success: true, message: 'অর্ডারটি সফলভাবে ক্যানসেল করা হয়েছে।' });
 });
 
-// 2) Order placement mail to user & admin with location link
 app.post('/api/orders', (req, res) => {
   const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
   ordersDB = loadData(ORDERS_FILE, []);
@@ -636,7 +666,6 @@ app.get('/api/admin/orders', (req, res) => {
   });
 });
 
-// 3) Order approved, 4) Order rejected with reason, 5) Order marked delivered
 app.post('/api/admin/order-status', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const { orderId, status, reason } = req.body;
@@ -721,7 +750,6 @@ app.get('/api/admin/special-requests', (req, res) => {
   res.json({ success: true, requests: specialRequestsDB });
 });
 
-// 7) Special request priced/update, 8) Special order approved, 9) Special request rejected with reason
 app.post('/api/admin/special-request/action', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const { requestId, action, pricePerPlate, reason } = req.body;
@@ -772,7 +800,6 @@ app.post('/api/admin/menu/save', (req, res) => {
   res.json({ success: true, message: 'মেনু আপডেট হয়েছে!' });
 });
 
-// 10) Special offer banner mail sent to all registered users when enabled/updated
 app.post('/api/admin/offer/save', (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const newOffer = req.body;
