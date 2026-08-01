@@ -159,6 +159,7 @@
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'revenue')">💰 Net Revenue</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'menu')">🍔 Manage Menu Items</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'offer')">🎉 Special Offer Banner</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab(this, 'pincodes')">📍 Allowed Pincodes</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'users')">👥 Manage Users</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'reviews')">⭐ Manage Reviews</button>
         <button class="admin-tab-btn" onclick="switchAdminTab(this, 'specialReqs')">✨ Special Requests</button>
@@ -186,6 +187,7 @@
     let usersList = [];
     let reviewsList = [];
     let specialReqsList = [];
+    let pincodesList = ['700036'];
     let currentTab = 'dashboard';
     
     const todayObj = new Date();
@@ -308,7 +310,8 @@
         fetchAdminMenu(),
         fetchAdminUsers(),
         fetchAdminReviews(),
-        fetchAdminSpecialReqs()
+        fetchAdminSpecialReqs(),
+        fetchAdminPincodes()
       ]);
       renderAdminTab();
     }
@@ -325,7 +328,7 @@
       if (res.status === 401) return logoutAdmin();
       adminData = await res.json();
       
-      if (!['menu', 'offer', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) {
+      if (!['menu', 'offer', 'pincodes', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) {
         renderAdminTab();
       }
     }
@@ -360,6 +363,14 @@
       } catch (err) { console.error(err); }
     }
 
+    async function fetchAdminPincodes() {
+      try {
+        const res = await fetch('/api/pincodes');
+        const data = await res.json();
+        if (data.success) pincodesList = data.pincodes || ['700036'];
+      } catch (err) { console.error(err); }
+    }
+
     async function switchAdminTab(btnElement, tab) {
       currentTab = tab;
       document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -369,6 +380,7 @@
       if (tab === 'users') await fetchAdminUsers();
       if (tab === 'reviews') await fetchAdminReviews();
       if (tab === 'specialReqs') await fetchAdminSpecialReqs();
+      if (tab === 'pincodes') await fetchAdminPincodes();
 
       await loadAdminData();
       renderAdminTab();
@@ -376,7 +388,7 @@
 
     async function renderAdminTab() {
       const container = document.getElementById('admin-tab-content');
-      if (!adminData && !['menu', 'offer', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) {
+      if (!adminData && !['menu', 'offer', 'pincodes', 'users', 'reviews', 'specialReqs', 'factory'].includes(currentTab)) {
         container.innerHTML = '<p style="text-align:center; color:#aaa; padding:25px;">ডেটা লোড হচ্ছে...</p>';
         return;
       }
@@ -402,7 +414,7 @@
               <h3 style="color:var(--red-accent);">${stats.rejectedCount}</h3>
               <p style="color:#aaa;">Rejected</p>
             </div>
-            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(11)'), 'specialReqs')" style="cursor: pointer;">
+            <div class="stat-card" onclick="switchAdminTab(document.querySelector('.admin-tab-btn:nth-child(12)'), 'specialReqs')" style="cursor: pointer;">
               <h3 style="color:var(--gold-bright);">${pendingSpecialCount}</h3>
               <p style="color:#aaa;">Special Request</p>
             </div>
@@ -482,6 +494,8 @@
         renderMenuManagement(container);
       } else if (currentTab === 'offer') {
         await renderOfferManagement(container);
+      } else if (currentTab === 'pincodes') {
+        renderPincodesManagement(container);
       } else if (currentTab === 'users') {
         renderUsersManagement(container);
       } else if (currentTab === 'reviews') {
@@ -490,6 +504,77 @@
         renderSpecialRequestsManagement(container);
       } else if (currentTab === 'factory') {
         renderFactorySettingsManagement(container);
+      }
+    }
+
+    // --- PINCODES MANAGEMENT TAB ---
+    function renderPincodesManagement(container) {
+      container.innerHTML = `
+        <div class="admin-section-box">
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">📍 নতুন ডেলিভারি পিনকোড যোগ করুন</h3>
+          <label class="input-label">পিনকোড (6 digits):</label>
+          <div style="display:flex; gap:10px; max-width:400px;">
+            <input type="text" id="new-pincode-input" class="input-field" placeholder="e.g. 700037" maxlength="6">
+            <button class="btn-primary" style="margin:0; width:140px;" onclick="addNewPincode()">যোগ করুন</button>
+          </div>
+        </div>
+
+        <div class="admin-section-box">
+          <h3 style="color:var(--gold-bright); margin-bottom:15px;">📋 বর্তমানে সক্রিয় ডেলিভারি পিনকোডসমূহ</h3>
+          <div style="display:flex; flex-direction:column; gap:10px; max-width:500px;">
+            ${pincodesList.map((pc, idx) => `
+              <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:12px 16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem;">📍 ${pc}</span>
+                ${pincodesList.length > 1 ? `<button onclick="deletePincode('${pc}')" style="background:var(--red-accent); color:#fff; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">ডিলিট</button>` : '<span style="color:#aaa; font-size:0.8rem;">(Default)</span>'}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    async function addNewPincode() {
+      const pcInput = document.getElementById('new-pincode-input');
+      const val = pcInput ? pcInput.value.trim() : '';
+      if (!val || val.length !== 6 || isNaN(val)) {
+        return alert('সঠিক ৬-সংখ্যার পিনকোড লিখুন।');
+      }
+      if (pincodesList.includes(val)) {
+        return alert('এই পিনকোডটি ইতিমধ্যে তালিকায় রয়েছে।');
+      }
+
+      pincodesList.push(val);
+      await savePincodesToServer();
+    }
+
+    async function deletePincode(pc) {
+      if (pincodesList.length <= 1) {
+        return alert('কমপক্ষে একটি পিনকোড থাকা আবশ্যক।');
+      }
+      if (confirm(`আপনি কি পিনকোডটি (${pc}) ডিলিট করতে চান?`)) {
+        pincodesList = pincodesList.filter(p => p !== pc);
+        await savePincodesToServer();
+      }
+    }
+
+    async function savePincodesToServer() {
+      try {
+        const res = await fetch('/api/admin/pincodes/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+          body: JSON.stringify({ pincodes: pincodesList })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          await fetchAdminPincodes();
+          renderAdminTab();
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('সার্ভার ত্রুটি!');
       }
     }
 

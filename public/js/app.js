@@ -591,7 +591,7 @@ async function loginUser() {
       closeModal('auth-modal');
       updateAuthNavUI();
       showToast('সফলভাবে লগইন হয়েছে!');
-      location.reload();
+      window.location.reload();
     } else {
       alert(data.message);
     }
@@ -607,7 +607,7 @@ async function signupUser() {
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
   const address = document.getElementById('signup-address').value.trim();
-  const location = document.getElementById('signup-location').value.trim();
+  const locVal = document.getElementById('signup-location').value.trim();
   const lat = document.getElementById('signup-lat').value.trim();
   const lng = document.getElementById('signup-lng').value.trim();
   const pincode = document.getElementById('signup-pincode').value.trim();
@@ -621,7 +621,7 @@ async function signupUser() {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, email, password, address, location, lat, lng, pincode })
+      body: JSON.stringify({ name, phone, email, password, address, location: locVal, lat, lng, pincode })
     });
     const data = await res.json();
     hideMobileLoading();
@@ -630,8 +630,8 @@ async function signupUser() {
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       closeModal('auth-modal');
       updateAuthNavUI();
-      showToast('সাইন-আপ সফল হয়েছে!');
-      location.reload();
+      alert('🎉 সাইন-আপ সফল হয়েছে! আস্বাদন পরিবারে আপনাকে স্বাগতম।');
+      window.location.reload();
     } else {
       alert(data.message);
     }
@@ -646,7 +646,7 @@ function logoutUser() {
   localStorage.removeItem('currentUser');
   currentUser = null;
   updateAuthNavUI();
-  location.reload();
+  window.location.reload();
 }
 
 // --- AUTO-INJECT CART MODAL WITH FIXED NaN PRICE GLITCH & VALID NUMBERS ---
@@ -1664,7 +1664,7 @@ async function placeOrder() {
       paymentScreenshotBase64 = '';
       updateCartCount();
       closeModal('cart-modal');
-      location.href = 'index.html';
+      window.location.href = 'index.html';
     } else {
       alert(data.message);
       isOrderSubmitting = false;
