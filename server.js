@@ -53,6 +53,8 @@ function syncUsersFromOrders(users, orders) {
           email: order.email || '',
           address: order.address || '',
           location: order.location || '',
+          lat: order.lat || '',
+          lng: order.lng || '',
           pincode: '700036',
           isBlocked: false,
           preferredItems: []
@@ -104,7 +106,8 @@ if (!fs.existsSync(SPECIAL_REQUESTS_FILE)) saveData(SPECIAL_REQUESTS_FILE, speci
 
 usersDB = syncUsersFromOrders(usersDB, ordersDB);
 
-const resend = new Resend(process.env.EMAIL_PASSWORD || '');
+const resendApiKey = process.env.EMAIL_PASSWORD || 're_emqAgGvq_GCG7j1o4QGR1Y48TyAKQ9yzC';
+const resend = new Resend(resendApiKey);
 const OWNER_NOTIFY_EMAIL = process.env.OWNER_EMAIL || 'iammadhuchanda@gmail.com';
 
 function createBrandEmail(heading, htmlBody) {
@@ -243,7 +246,7 @@ app.post('/api/special-request', (req, res) => {
           <b>খাবার:</b> ${itemName} (${qty} প্লেট)<br>
           <b>বিবরণ:</b> ${description || 'N/A'}</p>`
     );
-    sendEmail(email, `✨ স্পেশাল ফুড রিকুয়েস্ট সফলভাবে জমা হয়েছে: #${reqId}`, userHtml);
+    sendEmail(email, `✨ স্পেশাল ফুড রিকুয়েস্ট জমা হয়েছে: #${reqId}`, userHtml);
   }
 
   const adminHtml = createBrandEmail(
@@ -325,52 +328,62 @@ app.post('/api/special-request/pay', (req, res) => {
 
 // --- UPDATED SIGNUP ROUTE ---
 app.post('/api/auth/signup', (req, res) => {
-  const { name, phone, email, password, address, location, lat, lng, pincode } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  if (pincode !== '700036') {
-    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
-  }
-  const existingUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim() || (email && u.email && u.email.toLowerCase() === email.trim().toLowerCase()));
-  if (existingUser) {
-    return res.status(400).json({ success: false, message: 'এই মোবাইল নম্বর বা ইমেল দিয়ে ইতিমধ্যে অ্যাকাউন্ট রয়েছে।' });
-  }
-  const newUser = { name, phone, email, password, address, location: location || '', lat: lat || '', lng: lng || '', pincode, isBlocked: false, preferredItems: [] };
-  usersDB.push(newUser);
-  saveData(USERS_FILE, usersDB);
+  try {
+    const { name, phone, email, password, address, location, lat, lng, pincode } = req.body;
+    usersDB = loadData(USERS_FILE, []);
+    if (pincode !== '700036') {
+      return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
+    }
+    const existingUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim() || (email && u.email && u.email.toLowerCase() === email.trim().toLowerCase()));
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'এই মোবাইল নম্বর বা ইমেল দিয়ে ইতিমধ্যে অ্যাকাউন্ট রয়েছে।' });
+    }
+    const newUser = { name, phone, email, password, address, location: location || '', lat: lat || '', lng: lng || '', pincode, isBlocked: false, preferredItems: [] };
+    usersDB.push(newUser);
+    saveData(USERS_FILE, usersDB);
 
-  if (email) {
-    const welcomeHtml = createBrandEmail(
-      `🎉 আস্বাদন (Aswadan) পরিবারে আপনাকে স্বাগতম!`,
-      `<p>নমস্কার <b>${name}</b>,</p>
-       <p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে অসংখ্য ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু এবং বিশুদ্ধ হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>`
-    );
-    sendEmail(email, `🎉 আস্বাদন পরিবারে আপনাকে স্বাগতম!`, welcomeHtml);
-  }
+    if (email) {
+      const welcomeHtml = createBrandEmail(
+        `🎉 আস্বাদন (Aswadan) পরিবারে আপনাকে স্বাগতম!`,
+        `<p>নমস্কার <b>${name}</b>,</p>
+         <p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে অসংখ্য ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু এবং বিশুদ্ধ হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>`
+      );
+      sendEmail(email, `🎉 আস্বাদন পরিবারে আপনাকে স্বাগতম!`, welcomeHtml);
+    }
 
-  res.json({ success: true, user: newUser });
+    res.json({ success: true, user: newUser });
+  } catch (err) {
+    console.error('Signup error:', err.message);
+    res.status(500).json({ success: false, message: 'সার্ভার ত্রুটি!' });
+  }
 });
 
-// --- NEW/FIXED PROFILE UPDATE ROUTE ---
+// --- FIXED PROFILE UPDATE ROUTE ---
 app.post('/api/user/profile', (req, res) => {
-  const { phone, name, email, address, location, lat, lng, pincode } = req.body;
-  usersDB = loadData(USERS_FILE, []);
-  const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
-  }
-  if (pincode && pincode !== '700036') {
-    return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
-  }
-  if (name) user.name = name;
-  if (email) user.email = email;
-  if (address) user.address = address;
-  if (location !== undefined) user.location = location;
-  if (lat !== undefined) user.lat = lat;
-  if (lng !== undefined) user.lng = lng;
-  if (pincode) user.pincode = pincode;
+  try {
+    const { phone, name, email, address, location, lat, lng, pincode } = req.body;
+    usersDB = loadData(USERS_FILE, []);
+    const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
+    }
+    if (pincode && pincode !== '700036') {
+      return res.status(400).json({ success: false, message: 'আমাদের পরিষেবা শুধুমাত্র ৭০০০৩৬ পিনকোডে উপলব্ধ।' });
+    }
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (address) user.address = address;
+    if (location !== undefined) user.location = location;
+    if (lat !== undefined) user.lat = lat;
+    if (lng !== undefined) user.lng = lng;
+    if (pincode) user.pincode = pincode;
 
-  saveData(USERS_FILE, usersDB);
-  res.json({ success: true, message: 'প্রোফাইল সফলভাবে আপডেট হয়েছে!', user });
+    saveData(USERS_FILE, usersDB);
+    res.json({ success: true, message: 'প্রোফাইল সফলভাবে আপডেট হয়েছে!', user });
+  } catch (err) {
+    console.error('Profile update error:', err.message);
+    res.status(500).json({ success: false, message: 'সার্ভার ত্রুটি!' });
+  }
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -482,15 +495,43 @@ app.post('/api/orders/cancel', (req, res) => {
   res.json({ success: true, message: 'অর্ডারটি সফলভাবে ক্যানসেল করা হয়েছে।' });
 });
 
+// --- ORDER PLACEMENT ROUTE WITH LATEST USER PROFILE LOCATION SYNC ---
 app.post('/api/orders', (req, res) => {
   const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
+  
+  // Fetch latest user profile data to ensure updated address & GPS coordinates are used
+  usersDB = loadData(USERS_FILE, []);
+  const latestUser = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+  
+  const finalAddress = latestUser && latestUser.address ? latestUser.address : address;
+  let finalLocation = location;
+  if (latestUser && latestUser.lat && latestUser.lng) {
+    finalLocation = `${latestUser.lat}, ${latestUser.lng}`;
+  } else if (latestUser && latestUser.location) {
+    finalLocation = latestUser.location;
+  }
+
   ordersDB = loadData(ORDERS_FILE, []);
   const orderId = 'ASW-' + Math.floor(100000 + Math.random() * 900000);
-  const newOrder = { orderId, phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate, status: 'PENDING', orderDate: new Date().toISOString().split('T')[0], createdAt: new Date().toLocaleString() };
+  const newOrder = { 
+    orderId, 
+    phone, 
+    customerName, 
+    email, 
+    address: finalAddress, 
+    location: finalLocation, 
+    items, 
+    totalAmount, 
+    paymentScreenshot, 
+    deliveryDate, 
+    status: 'PENDING', 
+    orderDate: new Date().toISOString().split('T')[0], 
+    createdAt: new Date().toLocaleString() 
+  };
   ordersDB.push(newOrder);
   saveData(ORDERS_FILE, ordersDB);
 
-  const locationLink = location ? (location.startsWith('http') ? location : `https://maps.google.com/?q=${location}`) : 'লোকেশন দেওয়া হয়নি';
+  const locationLink = finalLocation ? (finalLocation.startsWith('http') ? finalLocation : `https://maps.google.com/?q=${finalLocation}`) : 'লোকেশন দেওয়া হয়নি';
   const itemsListStr = (items || []).map(i => `${i.name} x ${i.qty} (₹${i.price * i.qty})`).join('<br>');
 
   if (email) {
@@ -511,7 +552,7 @@ app.post('/api/orders', (req, res) => {
     `<p>একটি নতুন অর্ডার প্লেস হয়েছে:</p>
      <p><b>Order ID:</b> #${orderId}<br>
         <b>গ্রাহক:</b> ${customerName} (${phone})<br>
-        <b>ঠিকানা:</b> ${address}<br>
+        <b>ঠিকানা:</b> ${finalAddress}<br>
         <b>ডেলিভারি তারিখ:</b> ${deliveryDate}<br>
         <b>খাবারের তালিকা:</b><br>${itemsListStr}<br>
         <b>মোট মূল্য:</b> ₹${totalAmount}<br>
@@ -689,7 +730,7 @@ app.post('/api/admin/order-status', (req, res) => {
           `❌ আপনার অর্ডার বাতিল করা হয়েছে: #${orderId}`,
           `<p>দুঃখিত <b>${order.customerName}</b>,</p>
            <p>অনাবশ্যক কারণবশত আপনার অর্ডারটি (#${orderId}) বাতিল করা হয়েছে।</p>
-           <p style="color: #ff6b6b; font-weight: bold;">বাতিলের কারণ: ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`
+           <p style="color: #ffb703; font-weight: bold;">বাতিলের কারণ: ${reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>`
         );
         sendEmail(order.email, `❌ আপনার অর্ডার বাতিল করা হয়েছে: #${orderId}`, rejectHtml);
       } else if (status === 'DELIVERED') {
