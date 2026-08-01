@@ -106,7 +106,7 @@ if (!fs.existsSync(SPECIAL_REQUESTS_FILE)) saveData(SPECIAL_REQUESTS_FILE, speci
 
 usersDB = syncUsersFromOrders(usersDB, ordersDB);
 
-const resendApiKey = process.env.EMAIL_PASSWORD || 're_emqAgGvq_GCG7j1o4QGR1Y48TyAKQ9yzC';
+const resendApiKey = process.env.EMAIL_PASSWORD || '';
 const resend = new Resend(resendApiKey);
 const OWNER_NOTIFY_EMAIL = process.env.OWNER_EMAIL || 'iammadhuchanda@gmail.com';
 
