@@ -275,25 +275,31 @@ function setupGlobalAuthModalFix() {
     </div>
   `;
 
-  // Inject Live Google/Interactive Map Modal Picker if not present
+  // Inject Improved Live Map Modal Picker with Search & Google Maps Direct Link
   if (!document.getElementById('map-picker-modal')) {
     const mapModal = document.createElement('div');
     mapModal.id = 'map-picker-modal';
     mapModal.className = 'modal';
     mapModal.innerHTML = `
-      <div class="modal-content" style="max-width:500px; text-align:center;">
+      <div class="modal-content" style="max-width:480px; text-align:center;">
         <div class="modal-header">
           <h3 style="color:var(--gold-bright);">🗺️ Live Map Location Picker</h3>
           <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
         </div>
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">লাইভ ম্যাপে আপনার ডেলিভারি লোকেশন পিন করুন বা সিলেক্ট করুন:</p>
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক লোকেশন সেট করতে নিচে আপনার এলাকার নাম সার্চ করুন অথবা সরাসরি গুগল ম্যাপে পিন করুন:</p>
         
-        <!-- Live Google Map Embed / Interactive Container -->
-        <div style="width:100%; height:260px; border-radius:10px; overflow:hidden; border:1px solid var(--border-gold); margin-bottom:12px; position:relative;">
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          <input type="text" id="map-location-search-input" class="input-field" placeholder="Search area or landmark..." style="margin:0; font-size:0.9rem !important;">
+          <button type="button" class="btn-primary" onclick="searchLocationOnMap()" style="margin:0; width:90px; font-size:0.85rem;">Search</button>
+        </div>
+
+        <div style="width:100%; height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--border-gold); margin-bottom:10px; position:relative;">
           <iframe id="live-google-map-frame" width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen src="https://www.google.com/maps/embed/v1/place?key=&q=Kolkata"></iframe>
         </div>
 
-        <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Location details..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
+        <div style="margin-bottom:12px;">
+          <a id="external-google-maps-link" href="https://maps.google.com" target="_blank" style="color:var(--gold-bright); font-size:0.85rem; text-decoration:underline; font-weight:bold;">🔗 Open in Google Maps (এলাকা সিলেক্ট করতে এখানে ক্লিক করুন)</a>
+        </div>
 
         <div style="display:flex; gap:10px;">
           <button class="btn-primary" onclick="confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff;">লোকেশন নিশ্চিত করুন</button>
@@ -365,7 +371,7 @@ function fetchUserCurrentLocationGPS() {
       showToast('GPS লোকেশন সফলভাবে কনফার্ম হয়েছে!');
     }, () => {
       hideMobileLoading();
-      alert('লোকেশন পার্মিশন পাওয়া যায়নি।');
+      alert('লোকেশন পার্মিশন দেওয়া হয়নি।');
     });
   } else {
     alert('আপনার ব্রাউজার জিওলোকেশন সাপোর্ট করে না।');
@@ -382,23 +388,33 @@ function openMapLocationPickerModal() {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
-        document.getElementById('map-selected-coords-desc').value = `GPS Coords: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        document.getElementById('external-google-maps-link').href = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
         document.getElementById('signup-lat').value = lat;
         document.getElementById('signup-lng').value = lon;
       }, () => {
         document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=Kolkata&z=13&output=embed`;
-        document.getElementById('map-selected-coords-desc').value = `Kolkata, West Bengal`;
+        document.getElementById('external-google-maps-link').href = `https://www.google.com/maps/search/?api=1&query=Kolkata`;
       });
     }
   }
 }
 
+function searchLocationOnMap() {
+  const query = document.getElementById('map-location-search-input').value.trim();
+  if (!query) return alert('অনুগ্রহ করে এলাকার নাম লিখুন।');
+  const encodedQuery = encodeURIComponent(query);
+  document.getElementById('live-google-map-frame').src = `https://maps.google.com/maps?q=${encodedQuery}&z=15&output=embed`;
+  document.getElementById('external-google-maps-link').href = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+  document.getElementById('signup-location').value = query;
+  showToast('ম্যাপ আপডেট করা হয়েছে!');
+}
+
 function confirmMapLocationSelection() {
-  const desc = document.getElementById('map-selected-coords-desc').value;
+  const query = document.getElementById('map-location-search-input').value.trim() || 'Custom Map Pin';
   const badge = document.getElementById('location-status-badge');
   if (badge) {
     badge.style.display = 'block';
-    badge.innerText = `✅ Map Location Verified: ${desc}`;
+    badge.innerText = `✅ Map Location Confirmed: ${query}`;
   }
   closeModal('map-picker-modal');
   showToast('ম্যাপ লোকেশন কনফার্ম হয়েছে!');
@@ -439,7 +455,7 @@ async function signupUser() {
   const phone = document.getElementById('signup-phone').value.trim();
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value.trim();
-  const address = document.getElementById('signup-address').value.trim(); // Manually typed address
+  const address = document.getElementById('signup-address').value.trim(); // User types manually
   const location = document.getElementById('signup-location').value.trim();
   const lat = document.getElementById('signup-lat').value.trim();
   const lng = document.getElementById('signup-lng').value.trim();
