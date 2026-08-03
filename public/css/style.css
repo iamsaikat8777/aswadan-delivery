@@ -683,3 +683,22 @@ body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+/* --- MOBILE LANDSCAPE VIEW FIX (SINGLE LINE NAVBAR ALIGNED RIGHT) --- */
+@media (max-width: 900px) and (orientation: landscape) {
+  .top-nav-container {
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: max(6px, env(safe-area-inset-top, 6px)) 15px 0 0 !important;
+  }
+
+  .top-nav-bar {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    width: auto !important;
+    max-width: none !important;
+    justify-content: flex-end !important;
+    padding: 3px 6px !important;
+    gap: 2px !important;
+  }
+}

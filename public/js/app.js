@@ -84,6 +84,60 @@ function formatDateDDMMYYYY(dateInput) {
   return dateInput;
 }
 
+// --- PWA INSTALL PROMPT STUB ---
+function checkPWAInstallPrompt() {
+  // Handled by global beforeinstallprompt event listener
+}
+
+
+// --- SPECIAL OFFER POPUP FRONTEND FIX (WIDE & PROFESSIONAL ELEGANT DESIGN) ---
+async function checkAndShowOfferPopup() {
+  try {
+    const path = window.location.pathname;
+    const isHome = path.endsWith('index.html') || path === '/' || path === '' || path.endsWith('/');
+    if (!isHome) return;
+
+    const res = await fetch('/api/offer?t=' + Date.now());
+    const data = await res.json();
+
+    if (data.success && data.offer && data.offer.enabled) {
+      const offer = data.offer;
+      
+      if (document.getElementById('special-offer-popup-modal')) return;
+
+      const modalDiv = document.createElement('div');
+      modalDiv.id = 'special-offer-popup-modal';
+      modalDiv.className = 'modal';
+      modalDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999999; padding: 20px;';
+      
+      modalDiv.innerHTML = `
+        <div style="max-width: 650px; width: 100%; text-align: center; background: linear-gradient(145deg, #12121a 0%, #1a1a26 100%); border: 2px solid #d4af37; border-radius: 22px; padding: 35px 30px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.95), 0 0 30px rgba(212,175,55,0.25); animation: scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+          
+          <!-- Professional Clean Close Button -->
+          <button style="position: absolute; right: 20px; top: 20px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(212, 175, 55, 0.3); width: 36px; height: 36px; border-radius: 50%; font-size: 1.25rem; color: #d4af37; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;" onclick="document.getElementById('special-offer-popup-modal').remove()" onmouseover="this.style.background='#d4af37';this.style.color='#000';this.style.transform='scale(1.08)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.08)';this.style.color='#d4af37';this.style.transform='scale(1)';">&times;</button>
+          
+          <h2 style="color: #e5c158; margin-bottom: 16px; font-family: 'Cinzel', serif; font-size: 1.8rem; letter-spacing: 0.5px; text-shadow: 0 2px 10px rgba(229,193,88,0.3);">${offer.title || '🔥 বিশেষ অফার!'}</h2>
+          
+          ${offer.image ? `
+            <div style="margin: 18px 0; border-radius: 14px; overflow: hidden; border: 1px solid rgba(212,175,55,0.4); box-shadow: 0 8px 25px rgba(0,0,0,0.6); background: #000;">
+              <img src="${offer.image}" alt="Offer Poster" style="width: 100%; max-height: 320px; object-fit: contain; display: block;" onerror="this.parentElement.style.display='none'">
+            </div>
+          ` : ''}
+          
+          <p style="color: #e0e0e8; font-size: 1.05rem; line-height: 1.6; margin: 18px 0 26px; font-family: 'Hind Siliguri', sans-serif;">${offer.desc || ''}</p>
+          
+          <button onclick="document.getElementById('special-offer-popup-modal').remove(); window.location.href='menu.html';" style="background: linear-gradient(135deg, #e5c158 0%, #d4af37 50%, #aa8c2c 100%); color: #000; font-weight: 700; border: none; padding: 14px 26px; border-radius: 30px; cursor: pointer; font-size: 1.05rem; width: 100%; box-shadow: 0 8px 25px rgba(212,175,55,0.4); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+            ✨ অফার উপভোগ করতে মেনু পেজে যান
+          </button>
+        </div>
+      `;
+      document.body.appendChild(modalDiv);
+    }
+  } catch (err) {
+    console.error('Error fetching special offer:', err);
+  }
+}
+
 // --- CART & APP CORE LOGIC ---
 let cart = JSON.parse(localStorage.getItem('aswadan_cart') || '[]');
 cart = cart.map(i => ({ ...i, price: Number(i.price) || 0, qty: Number(i.qty) || 1 }));
@@ -98,14 +152,14 @@ window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   updateAuthNavUI();
   loadHomeSpotlight();
-  checkPWAInstallPrompt();
+  checkPWAInstallPrompt(); // Now defined, will not crash!
   injectUserDashboardModalIfNeeded();
   injectCartModalIfNeeded();
   checkSpecialRequestNotificationBadge();
   setupGlobalAuthModalFix();
   injectGlobalMapPickerModalIfNeeded();
   injectLeafletDependencies();
-  checkAndShowSpecialOffer();
+  checkAndShowOfferPopup(); // Executes automatically on page load!
 });
 
 function injectLeafletDependencies() {
@@ -121,43 +175,6 @@ function injectLeafletDependencies() {
     script.id = 'leaflet-js';
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     document.head.appendChild(script);
-  }
-}
-
-// --- SPECIAL OFFER POPUP LOADER ---
-async function checkAndShowSpecialOffer() {
-  try {
-    const res = await fetch('/api/offer');
-    const data = await res.json();
-    if (data.success && data.offer && data.offer.enabled) {
-      const offer = data.offer;
-      injectSpecialOfferModalIfNeeded(offer);
-    }
-  } catch (err) {
-    console.error('Failed to load special offer banner:', err);
-  }
-}
-
-function injectSpecialOfferModalIfNeeded(offer) {
-  if (!document.getElementById('special-offer-popup-modal')) {
-    const modal = document.createElement('div');
-    modal.id = 'special-offer-popup-modal';
-    modal.className = 'modal';
-    modal.style.display = 'flex';
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width: 440px; text-align: center; background: #12121a; border: 2px solid var(--border-gold); position: relative;">
-        <button class="close-btn" onclick="closeModal('special-offer-popup-modal')" style="position: absolute; right: 15px; top: 12px;">&times;</button>
-        <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
-        <h2 style="color: var(--gold-bright); margin-bottom: 10px;">${offer.title || 'বিশেষ অফার!'}</h2>
-        ${offer.image ? `<img src="${offer.image}" alt="Offer Poster" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--border-gold); margin-bottom: 12px; object-fit: cover;">` : ''}
-        <p style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">${offer.desc || ''}</p>
-        <button class="btn-primary" onclick="closeModal('special-offer-popup-modal')">উপভোগ করুন / বন্ধ করুন</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  } else {
-    const m = document.getElementById('special-offer-popup-modal');
-    m.style.display = 'flex';
   }
 }
 
@@ -364,7 +381,6 @@ function setupGlobalAuthModalFix() {
 
   injectGlobalMapPickerModalIfNeeded();
 
-  // Inject Forgot Password Modal with Eye Toggle
   if (!document.getElementById('forgot-pass-modal')) {
     const fpModal = document.createElement('div');
     fpModal.id = 'forgot-pass-modal';
@@ -485,7 +501,6 @@ function switchAuthTab(tab) {
   }
 }
 
-// --- PASSWORD EYE TOGGLE ---
 function togglePasswordVisibility(fieldId, iconId) {
   const field = document.getElementById(fieldId);
   const icon = document.getElementById(iconId);
@@ -500,7 +515,6 @@ function togglePasswordVisibility(fieldId, iconId) {
   }
 }
 
-// --- GPS & MAP LOCATION HELPERS ---
 let activeLatField = 'signup-lat';
 let activeLngField = 'signup-lng';
 let activeBadgeField = 'location-status-badge';
@@ -687,7 +701,6 @@ function logoutUser() {
   window.location.reload();
 }
 
-// --- AUTO-INJECT CART MODAL WITH FIXED NaN PRICE GLITCH & VALID NUMBERS ---
 function injectCartModalIfNeeded() {
   if (!document.getElementById('cart-modal')) {
     const cartModalDiv = document.createElement('div');
@@ -775,7 +788,6 @@ function togglePaymentMethodUI() {
   }
 }
 
-// --- PERSISTENT USER DASHBOARD WITH PROFILE MAP & GPS ---
 function injectUserDashboardModalIfNeeded() {
   const dropdownMenu = document.getElementById('user-hover-menu');
   if (dropdownMenu) {
@@ -824,7 +836,6 @@ function injectUserDashboardModalIfNeeded() {
           <label class="input-label">🏠 ঠিকানা:</label>
           <textarea id="prof-address" class="input-field" rows="2" placeholder="Update your address..."></textarea>
 
-          <!-- RESTORED FOR PROFILE UPDATE -->
           <div style="display:flex; gap:8px; margin-bottom:8px; margin-top:8px;">
             <button type="button" onclick="fetchUserCurrentLocationGPS('prof-lat', 'prof-lng', 'prof-location-status-badge')" style="flex:1; background:rgba(42,157,143,0.2); border:1px solid var(--green-accent); color:#4ade80; padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">📍 Get GPS Location</button>
             <button type="button" onclick="openMapLocationPickerModal('prof-lat', 'prof-lng', 'prof-location-status-badge')" style="flex:1; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-bright); padding:8px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">🗺️ Set from Map</button>
@@ -873,7 +884,6 @@ function injectUserDashboardModalIfNeeded() {
     document.body.appendChild(modalDiv);
   }
 
-  // Inject Smart Refund Modal for Prepaid Order Cancellations with Memory Notification
   if (!document.getElementById('order-cancel-modal')) {
     const cancelModal = document.createElement('div');
     cancelModal.id = 'order-cancel-modal';
@@ -1165,7 +1175,6 @@ function handleSpecScreenshotUpload(event) {
   }
 }
 
-// --- USER DASHBOARD FUNCTIONS WITH WORKING DROPDOWN OPTIONS ---
 function openUserDashboard(tab) {
   const wrapper = document.getElementById('user-nav-wrapper');
   if (wrapper) wrapper.classList.remove('active-dropdown');
@@ -1530,7 +1539,6 @@ async function confirmSpecialPayment() {
   }
 }
 
-// --- CART MANAGEMENT WITH ROBUST PRICE FIX ---
 function addToCart(id, name, price, desc) {
   const numericPrice = Number(price) || 0;
   const existing = cart.find(item => Number(item.id) === Number(id));
@@ -1722,7 +1730,6 @@ async function placeOrder() {
   }
 }
 
-// --- HOME SPOTLIGHT WITH HORIZONTAL SIDE-BY-SIDE SLIDING ANIMATION ---
 async function loadHomeSpotlight() {
   try {
     const res = await fetch('/api/menu');
@@ -1791,7 +1798,6 @@ async function loadHomeSpotlight() {
   } catch (err) { console.error(err); }
 }
 
-// --- PWA INSTALL PROMPT FIX FOR MOBILE DEVICES ---
 let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
