@@ -1495,7 +1495,10 @@ async function loadPreferredMenuSelection() {
 }
 
 async function savePreferredMenu() {
-  if (!currentUser) return;
+  if (!currentUser || !currentUser.phone) {
+    alert('অনুগ্রহ করে প্রথমে লগইন করুন।');
+    return;
+  }
   const checkboxes = document.querySelectorAll('.pref-chk:checked');
   const preferredItems = Array.from(checkboxes).map(chk => Number(chk.value));
   showMobileLoading();
@@ -1507,13 +1510,16 @@ async function savePreferredMenu() {
     });
     const data = await res.json();
     hideMobileLoading();
-    if (data.success) {
-      currentUser.preferredItems = data.preferredItems;
+    if (res.ok && data.success) {
+      currentUser.preferredItems = data.preferredItems || preferredItems;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
-      showToast('প্রেফার্ড মেনু সেভ হয়েছে!');
+      showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
+    } else {
+      alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
     }
   } catch (err) {
     hideMobileLoading();
+    console.error(err);
     alert('সার্ভার ত্রুটি!');
   }
 }
