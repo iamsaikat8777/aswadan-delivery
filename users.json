@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "name": "Saikat Dutta",
+    "phone": "8777866113",
+    "email": "iamsaikatdutta@gmail.com",
+    "password": "Saikat123",
+    "address": "Baranagar",
+    "location": "Kolkata",
+    "lat": "22.629618633566043",
+    "lng": "88.36464643478395",
+    "pincode": "700036",
+    "isBlocked": false,
+    "preferredItems": []
+  }
+]
