@@ -279,7 +279,10 @@ function showToast(msg) {
 
 function closeModal(modalId) {
   const m = document.getElementById(modalId);
-  if (m) m.style.display = 'none';
+  if (m) {
+    m.style.display = 'none';
+    document.body.style.overflow = '';
+  }
 }
 
 function openAuthModal() {
@@ -287,6 +290,7 @@ function openAuthModal() {
   const m = document.getElementById('auth-modal');
   if (m) {
     m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     switchAuthTab('login');
   }
 }
@@ -299,23 +303,27 @@ function injectGlobalMapPickerModalIfNeeded() {
     const mapModal = document.createElement('div');
     mapModal.id = 'map-picker-modal';
     mapModal.className = 'modal';
+    mapModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 999999; padding: 15px;';
     mapModal.innerHTML = `
-      <div class="modal-content" style="max-width:480px; text-align:center;">
-        <div class="modal-header">
-          <h3 style="color:var(--gold-bright);">🗺️ Tap & Drop Pin on Map</h3>
-          <button class="close-btn" onclick="closeModal('map-picker-modal')">&times;</button>
+      <div class="modal-content" style="max-width:480px; width:100%; text-align:center; background:#12121a; border:2px solid var(--border-gold); border-radius:16px; padding:20px; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.9);" onclick="event.stopPropagation()">
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3 style="color:var(--gold-bright); margin:0; font-size:1.1rem;">🗺️ Tap & Drop Pin on Map</h3>
+          <button class="close-btn" onclick="closeModal('map-picker-modal')" style="background:rgba(255,255,255,0.08); border:1px solid rgba(212,175,55,0.3); width:32px; height:32px; border-radius:50%; color:#d4af37; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
         </div>
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
+        <p style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
         
-        <div id="interactive-leaflet-map" style="width:100%; height:260px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
+        <div id="interactive-leaflet-map" style="width:100%; height:240px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
         <input type="text" id="map-selected-coords-desc" class="input-field" placeholder="Selected Pin Coordinates..." readonly style="margin-bottom:12px; background:#181824; font-size:0.85rem !important;">
 
         <div style="display:flex; gap:10px;">
-          <button type="button" class="btn-primary" onclick="window.confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff;">লোকেশন নিশ্চিত করুন</button>
-          <button type="button" onclick="closeModal('map-picker-modal')" style="flex:1; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer; font-weight:bold;">বাতিল</button>
+          <button type="button" class="btn-primary" onclick="window.confirmMapLocationSelection()" style="margin:0; background:var(--green-accent); color:#fff; flex:1; padding:10px;">লোকেশন নিশ্চিত করুন</button>
+          <button type="button" onclick="closeModal('map-picker-modal')" style="flex:1; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer; font-weight:bold; padding:10px;">বাতিল</button>
         </div>
       </div>
     `;
+    mapModal.onclick = (e) => {
+      if (e.target === mapModal) closeModal('map-picker-modal');
+    };
     document.body.appendChild(mapModal);
   }
 }
@@ -575,11 +583,12 @@ function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', 
   const m = document.getElementById('map-picker-modal');
   if (m) {
     m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     setTimeout(() => {
       let initLat = parseFloat(document.getElementById(latId)?.value) || 22.5726;
       let initLng = parseFloat(document.getElementById(lngId)?.value) || 88.3639;
       initInteractiveLeafletMap(initLat, initLng);
-    }, 250);
+    }, 300);
   }
 }
 
@@ -613,8 +622,14 @@ function initInteractiveLeafletMap(lat, lng) {
   } else {
     activeLeafletMap.setView([lat, lng], 15);
     activeLeafletMarker.setLatLng([lat, lng]);
-    setTimeout(() => { activeLeafletMap.invalidateSize(); }, 150);
   }
+  
+  setTimeout(() => {
+    if (activeLeafletMap) {
+      activeLeafletMap.invalidateSize();
+    }
+  }, 250);
+
   window.updateMapSelectionCoords(lat, lng);
 }
 
@@ -1177,11 +1192,9 @@ async function checkSpecialRequestNotificationBadge() {
       const signatures = data.requests.map(r => `${r.requestId}_${r.status}`).join(',');
       const lastSeenSig = localStorage.getItem(`aswadan_spec_sig_${currentUser.phone}`);
       
-      const dropdownBadge = document.getElementById('dropdown-spec-badge');
       const modalBadge = document.getElementById('modal-spec-badge');
       const hasUnread = lastSeenSig !== null && lastSeenSig !== signatures;
 
-      if (dropdownBadge) dropdownBadge.style.display = hasUnread ? 'inline-block' : 'none';
       if (modalBadge) modalBadge.style.display = hasUnread ? 'inline-block' : 'none';
 
       if (lastSeenSig === null) {
@@ -1201,9 +1214,7 @@ function clearSpecialRequestNotification() {
       if (data.success && data.requests) {
         const signatures = data.requests.map(r => `${r.requestId}_${r.status}`).join(',');
         localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, signatures);
-        const dropdownBadge = document.getElementById('dropdown-spec-badge');
         const modalBadge = document.getElementById('modal-spec-badge');
-        if (dropdownBadge) dropdownBadge.style.display = 'none';
         if (modalBadge) modalBadge.style.display = 'none';
       }
     }).catch(err => console.error(err));
@@ -1274,6 +1285,7 @@ function openUserDashboard(tab) {
   const m = document.getElementById('user-dashboard-modal');
   if (m) {
     m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     switchDashboardTab(tab || 'profile');
     loadUserProfileData();
     if (tab === 'history' || tab === 'status') clearNormalOrderNotification();
@@ -1678,7 +1690,10 @@ function addToCart(id, name, price, desc) {
 function openCartModal() {
   injectCartModalIfNeeded();
   const m = document.getElementById('cart-modal');
-  if (m) m.style.display = 'flex';
+  if (m) {
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
   renderCartItems();
   const step1 = document.getElementById('cart-step-1');
   const step2 = document.getElementById('cart-step-2');
