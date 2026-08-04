@@ -162,6 +162,30 @@ app.get('/api/menu', (req, res) => {
   res.json({ success: true, menu: menuDB });
 });
 
+// --- PREFERRED MENU SAVE ROUTE ---
+app.post('/api/user/preferred-menu', (req, res) => {
+  try {
+    const { phone, preferredItems } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'মোবাইল নম্বর পাওয়া যায়নি।' });
+    }
+
+    usersDB = loadData(USERS_FILE, []);
+    const user = usersDB.find(u => String(u.phone).trim() === String(phone).trim());
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি।' });
+    }
+
+    user.preferredItems = Array.isArray(preferredItems) ? preferredItems.map(Number) : [];
+    saveData(USERS_FILE, usersDB);
+
+    res.json({ success: true, message: 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!', preferredItems: user.preferredItems });
+  } catch (err) {
+    console.error('Preferred menu save error:', err.message);
+    res.status(500).json({ success: false, message: 'সার্ভার ত্রুটি!' });
+  }
+});
+
 app.get('/api/offer', (req, res) => {
   offerDB = loadData(OFFER_FILE, defaultOffer);
   res.json({ success: true, offer: offerDB });
