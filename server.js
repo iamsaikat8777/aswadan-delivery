@@ -122,7 +122,7 @@ function createBrandEmail(heading, htmlBody) {
         <div style="display: inline-block; background: #000000; border: 2px solid #d4af37; border-radius: 50%; width: 75px; height: 75px; line-height: 75px; text-align: center; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(212,175,55,0.4);">
           <img src="https://aaswadanfoodservices.com/logo.png" alt="Aswadan Logo" style="width: 55px; height: 55px; vertical-align: middle; object-fit: contain;" />
         </div>
-        <h1 style="color: #d4af37; margin: 0; font-size: 26px; letter-spacing: 0.5px; font-weight: 800;">আস্বাদন (Aswadan Food Services)</h1>
+        <h1 style="color: #d4af37; margin: 0; font-size: 26px; letter-spacing: 0.5px; font-weight: 800;">আস্বাদন (Aaswadan Food Services)</h1>
         <p style="color: #a0a0b0; font-size: 13px; margin: 6px 0 0 0; letter-spacing: 0.5px;">Authentic & Pure Homemade Food Delivery</p>
       </div>
       
@@ -134,7 +134,7 @@ function createBrandEmail(heading, htmlBody) {
       
       <div style="margin-top: 35px; border-top: 1px solid rgba(212, 175, 55, 0.3); padding-top: 20px; text-align: center;">
         <p style="color: #d4af37; font-weight: bold; margin: 0; font-size: 15px;">আন্তরিক ধন্যবাদসহ,</p>
-        <p style="color: #ffffff; margin: 6px 0 0 0; font-size: 14px; font-weight: 600;">ম্যানেজমেন্ট টিম, আস্বাদন (Aswadan Admin)</p>
+        <p style="color: #ffffff; margin: 6px 0 0 0; font-size: 14px; font-weight: 600;">ম্যানেজমেন্ট টিম, আস্বাদন (Aaswadan Admin)</p>
         <p style="color: #777788; font-size: 11px; margin-top: 15px;">এটি একটি স্বয়ংক্রিয় নোটিফিকেশন ইমেল, দয়া করে সরাসরি এই ঠিকানায় রিপ্লাই করবেন না।</p>
       </div>
     </div>
@@ -357,7 +357,7 @@ app.post('/api/auth/signup', (req, res) => {
 
     if (email) {
       const welcomeHtml = createBrandEmail(
-        `🎉 আস্বাদন (Aswadan) পরিবারে আপনাকে স্বাগতম!`,
+        `🎉 আস্বাদন (Aaswadan) পরিবারে আপনাকে স্বাগতম!`,
         `<p>নমস্কার <b>${name}</b>,</p>
          <p>আস্বাদন ফুড সার্ভিসেস-এ সফলভাবে রেজিস্টার করার জন্য আপনাকে অসংখ্য ধন্যবাদ। এখন থেকেই আপনি আমাদের সুস্বাদু এবং বিশুদ্ধ হোম ডেলিভারি খাবার অর্ডার করতে পারবেন।</p>`
       );
