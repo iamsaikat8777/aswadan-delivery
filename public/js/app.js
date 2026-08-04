@@ -1484,12 +1484,18 @@ async function loadPreferredMenuSelection() {
     const data = await res.json();
     if (data.success) {
       const pref = currentUser && currentUser.preferredItems ? currentUser.preferredItems : [];
+      const hasPref = pref.length > 0;
+
       container.innerHTML = data.menu.map(m => `
         <label style="display:flex; align-items:center; gap:10px; background:#181824; padding:8px 12px; border-radius:8px; margin-bottom:6px; cursor:pointer;">
           <input type="checkbox" value="${m.id}" ${pref.includes(m.id) ? 'checked' : ''} class="pref-chk" style="width:18px; height:18px;">
           <span style="color:#fff; font-size:0.9rem;">${m.name} (₹${m.price})</span>
         </label>
-      `).join('') + `<button class="btn-primary" onclick="savePreferredMenu()" style="margin-top:10px;">সেভ প্রেফার্ড মেনু</button>`;
+      `).join('') + `
+        <button class="btn-primary" onclick="savePreferredMenu()" style="margin-top:10px;">সেভ প্রেফার্ড মেনু</button>
+        <button id="add-saved-menu-cart-btn" class="btn-primary" onclick="addSavedMenuToCart()" style="margin-top:8px; background:${hasPref ? 'var(--green-accent)' : '#444'}; color:#fff; ${hasPref ? '' : 'opacity:0.6; cursor:not-allowed;'}" ${hasPref ? '' : 'disabled'}>🛒 Add Saved Menu to Cart</button>
+        ${hasPref ? '' : '<small style="display:block; text-align:center; color:#aaa; margin-top:4px;">Save your preferred menu first.</small>'}
+      `;
     }
   } catch (err) { console.error(err); }
 }
@@ -1514,6 +1520,9 @@ async function savePreferredMenu() {
       currentUser.preferredItems = data.preferredItems || preferredItems;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
+      
+      // Instantly update button state without requiring page reload
+      loadPreferredMenuSelection();
     } else {
       alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
     }
@@ -1524,6 +1533,40 @@ async function savePreferredMenu() {
   }
 }
 
+async function addSavedMenuToCart() {
+  if (!currentUser || !currentUser.preferredItems || currentUser.preferredItems.length === 0) {
+    alert('Save your preferred menu first.');
+    return;
+  }
+  
+  showMobileLoading();
+  try {
+    const res = await fetch('/api/menu');
+    const data = await res.json();
+    hideMobileLoading();
+
+    if (data.success && data.menu) {
+      const savedIds = currentUser.preferredItems.map(Number);
+      const matchingItems = data.menu.filter(m => savedIds.includes(Number(m.id)));
+
+      if (matchingItems.length === 0) {
+        alert('No matching items found in the menu.');
+        return;
+      }
+
+      matchingItems.forEach(item => {
+        // Reuse existing cart function
+        addToCart(item.id, item.name, item.price, item.desc);
+      });
+
+      showToast('Saved menu added to cart successfully.');
+    }
+  } catch (err) {
+    hideMobileLoading();
+    console.error(err);
+    alert('Failed to add saved menu to cart.');
+  }
+}
 async function submitSpecialFoodRequest(e) {
   e.preventDefault();
   if (!currentUser) { openAuthModal(); return; }
