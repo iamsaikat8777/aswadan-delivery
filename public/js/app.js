@@ -59,17 +59,38 @@ function injectLoadingOverlayIfNeeded() {
 }
 
 function showMobileLoading() {
-  if (window.innerWidth <= 768) {
-    injectLoadingOverlayIfNeeded();
-    const overlay = document.getElementById('mobile-loading-overlay');
-    if (overlay) overlay.style.display = 'flex';
-  }
+  injectLoadingOverlayIfNeeded();
+  const overlay = document.getElementById('mobile-loading-overlay');
+  if (overlay) overlay.style.display = 'flex';
 }
 
 function hideMobileLoading() {
   const overlay = document.getElementById('mobile-loading-overlay');
   if (overlay) overlay.style.display = 'none';
 }
+
+// --- UNIVERSAL PROCESSING LOADER & FETCH WRAPPER ---
+(function() {
+  let activeRequestsCount = 0;
+
+  const originalFetch = window.fetch;
+  window.fetch = async function(...args) {
+    activeRequestsCount++;
+    showMobileLoading();
+    try {
+      const response = await originalFetch.apply(this, args);
+      return response;
+    } catch (error) {
+      throw error;
+    } finally {
+      activeRequestsCount--;
+      if (activeRequestsCount <= 0) {
+        activeRequestsCount = 0;
+        hideMobileLoading();
+      }
+    }
+  };
+})();
 
 // --- STRICT DD/MM/YYYY FORMATTER ---
 function formatDateDDMMYYYY(dateInput) {
@@ -89,8 +110,7 @@ function checkPWAInstallPrompt() {
   // Handled by global beforeinstallprompt event listener
 }
 
-
-// --- SPECIAL OFFER POPUP FRONTEND FIX (WIDE & PROFESSIONAL ELEGANT DESIGN) ---
+// --- SPECIAL OFFER POPUP FRONTEND FIX ---
 async function checkAndShowOfferPopup() {
   try {
     const path = window.location.pathname;
@@ -111,22 +131,21 @@ async function checkAndShowOfferPopup() {
       modalDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999999; padding: 20px;';
       
       modalDiv.innerHTML = `
-        <div style="max-width: 650px; width: 100%; text-align: center; background: linear-gradient(145deg, #12121a 0%, #1a1a26 100%); border: 2px solid #d4af37; border-radius: 22px; padding: 35px 30px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.95), 0 0 30px rgba(212,175,55,0.25); animation: scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+        <div style="max-width: 650px; width: 100%; text-align: center; background: linear-gradient(145deg, #12121a 0%, #1a1a26 100%); border: 2px solid #d4af37; border-radius: 22px; padding: 35px 30px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.95), 0 0 30px rgba(212,175,55,0.25);">
           
-          <!-- Professional Clean Close Button -->
-          <button style="position: absolute; right: 20px; top: 20px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(212, 175, 55, 0.3); width: 36px; height: 36px; border-radius: 50%; font-size: 1.25rem; color: #d4af37; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;" onclick="document.getElementById('special-offer-popup-modal').remove()" onmouseover="this.style.background='#d4af37';this.style.color='#000';this.style.transform='scale(1.08)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.08)';this.style.color='#d4af37';this.style.transform='scale(1)';">&times;</button>
+          <button style="position: absolute; right: 20px; top: 20px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(212, 175, 55, 0.3); width: 36px; height: 36px; border-radius: 50%; font-size: 1.25rem; color: #d4af37; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('special-offer-popup-modal').remove()">&times;</button>
           
-          <h2 style="color: #e5c158; margin-bottom: 16px; font-family: 'Cinzel', serif; font-size: 1.8rem; letter-spacing: 0.5px; text-shadow: 0 2px 10px rgba(229,193,88,0.3);">${offer.title || '🔥 বিশেষ অফার!'}</h2>
+          <h2 style="color: #e5c158; margin-bottom: 16px; font-family: 'Cinzel', serif; font-size: 1.8rem; letter-spacing: 0.5px;">${offer.title || '🔥 বিশেষ অফার!'}</h2>
           
           ${offer.image ? `
-            <div style="margin: 18px 0; border-radius: 14px; overflow: hidden; border: 1px solid rgba(212,175,55,0.4); box-shadow: 0 8px 25px rgba(0,0,0,0.6); background: #000;">
+            <div style="margin: 18px 0; border-radius: 14px; overflow: hidden; border: 1px solid rgba(212,175,55,0.4); background: #000;">
               <img src="${offer.image}" alt="Offer Poster" style="width: 100%; max-height: 320px; object-fit: contain; display: block;" onerror="this.parentElement.style.display='none'">
             </div>
           ` : ''}
           
-          <p style="color: #e0e0e8; font-size: 1.05rem; line-height: 1.6; margin: 18px 0 26px; font-family: 'Hind Siliguri', sans-serif;">${offer.desc || ''}</p>
+          <p style="color: #e0e0e8; font-size: 1.05rem; line-height: 1.6; margin: 18px 0 26px;">${offer.desc || ''}</p>
           
-          <button onclick="document.getElementById('special-offer-popup-modal').remove(); window.location.href='menu.html';" style="background: linear-gradient(135deg, #e5c158 0%, #d4af37 50%, #aa8c2c 100%); color: #000; font-weight: 700; border: none; padding: 14px 26px; border-radius: 30px; cursor: pointer; font-size: 1.05rem; width: 100%; box-shadow: 0 8px 25px rgba(212,175,55,0.4); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+          <button onclick="document.getElementById('special-offer-popup-modal').remove(); window.location.href='menu.html';" style="background: linear-gradient(135deg, #e5c158 0%, #d4af37 50%, #aa8c2c 100%); color: #000; font-weight: 700; border: none; padding: 14px 26px; border-radius: 30px; cursor: pointer; font-size: 1.05rem; width: 100%;">
             ✨ অফার উপভোগ করতে মেনু পেজে যান
           </button>
         </div>
@@ -152,14 +171,15 @@ window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   updateAuthNavUI();
   loadHomeSpotlight();
-  checkPWAInstallPrompt(); // Now defined, will not crash!
+  checkPWAInstallPrompt();
   injectUserDashboardModalIfNeeded();
   injectCartModalIfNeeded();
   checkSpecialRequestNotificationBadge();
+  checkNormalOrderNotificationBadge();
   setupGlobalAuthModalFix();
   injectGlobalMapPickerModalIfNeeded();
   injectLeafletDependencies();
-  checkAndShowOfferPopup(); // Executes automatically on page load!
+  checkAndShowOfferPopup();
 });
 
 function injectLeafletDependencies() {
@@ -187,7 +207,6 @@ function updateCartCount() {
   localStorage.setItem('aswadan_cart', JSON.stringify(cart));
 }
 
-// --- STRICT LOGIN STATE NAVBAR & FIXED MOBILE DROPDOWN TOGGLE ---
 function updateAuthNavUI() {
   const btn = document.getElementById('profile-nav-btn');
   const wrapper = document.getElementById('user-nav-wrapper');
@@ -272,11 +291,9 @@ function openAuthModal() {
   }
 }
 
-// --- SVG EYE ICONS FOR PASSWORD TOGGLE ---
 const svgEyeOpen = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const svgEyeClosed = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-// --- GUARANTEED GLOBAL MAP PICKER MODAL INJECTION ---
 function injectGlobalMapPickerModalIfNeeded() {
   if (!document.getElementById('map-picker-modal')) {
     const mapModal = document.createElement('div');
@@ -303,7 +320,6 @@ function injectGlobalMapPickerModalIfNeeded() {
   }
 }
 
-// --- AUTH MODAL WITH ENTER KEY, FORGOT PASSWORD & MAP ---
 function setupGlobalAuthModalFix() {
   let modal = document.getElementById('auth-modal');
   if (!modal) {
@@ -795,7 +811,11 @@ function injectUserDashboardModalIfNeeded() {
       const specialLink = document.createElement('a');
       specialLink.id = 'dropdown-special-link';
       specialLink.href = 'javascript:void(0)';
-      specialLink.onclick = (e) => { e.preventDefault(); openUserDashboard('special'); };
+      specialLink.onclick = (e) => { 
+        e.preventDefault(); 
+        clearSpecialRequestNotification();
+        openUserDashboard('special'); 
+      };
       specialLink.style.cssText = 'color:var(--gold-bright); font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:pointer;';
       specialLink.innerHTML = `<span>✨ Special Order Request</span> <span id="dropdown-spec-badge" style="background:#e63946; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; display:none;">!</span>`;
       
@@ -820,10 +840,10 @@ function injectUserDashboardModalIfNeeded() {
         </div>
         <div class="dashboard-tabs" style="display:flex; gap:6px; margin-bottom:15px; flex-wrap:wrap;">
           <button class="dash-tab-btn active" id="btn-tab-profile" onclick="switchDashboardTab('profile')">👤 Profile</button>
-          <button class="dash-tab-btn" id="btn-tab-history" onclick="switchDashboardTab('history')">📦 History</button>
-          <button class="dash-tab-btn" id="btn-tab-status" onclick="switchDashboardTab('status')">🚚 Status</button>
+          <button class="dash-tab-btn" id="btn-tab-history" onclick="switchDashboardTab('history'); clearNormalOrderNotification();" style="position:relative;">📦 History <span id="tab-history-badge" style="position:absolute; top:-4px; right:-4px; background:#e63946; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:50%; display:none;">!</span></button>
+          <button class="dash-tab-btn" id="btn-tab-status" onclick="switchDashboardTab('status'); clearNormalOrderNotification();" style="position:relative;">🚚 Status <span id="tab-status-badge" style="position:absolute; top:-4px; right:-4px; background:#e63946; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:50%; display:none;">!</span></button>
           <button class="dash-tab-btn" id="btn-tab-preferred" onclick="switchDashboardTab('preferred')">⭐ Preferred</button>
-          <button class="dash-tab-btn" id="btn-tab-special" onclick="switchDashboardTab('special')" style="background:var(--gold-gradient); color:#000; font-weight:bold; position:relative;">✨ Special Request <span id="modal-spec-badge" style="position:absolute; top:-4px; right:-4px; background:#e63946; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:50%; display:none;">!</span></button>
+          <button class="dash-tab-btn" id="btn-tab-special" onclick="switchDashboardTab('special'); clearSpecialRequestNotification();" style="background:var(--gold-gradient); color:#000; font-weight:bold; position:relative;">✨ Special Request <span id="modal-spec-badge" style="position:absolute; top:-4px; right:-4px; background:#e63946; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:50%; display:none;">!</span></button>
         </div>
 
         <div id="dash-view-profile">
@@ -1034,7 +1054,7 @@ function promptCancelOrder(orderId, isPrepaid) {
     }
     document.getElementById('order-cancel-modal').style.display = 'flex';
   } else {
-    if (confirm(`আপনি কি নিশ্চিতভাবে অর্ডার #${orderId} ক্যানসেল করতে চান?`)) {
+    if (confirm(`আপনি কি নিশ্চিতভাবে অর্ডার / রিকুয়েস্ট #${orderId} ক্যানসেল করতে চান?`)) {
       executeOrderCancellation(orderId, null);
     }
   }
@@ -1091,19 +1111,28 @@ async function submitOrderCancellationWithRefund() {
 async function executeOrderCancellation(orderId, refundInfo) {
   showMobileLoading();
   try {
-    const res = await fetch('/api/orders/cancel', {
+    let endpoint = '/api/orders/cancel';
+    let bodyPayload = { orderId, phone: currentUser.phone, refundInfo };
+
+    if (String(orderId).startsWith('SPEC-') || userSpecialRequestsCache.some(r => r.requestId === orderId)) {
+      endpoint = '/api/special-request/cancel';
+      bodyPayload = { requestId: orderId, phone: currentUser.phone, refundInfo };
+    }
+
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, phone: currentUser.phone, refundInfo })
+      body: JSON.stringify(bodyPayload)
     });
     const data = await res.json();
     hideMobileLoading();
     if (data.success) {
-      showToast(data.message);
+      showToast(data.message || 'সফলভাবে ক্যানসেল হয়েছে!');
       loadUserOrderHistory();
       loadUserOrderStatus();
+      loadUserSpecialRequests();
     } else {
-      alert(data.message);
+      alert(data.message || 'ক্যানসেল করতে সমস্যা হয়েছে।');
     }
   } catch (err) {
     hideMobileLoading();
@@ -1145,18 +1174,80 @@ async function checkSpecialRequestNotificationBadge() {
     const res = await fetch(`/api/special-request/user/${currentUser.phone}`);
     const data = await res.json();
     if (data.success && data.requests) {
-      const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
-      const unseenActioned = data.requests.some(r => (r.status === 'PRICED' || r.status === 'REJECTED') && !seenIds.includes(r.requestId));
+      const signatures = data.requests.map(r => `${r.requestId}_${r.status}`).join(',');
+      const lastSeenSig = localStorage.getItem(`aswadan_spec_sig_${currentUser.phone}`);
       
       const dropdownBadge = document.getElementById('dropdown-spec-badge');
       const modalBadge = document.getElementById('modal-spec-badge');
-      
-      if (dropdownBadge) dropdownBadge.style.display = unseenActioned ? 'inline-block' : 'none';
-      if (modalBadge) modalBadge.style.display = unseenActioned ? 'inline-block' : 'none';
+      const hasUnread = lastSeenSig !== null && lastSeenSig !== signatures;
+
+      if (dropdownBadge) dropdownBadge.style.display = hasUnread ? 'inline-block' : 'none';
+      if (modalBadge) modalBadge.style.display = hasUnread ? 'inline-block' : 'none';
+
+      if (lastSeenSig === null) {
+        localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, signatures);
+      }
     }
   } catch (err) {
     console.error(err);
   }
+}
+
+function clearSpecialRequestNotification() {
+  if (!currentUser || !currentUser.phone) return;
+  fetch(`/api/special-request/user/${currentUser.phone}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.requests) {
+        const signatures = data.requests.map(r => `${r.requestId}_${r.status}`).join(',');
+        localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, signatures);
+        const dropdownBadge = document.getElementById('dropdown-spec-badge');
+        const modalBadge = document.getElementById('modal-spec-badge');
+        if (dropdownBadge) dropdownBadge.style.display = 'none';
+        if (modalBadge) modalBadge.style.display = 'none';
+      }
+    }).catch(err => console.error(err));
+}
+
+async function checkNormalOrderNotificationBadge() {
+  if (!currentUser || !currentUser.phone) return;
+  try {
+    const res = await fetch(`/api/orders/user/${currentUser.phone}`);
+    const data = await res.json();
+    if (data.success && data.orders) {
+      const signatures = data.orders.map(o => `${o.orderId}_${o.status}`).join(',');
+      const lastSeenSig = localStorage.getItem(`aswadan_norm_sig_${currentUser.phone}`);
+      
+      const historyBadge = document.getElementById('tab-history-badge');
+      const statusBadge = document.getElementById('tab-status-badge');
+      const hasUnread = lastSeenSig !== null && lastSeenSig !== signatures;
+
+      if (historyBadge) historyBadge.style.display = hasUnread ? 'inline-block' : 'none';
+      if (statusBadge) statusBadge.style.display = hasUnread ? 'inline-block' : 'none';
+
+      if (lastSeenSig === null) {
+        localStorage.setItem(`aswadan_norm_sig_${currentUser.phone}`, signatures);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function clearNormalOrderNotification() {
+  if (!currentUser || !currentUser.phone) return;
+  fetch(`/api/orders/user/${currentUser.phone}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.orders) {
+        const signatures = data.orders.map(o => `${o.orderId}_${o.status}`).join(',');
+        localStorage.setItem(`aswadan_norm_sig_${currentUser.phone}`, signatures);
+        const historyBadge = document.getElementById('tab-history-badge');
+        const statusBadge = document.getElementById('tab-status-badge');
+        if (historyBadge) historyBadge.style.display = 'none';
+        if (statusBadge) statusBadge.style.display = 'none';
+      }
+    }).catch(err => console.error(err));
 }
 
 function handleSpecScreenshotUpload(event) {
@@ -1185,6 +1276,8 @@ function openUserDashboard(tab) {
     m.style.display = 'flex';
     switchDashboardTab(tab || 'profile');
     loadUserProfileData();
+    if (tab === 'history' || tab === 'status') clearNormalOrderNotification();
+    if (tab === 'special') clearSpecialRequestNotification();
   }
 }
 
@@ -1203,10 +1296,10 @@ function switchDashboardTab(tab) {
     }
   });
 
-  if (tab === 'history') loadUserOrderHistory();
-  if (tab === 'status') loadUserOrderStatus();
+  if (tab === 'history') { loadUserOrderHistory(); clearNormalOrderNotification(); }
+  if (tab === 'status') { loadUserOrderStatus(); clearNormalOrderNotification(); }
   if (tab === 'preferred') loadPreferredMenuSelection();
-  if (tab === 'special') loadUserSpecialRequests();
+  if (tab === 'special') { loadUserSpecialRequests(); clearSpecialRequestNotification(); }
 }
 
 function loadUserProfileData() {
@@ -1254,8 +1347,11 @@ async function saveUserProfile() {
 }
 
 function canCancelOrder(order) {
-  if (order.status !== 'PENDING') return false;
-  let orderDateStr = order.orderDate || new Date().toISOString().split('T')[0];
+  const status = String(order.status || '').toUpperCase();
+  const nonCancellableStates = ['DELIVERED', 'COMPLETED', 'REJECTED', 'CANCELLED'];
+  if (nonCancellableStates.includes(status)) return false;
+
+  let orderDateStr = order.orderDate || order.createdAt || order.date || new Date().toISOString().split('T')[0];
   let orderDate = new Date(orderDateStr);
   let endOfDay = new Date(orderDate);
   endOfDay.setHours(23, 59, 59, 999);
@@ -1263,7 +1359,8 @@ function canCancelOrder(order) {
 }
 
 function getRemainingCancelSeconds(orderDateStr) {
-  let orderDate = new Date(orderDateStr || new Date().toISOString().split('T')[0]);
+  let dateStr = orderDateStr || new Date().toISOString().split('T')[0];
+  let orderDate = new Date(dateStr);
   let endOfDay = new Date(orderDate);
   endOfDay.setHours(23, 59, 59, 999);
   let diff = endOfDay - new Date();
@@ -1277,10 +1374,10 @@ async function loadUserOrderHistory() {
   const container = document.getElementById('user-orders-history-list');
   if (container && data.success) {
     container.innerHTML = data.orders.length === 0 ? '<p style="color:#aaa;">কোনো ইতিহাস নেই।</p>' : data.orders.map(o => {
-      const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt);
+      const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt || o.date);
       const formattedDelDate = formatDateDDMMYYYY(o.deliveryDate);
       const showCancel = canCancelOrder(o);
-      const remSec = getRemainingCancelSeconds(o.orderDate);
+      const remSec = getRemainingCancelSeconds(o.orderDate || o.createdAt || o.date);
       const isPrepaid = o.paymentScreenshot && o.paymentScreenshot !== 'CASH ON DELIVERY';
       
       return `
@@ -1312,10 +1409,10 @@ let countdownInterval = null;
 function startLiveCountdowns() {
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = setInterval(() => {
-    document.querySelectorAll('[id^="countdown-"]').forEach(el => {
+    document.querySelectorAll('[id^="countdown-"], [id^="countdown-status-"]').forEach(el => {
       let sec = parseInt(el.getAttribute('data-seconds'), 10);
       if (isNaN(sec) || sec <= 0) {
-        el.innerText = '⚠️ ক্যানসেল করার সময় শেষ';
+        el.innerText = '⚠️ ক্যানসেল করার সময় শেষ অফিসিয়াল';
         return;
       }
       sec--;
@@ -1336,10 +1433,10 @@ async function loadUserOrderStatus() {
   if (container && data.success) {
     const active = data.orders.filter(o => o.status === 'PENDING' || o.status === 'ACCEPTED' || o.status === 'REJECTED');
     container.innerHTML = active.length === 0 ? '<p style="color:#aaa;">কোনো সক্রিয় অর্ডার নেই।</p>' : active.map(o => {
-      const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt);
+      const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt || o.date);
       const formattedDelDate = formatDateDDMMYYYY(o.deliveryDate);
       const showCancel = canCancelOrder(o);
-      const remSec = getRemainingCancelSeconds(o.orderDate);
+      const remSec = getRemainingCancelSeconds(o.orderDate || o.createdAt || o.date);
       const isPrepaid = o.paymentScreenshot && o.paymentScreenshot !== 'CASH ON DELIVERY';
 
       return `
@@ -1362,6 +1459,8 @@ async function loadUserOrderStatus() {
         </div>
       `;
     }).join('');
+
+    startLiveCountdowns();
   }
 }
 
@@ -1440,38 +1539,62 @@ async function submitSpecialFoodRequest(e) {
 async function loadUserSpecialRequests() {
   if (!currentUser) return;
   try {
-    const res = await fetch(`/api/special-request/user/${currentUser.phone}`);
-    const data = await res.json();
+    const [specRes, ordersRes] = await Promise.all([
+      fetch(`/api/special-request/user/${currentUser.phone}`),
+      fetch(`/api/orders/user/${currentUser.phone}`)
+    ]);
+    const specData = await specRes.json();
+    const ordersData = await ordersRes.json();
+
     const container = document.getElementById('user-special-requests-list');
-    if (container && data.success) {
-      userSpecialRequestsCache = data.requests || [];
-      const actionedRequests = userSpecialRequestsCache.filter(r => r.status === 'PRICED' || r.status === 'REJECTED');
+    if (container && specData.success) {
+      userSpecialRequestsCache = specData.requests || [];
+      const userOrders = ordersData.success ? ordersData.orders : [];
+
+      userSpecialRequestsCache = userSpecialRequestsCache.map(r => {
+        const matchingOrder = userOrders.find(o => String(o.orderId) === String(r.requestId) || (o.items && o.items.some(i => i.name === r.itemName)));
+        if (matchingOrder) {
+          return { ...r, status: matchingOrder.status };
+        }
+        return r;
+      });
+
+      const actionedRequests = userSpecialRequestsCache.filter(r => r.status === 'PRICED' || r.status === 'REJECTED' || r.status === 'ACCEPTED' || r.status === 'DELIVERED');
       if (actionedRequests.length > 0) {
-        const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
-        actionedRequests.forEach(r => {
-          if (!seenIds.includes(r.requestId)) seenIds.push(r.requestId);
-        });
-        localStorage.setItem(`aswadan_seen_specs_${currentUser.phone}`, JSON.stringify(seenIds));
         checkSpecialRequestNotificationBadge();
       }
 
-      container.innerHTML = userSpecialRequestsCache.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : userSpecialRequestsCache.map(r => `
-        <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between;">
-            <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
-            <span style="color:${r.status==='PRICED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
+      container.innerHTML = userSpecialRequestsCache.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : userSpecialRequestsCache.map(r => {
+        const showCancel = canCancelOrder(r);
+        const remSec = getRemainingCancelSeconds(r.createdAt || r.date);
+
+        return `
+          <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between;">
+              <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
+              <span style="color:${r.status==='PRICED'||r.status==='ACCEPTED'||r.status==='ORDERED'||r.status==='DELIVERED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
+            </div>
+            <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
+            
+            ${r.status === 'REJECTED' ? `
+              <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || r.reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
+            ` : ''}
+            ${r.status === 'PRICED' ? `
+              <p style="color:var(--gold-bright); font-weight:bold; margin-top:5px;">মূল্য: ₹${r.totalAmount}</p>
+              <button onclick="openSpecialPaymentModal('${r.requestId}')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও অর্ডার কনফার্ম করুন</button>
+            ` : ''}
+
+            ${showCancel ? `
+              <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(230,57,70,0.1); border:1px solid var(--red-accent); padding:8px 12px; border-radius:8px;">
+                <span style="font-size:0.80rem; color:#ffb703;" id="countdown-${r.requestId}" data-seconds="${remSec}">⏳ ক্যানসেল করার সময় বাকি: গণনা হচ্ছে...</span>
+                <button onclick="promptCancelOrder('${r.requestId}', false)" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">রিকুয়েস্ট ক্যানসেল করুন</button>
+              </div>
+            ` : ''}
           </div>
-          <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
-          
-          ${r.status === 'REJECTED' ? `
-            <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || r.reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
-          ` : ''}
-          ${r.status === 'PRICED' ? `
-            <p style="color:var(--gold-bright); font-weight:bold; margin-top:5px;">মূল্য: ₹${r.totalAmount}</p>
-            <button onclick="openSpecialPaymentModal('${r.requestId}')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও অর্ডার কনফার্ম করুন</button>
-          ` : ''}
-        </div>
-      `).join('');
+        `;
+      }).join('');
+
+      startLiveCountdowns();
     }
   } catch (err) { console.error(err); }
 }
@@ -1526,12 +1649,12 @@ async function confirmSpecialPayment() {
     });
     const data = await res.json();
     hideMobileLoading();
-    if (data.success) {
-      showToast(data.message);
+    if (res.ok && data.success) {
+      showToast(data.message || 'অর্ডার সফলভাবে কনফার্ম হয়েছে!');
       document.getElementById('special-payment-modal').style.display = 'none';
       loadUserSpecialRequests();
     } else {
-      alert(data.message);
+      alert(data.message || 'অর্ডার সম্পন্ন করতে সমস্যা হয়েছে।');
     }
   } catch (err) {
     hideMobileLoading();
@@ -1670,9 +1793,17 @@ async function placeOrder() {
   const deliveryDate = document.getElementById('delivery-date').value;
   if (!deliveryDate) return alert('তারিখ সিলেক্ট করুন।');
   
-  const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
-  if (paymentMethod === 'online' && !paymentScreenshotBase64) {
-    return alert('⚠️ অনলাইন পেমেন্টের জন্য স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
+  const paymentMethodInput = document.querySelector('input[name="payment-method"]:checked');
+  const paymentMethod = paymentMethodInput ? paymentMethodInput.value : 'online';
+
+  let finalScreenshot = '';
+  if (paymentMethod === 'cod') {
+    finalScreenshot = 'CASH ON DELIVERY';
+  } else {
+    if (!paymentScreenshotBase64) {
+      return alert('⚠️ অনলাইন পেমেন্টের জন্য স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
+    }
+    finalScreenshot = paymentScreenshotBase64;
   }
 
   isOrderSubmitting = true;
@@ -1683,7 +1814,6 @@ async function placeOrder() {
   }
 
   const totalAmount = cart.reduce((sum, i) => sum + (Number(i.price || 0) * Number(i.qty || 1)), 0);
-  const finalScreenshot = (paymentMethod === 'cod') ? 'CASH ON DELIVERY' : paymentScreenshotBase64;
 
   showMobileLoading();
   try {
@@ -1704,7 +1834,7 @@ async function placeOrder() {
     });
     const data = await res.json();
     hideMobileLoading();
-    if (data.success) {
+    if (res.ok && data.success) {
       alert(`🎉 অর্ডার #${data.order.orderId} সফলভাবে জমা হয়েছে!`);
       cart = [];
       paymentScreenshotBase64 = '';
@@ -1712,7 +1842,7 @@ async function placeOrder() {
       closeModal('cart-modal');
       window.location.href = 'index.html';
     } else {
-      alert(data.message);
+      alert(data.message || 'অর্ডার প্রসেসিংয়ে সমস্যা হয়েছে।');
       isOrderSubmitting = false;
       if (orderBtn) {
         orderBtn.disabled = false;
