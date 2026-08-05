@@ -981,6 +981,12 @@ function injectUserDashboardModalIfNeeded() {
         </div>
         <p style="margin-bottom:8px;">নির্ধারিত মোট মূল্য: <b style="color:var(--gold-bright); font-size:1.2rem;">₹<span id="spec-pay-amount">0</span></b></p>
         
+        <label class="input-label" style="text-align:left;">📅 ডেলিভারির তারিখ (DD/MM/YYYY):</label>
+        <div style="position:relative;">
+          <input type="date" id="spec-delivery-date" class="input-field" style="margin-bottom:12px;" onchange="syncDisplayDate('spec-delivery-date', 'spec-delivery-date-display')">
+          <input type="text" id="spec-delivery-date-display" class="input-field" readonly style="position:absolute; top:0; left:0; width:100%; background:#1c1c28; pointer-events:none;" placeholder="DD/MM/YYYY">
+        </div>
+
         <div style="margin-bottom: 12px; background: #1c1c28; padding: 12px; border-radius: 10px; border: 1px solid var(--border-gold);">
           <label style="color:var(--gold-bright); font-weight:bold; font-size:0.9rem; display:block; margin-bottom:8px;">পেমেন্ট পদ্ধতি বাছুন:</label>
           <div style="display:flex; gap:15px;">
@@ -1007,9 +1013,6 @@ function injectUserDashboardModalIfNeeded() {
         <div id="spec-cod-payment-section" style="display:none; background:rgba(42,157,143,0.15); border:1px solid var(--green-accent); padding:12px; border-radius:8px; margin-bottom:12px; text-align:center;">
           <p style="color:#4ade80; font-weight:bold; font-size:0.9rem;">💵 আপনি ক্যাশ অন ডেলিভারি (COD) সিলেক্ট করেছেন। স্ক্রিনশট ছাড়াই অর্ডার কনফার্ম করতে পারেন।</p>
         </div>
-
-        <label class="input-label" style="text-align:left;">📅 ডেলিভারির তারিখ:</label>
-        <input type="date" id="spec-delivery-date" class="input-field" style="margin-bottom:10px;">
 
         <button class="btn-primary" onclick="confirmSpecialPayment()">অর্ডার নিশ্চিত করুন</button>
       </div>
@@ -1358,6 +1361,36 @@ async function saveUserProfile() {
   }
 }
 
+async function savePreferredMenu() {
+  if (!currentUser || !currentUser.phone) {
+    alert('অনুগ্রহ করে প্রথমে লগইন করুন।');
+    return;
+  }
+  const checkboxes = document.querySelectorAll('.pref-chk:checked');
+  const preferredItems = Array.from(checkboxes).map(chk => Number(chk.value));
+  showMobileLoading();
+  try {
+    const res = await fetch('/api/user/preferred-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: currentUser.phone, preferredItems })
+    });
+    const data = await res.json();
+    hideMobileLoading();
+    if (res.ok && data.success) {
+      currentUser.preferredItems = data.preferredItems || preferredItems;
+      localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
+      showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
+    } else {
+      alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
+    }
+  } catch (err) {
+    hideMobileLoading();
+    console.error(err);
+    alert('সার্ভার ত্রুটি!');
+  }
+}
+
 function canCancelOrder(order) {
   const status = String(order.status || '').toUpperCase();
   const nonCancellableStates = ['DELIVERED', 'COMPLETED', 'REJECTED', 'CANCELLED'];
@@ -1377,6 +1410,13 @@ function getRemainingCancelSeconds(orderDateStr) {
   endOfDay.setHours(23, 59, 59, 999);
   let diff = endOfDay - new Date();
   return Math.max(0, Math.floor(diff / 1000));
+}
+
+// --- DYNAMIC TOMORROW DATE CALCULATOR ---
+function getTomorrowDateString() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0];
 }
 
 async function loadUserOrderHistory() {
@@ -1484,27 +1524,18 @@ async function loadPreferredMenuSelection() {
     const data = await res.json();
     if (data.success) {
       const pref = currentUser && currentUser.preferredItems ? currentUser.preferredItems : [];
-      const hasPref = pref.length > 0;
-
       container.innerHTML = data.menu.map(m => `
         <label style="display:flex; align-items:center; gap:10px; background:#181824; padding:8px 12px; border-radius:8px; margin-bottom:6px; cursor:pointer;">
           <input type="checkbox" value="${m.id}" ${pref.includes(m.id) ? 'checked' : ''} class="pref-chk" style="width:18px; height:18px;">
           <span style="color:#fff; font-size:0.9rem;">${m.name} (₹${m.price})</span>
         </label>
-      `).join('') + `
-        <button class="btn-primary" onclick="savePreferredMenu()" style="margin-top:10px;">সেভ প্রেফার্ড মেনু</button>
-        <button id="add-saved-menu-cart-btn" class="btn-primary" onclick="addSavedMenuToCart()" style="margin-top:8px; background:${hasPref ? 'var(--green-accent)' : '#444'}; color:#fff; ${hasPref ? '' : 'opacity:0.6; cursor:not-allowed;'}" ${hasPref ? '' : 'disabled'}>🛒 Add Saved Menu to Cart</button>
-        ${hasPref ? '' : '<small style="display:block; text-align:center; color:#aaa; margin-top:4px;">Save your preferred menu first.</small>'}
-      `;
+      `).join('') + `<button class="btn-primary" onclick="savePreferredMenu()" style="margin-top:10px;">সেভ প্রেফার্ড মেনু</button>`;
     }
   } catch (err) { console.error(err); }
 }
 
 async function savePreferredMenu() {
-  if (!currentUser || !currentUser.phone) {
-    alert('অনুগ্রহ করে প্রথমে লগইন করুন।');
-    return;
-  }
+  if (!currentUser) return;
   const checkboxes = document.querySelectorAll('.pref-chk:checked');
   const preferredItems = Array.from(checkboxes).map(chk => Number(chk.value));
   showMobileLoading();
@@ -1516,57 +1547,17 @@ async function savePreferredMenu() {
     });
     const data = await res.json();
     hideMobileLoading();
-    if (res.ok && data.success) {
-      currentUser.preferredItems = data.preferredItems || preferredItems;
+    if (data.success) {
+      currentUser.preferredItems = data.preferredItems;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
-      showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
-      
-      // Instantly update button state without requiring page reload
-      loadPreferredMenuSelection();
-    } else {
-      alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
+      showToast('প্রেফার্ড মেনু সেভ হয়েছে!');
     }
   } catch (err) {
     hideMobileLoading();
-    console.error(err);
     alert('সার্ভার ত্রুটি!');
   }
 }
 
-async function addSavedMenuToCart() {
-  if (!currentUser || !currentUser.preferredItems || currentUser.preferredItems.length === 0) {
-    alert('Save your preferred menu first.');
-    return;
-  }
-  
-  showMobileLoading();
-  try {
-    const res = await fetch('/api/menu');
-    const data = await res.json();
-    hideMobileLoading();
-
-    if (data.success && data.menu) {
-      const savedIds = currentUser.preferredItems.map(Number);
-      const matchingItems = data.menu.filter(m => savedIds.includes(Number(m.id)));
-
-      if (matchingItems.length === 0) {
-        alert('No matching items found in the menu.');
-        return;
-      }
-
-      matchingItems.forEach(item => {
-        // Reuse existing cart function
-        addToCart(item.id, item.name, item.price, item.desc);
-      });
-
-      showToast('Saved menu added to cart successfully.');
-    }
-  } catch (err) {
-    hideMobileLoading();
-    console.error(err);
-    alert('Failed to add saved menu to cart.');
-  }
-}
 async function submitSpecialFoodRequest(e) {
   e.preventDefault();
   if (!currentUser) { openAuthModal(); return; }
@@ -1600,62 +1591,38 @@ async function submitSpecialFoodRequest(e) {
 async function loadUserSpecialRequests() {
   if (!currentUser) return;
   try {
-    const [specRes, ordersRes] = await Promise.all([
-      fetch(`/api/special-request/user/${currentUser.phone}`),
-      fetch(`/api/orders/user/${currentUser.phone}`)
-    ]);
-    const specData = await specRes.json();
-    const ordersData = await ordersRes.json();
-
+    const res = await fetch(`/api/special-request/user/${currentUser.phone}`);
+    const data = await res.json();
     const container = document.getElementById('user-special-requests-list');
-    if (container && specData.success) {
-      userSpecialRequestsCache = specData.requests || [];
-      const userOrders = ordersData.success ? ordersData.orders : [];
-
-      userSpecialRequestsCache = userSpecialRequestsCache.map(r => {
-        const matchingOrder = userOrders.find(o => String(o.orderId) === String(r.requestId) || (o.items && o.items.some(i => i.name === r.itemName)));
-        if (matchingOrder) {
-          return { ...r, status: matchingOrder.status };
-        }
-        return r;
-      });
-
-      const actionedRequests = userSpecialRequestsCache.filter(r => r.status === 'PRICED' || r.status === 'REJECTED' || r.status === 'ACCEPTED' || r.status === 'DELIVERED');
+    if (container && data.success) {
+      userSpecialRequestsCache = data.requests || [];
+      const actionedRequests = userSpecialRequestsCache.filter(r => r.status === 'PRICED' || r.status === 'REJECTED');
       if (actionedRequests.length > 0) {
+        const seenIds = JSON.parse(localStorage.getItem(`aswadan_seen_specs_${currentUser.phone}`) || '[]');
+        actionedRequests.forEach(r => {
+          if (!seenIds.includes(r.requestId)) seenIds.push(r.requestId);
+        });
+        localStorage.setItem(`aswadan_seen_specs_${currentUser.phone}`, JSON.stringify(seenIds));
         checkSpecialRequestNotificationBadge();
       }
 
-      container.innerHTML = userSpecialRequestsCache.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : userSpecialRequestsCache.map(r => {
-        const showCancel = canCancelOrder(r);
-        const remSec = getRemainingCancelSeconds(r.createdAt || r.date);
-
-        return `
-          <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between;">
-              <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
-              <span style="color:${r.status==='PRICED'||r.status==='ACCEPTED'||r.status==='ORDERED'||r.status==='DELIVERED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
-            </div>
-            <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
-            
-            ${r.status === 'REJECTED' ? `
-              <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || r.reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
-            ` : ''}
-            ${r.status === 'PRICED' ? `
-              <p style="color:var(--gold-bright); font-weight:bold; margin-top:5px;">মূল্য: ₹${r.totalAmount}</p>
-              <button onclick="openSpecialPaymentModal('${r.requestId}')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও অর্ডার কনফার্ম করুন</button>
-            ` : ''}
-
-            ${showCancel ? `
-              <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(230,57,70,0.1); border:1px solid var(--red-accent); padding:8px 12px; border-radius:8px;">
-                <span style="font-size:0.80rem; color:#ffb703;" id="countdown-${r.requestId}" data-seconds="${remSec}">⏳ ক্যানসেল করার সময় বাকি: গণনা হচ্ছে...</span>
-                <button onclick="promptCancelOrder('${r.requestId}', false)" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">রিকুয়েস্ট ক্যানসেল করুন</button>
-              </div>
-            ` : ''}
+      container.innerHTML = userSpecialRequestsCache.length === 0 ? '<p style="color:#aaa; text-align:center;">কোনো রিকুয়েস্ট নেই।</p>' : userSpecialRequestsCache.map(r => `
+        <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
+            <span style="color:${r.status==='PRICED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
           </div>
-        `;
-      }).join('');
-
-      startLiveCountdowns();
+          <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
+          
+          ${r.status === 'REJECTED' ? `
+            <p style="color:#e63946; font-weight:bold; margin-top:5px;">বাতিলের কারণ: ${r.rejectionReason || r.reason || 'প্রশাসনিক সিদ্ধান্ত'}</p>
+          ` : ''}
+          ${r.status === 'PRICED' ? `
+            <p style="color:var(--gold-bright); font-weight:bold; margin-top:5px;">মূল্য: ₹${r.totalAmount}</p>
+            <button onclick="openSpecialPaymentModal('${r.requestId}')" style="background:var(--green-accent); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:6px;">💳 পেমেন্ট ও অর্ডার কনফার্ম করুন</button>
+          ` : ''}
+        </div>
+      `).join('');
     }
   } catch (err) { console.error(err); }
 }
@@ -1674,16 +1641,17 @@ function openSpecialPaymentModal(requestId) {
   if (onlineRadio) onlineRadio.checked = true;
   toggleSpecPaymentMethodUI();
   
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
   const specDelDateInput = document.getElementById('spec-delivery-date');
-  if (specDelDateInput) specDelDateInput.value = tomorrow.toISOString().split('T')[0];
+  if (specDelDateInput) {
+    specDelDateInput.value = getTomorrowDateString();
+    syncDisplayDate('spec-delivery-date', 'spec-delivery-date-display');
+  }
 
   document.getElementById('special-payment-modal').style.display = 'flex';
 }
 
 async function confirmSpecialPayment() {
-  const deliveryDate = document.getElementById('spec-delivery-date').value;
+  const deliveryDate = document.getElementById('spec-delivery-date').value || getTomorrowDateString();
   if (!deliveryDate) return alert('ডেলিভারি তারিখ দিন।');
 
   const method = document.querySelector('input[name="spec-payment-method"]:checked');
@@ -1749,11 +1717,9 @@ function openCartModal() {
   if (step1) step1.style.display = 'block';
   if (step2) step2.style.display = 'none';
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
-    delDateInput.value = tomorrow.toISOString().split('T')[0];
+    delDateInput.value = getTomorrowDateString();
     syncDisplayDate('delivery-date', 'delivery-date-display');
   }
 }
@@ -1824,11 +1790,9 @@ function proceedToPaymentStep() {
   document.getElementById('cart-step-1').style.display = 'none';
   document.getElementById('cart-step-2').style.display = 'block';
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
-    delDateInput.value = tomorrow.toISOString().split('T')[0];
+    delDateInput.value = getTomorrowDateString();
     syncDisplayDate('delivery-date', 'delivery-date-display');
   }
 }
@@ -1854,7 +1818,8 @@ function handlePaymentScreenshotUpload(event) {
 async function placeOrder() {
   if (isOrderSubmitting) return;
 
-  const deliveryDate = document.getElementById('delivery-date').value;
+  const deliveryDateInput = document.getElementById('delivery-date');
+  const deliveryDate = deliveryDateInput ? deliveryDateInput.value : getTomorrowDateString();
   if (!deliveryDate) return alert('তারিখ সিলেক্ট করুন।');
   
   const paymentMethodInput = document.querySelector('input[name="payment-method"]:checked');
