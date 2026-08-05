@@ -159,16 +159,36 @@
       </div>
       <div id="cart-step-2" style="display: none;">
         <button onclick="backToCartStep()" style="background:none; border:none; color:var(--gold-bright); cursor:pointer; font-weight:bold; margin-bottom:10px;">← কার্ট সংশোধন করুন</button>
-        <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center;">
-          <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%20Food%20Services%26cu=INR" alt="Aswadan UPI QR">
-          <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+        
+        <div style="margin-bottom: 12px; background: #1c1c28; padding: 12px; border-radius: 10px; border: 1px solid var(--border-gold);">
+          <label style="color:var(--gold-bright); font-weight:bold; font-size:0.9rem; display:block; margin-bottom:8px;">পেমেন্ট পদ্ধতি বাছুন:</label>
+          <div style="display:flex; gap:15px;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff;">
+              <input type="radio" name="payment-method" value="online" checked onchange="togglePaymentMethodUI()"> অনলাইন (UPI/QR)
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff;">
+              <input type="radio" name="payment-method" value="cod" onchange="togglePaymentMethodUI()"> ক্যাশ অন ডেলিভারি (COD)
+            </label>
+          </div>
         </div>
+
+        <div id="online-payment-section">
+          <div class="qr-box" style="background:#ffffff; padding:15px; border-radius:12px; text-align:center; margin-bottom:12px;">
+            <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%20Food%20Services%26cu=INR" alt="Aswadan UPI QR">
+            <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+          </div>
+          <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
+          <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)" style="margin-bottom:8px;">
+          <img id="payment-screenshot-preview" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none; margin:8px auto;">
+        </div>
+
+        <div id="cod-payment-section" style="display:none; background:rgba(42,157,143,0.15); border:1px solid var(--green-accent); padding:12px; border-radius:8px; margin-bottom:12px; text-align:center;">
+          <p style="color:#4ade80; font-weight:bold; font-size:0.9rem;">💵 আপনি ক্যাশ অন ডেলিভারি (COD) সিলেক্ট করেছেন। স্ক্রিনশট ছাড়াই অর্ডার কনফার্ম করতে পারেন।</p>
+        </div>
+
         <label class="input-label">📅 ডেলিভারির তারিখ:</label>
-        <input type="date" id="delivery-date" class="input-field">
-        <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
-        <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)">
-        <img id="payment-screenshot-preview" src="" alt="Preview" style="max-width:180px; border-radius:8px; display:none; margin:8px auto;">
+        <input type="date" id="delivery-date" class="input-field" style="margin-bottom:12px;">
         <button class="btn-primary" onclick="placeOrder()">অর্ডার নিশ্চিত করুন</button>
       </div>
     </div>
