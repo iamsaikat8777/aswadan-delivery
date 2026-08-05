@@ -579,7 +579,6 @@ function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', 
   activeLngField = lngId;
   activeBadgeField = badgeId;
 
-  injectGlobalMapPickerModalIfNeeded();
   const m = document.getElementById('map-picker-modal');
   if (m) {
     m.style.display = 'flex';
@@ -592,17 +591,19 @@ function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', 
   }
 }
 
+
+
 function initInteractiveLeafletMap(lat, lng) {
   if (!window.L) {
     setTimeout(() => initInteractiveLeafletMap(lat, lng), 300);
     return;
   }
 
-  const container = document.getElementById('interactive-leaflet-map');
+  const container = document.getElementById('leaflet-map');
   if (!container) return;
 
   if (!activeLeafletMap) {
-    activeLeafletMap = L.map('interactive-leaflet-map').setView([lat, lng], 15);
+    activeLeafletMap = L.map('leaflet-map').setView([lat, lng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
@@ -638,8 +639,6 @@ window.updateMapSelectionCoords = function(lat, lng) {
   const lngEl = document.getElementById(activeLngField);
   if (latEl) latEl.value = lat;
   if (lngEl) lngEl.value = lng;
-  const descEl = document.getElementById('map-selected-coords-desc');
-  if (descEl) descEl.value = `Pin Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 };
 
 window.confirmMapLocationSelection = function() {
@@ -653,7 +652,18 @@ window.confirmMapLocationSelection = function() {
   closeModal('map-picker-modal');
   showToast('ম্যাপ লোকেশন সফলভাবে সেট হয়েছে!');
 };
-
+function closeMapModal() {
+  const m = document.getElementById('map-picker-modal');
+  if (m) {
+    m.style.display = 'none';
+    document.body.style.overflow = '';
+    if (activeLeafletMap) {
+      activeLeafletMap.remove();
+      activeLeafletMap = null;
+      activeLeafletMarker = null;
+    }
+  }
+}
 async function loginUser() {
   const identifier = document.getElementById('login-identifier').value.trim();
   const password = document.getElementById('login-password').value.trim();
