@@ -82,7 +82,7 @@ body {
   border-color: var(--gold-bright);
 }
 
-/* --- AMBIENT GLOW ANIMATION --- */
+/* --- AMBIENT GLOW ANIMATION (DESKTOP DEFAULT) --- */
 .ambient-glow {
   position: absolute;
   top: -20px;
@@ -542,6 +542,13 @@ body {
 
 /* --- MOBILE RESPONSIVE OPTIMIZATION (ONLY FOR MOBILE VIEW) --- */
 @media (max-width: 768px) {
+  /* Prevent background glow layer from scaling past 100vw on mobile viewport */
+  .ambient-glow {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    animation: glowPulseMobile 4s ease-in-out infinite alternate !important;
+  }
+
   body {
     padding-bottom: 90px !important;
   }
@@ -669,6 +676,11 @@ body {
 
   .hero-left-content h1 { font-size: 1.6rem; }
   .hero-left-content p { font-size: 0.9rem; }
+}
+
+@keyframes glowPulseMobile {
+  0% { opacity: 0.5; transform: translateX(-50%) scale(0.9); }
+  100% { opacity: 0.9; transform: translateX(-50%) scale(0.98); }
 }
 
 @media (max-width: 380px) {
