@@ -167,6 +167,43 @@ let specPaymentScreenshotBase64 = '';
 let isOrderSubmitting = false;
 let userSpecialRequestsCache = [];
 
+
+async function loadDynamicDeliveryPincodes() {
+  const elements = document.querySelectorAll('.pincode-tag');
+  if (!elements || elements.length === 0) return;
+
+  try {
+    const res = await fetch('/api/pincodes?t=' + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+    
+    let list = [];
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data && Array.isArray(data.pincodes)) {
+      list = data.pincodes;
+    } else if (data && Array.isArray(data.data)) {
+      list = data.data;
+    } else if (data && data.pincode) {
+      list = Array.isArray(data.pincode) ? data.pincode : [data.pincode];
+    } else if (data && data.pincodes && typeof data.pincodes === 'string') {
+      list = data.pincodes.split(',').map(p => p.trim());
+    }
+
+    list = list.map(p => typeof p === 'object' && p !== null ? (p.pincode || p.code || String(p)) : String(p))
+               .map(p => p.trim())
+               .filter(Boolean);
+
+    if (list.length > 0) {
+      const formattedPincodes = list.join(', ');
+      elements.forEach(el => {
+        el.innerText = formattedPincodes;
+      });
+    }
+  } catch (err) {
+    console.error('Error loading delivery pincodes:', err);
+  }
+}
 window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   updateAuthNavUI();
@@ -180,6 +217,7 @@ window.addEventListener('DOMContentLoaded', () => {
   injectGlobalMapPickerModalIfNeeded();
   injectLeafletDependencies();
   checkAndShowOfferPopup();
+  loadDynamicDeliveryPincodes();
 });
 
 function injectLeafletDependencies() {
@@ -591,8 +629,6 @@ function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', 
   }
 }
 
-
-
 function initInteractiveLeafletMap(lat, lng) {
   if (!window.L) {
     setTimeout(() => initInteractiveLeafletMap(lat, lng), 300);
@@ -652,6 +688,7 @@ window.confirmMapLocationSelection = function() {
   closeModal('map-picker-modal');
   showToast('ম্যাপ লোকেশন সফলভাবে সেট হয়েছে!');
 };
+
 function closeMapModal() {
   const m = document.getElementById('map-picker-modal');
   if (m) {
@@ -664,6 +701,7 @@ function closeMapModal() {
     }
   }
 }
+
 async function loginUser() {
   const identifier = document.getElementById('login-identifier').value.trim();
   const password = document.getElementById('login-password').value.trim();
@@ -1391,6 +1429,9 @@ async function savePreferredMenu() {
       currentUser.preferredItems = data.preferredItems || preferredItems;
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
+      
+      // Instantly update button state without requiring page reload
+      loadPreferredMenuSelection();
     } else {
       alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
     }
@@ -1548,39 +1589,6 @@ async function loadPreferredMenuSelection() {
       `;
     }
   } catch (err) { console.error(err); }
-}
-
-async function savePreferredMenu() {
-  if (!currentUser || !currentUser.phone) {
-    alert('অনুগ্রহ করে প্রথমে লগইন করুন।');
-    return;
-  }
-  const checkboxes = document.querySelectorAll('.pref-chk:checked');
-  const preferredItems = Array.from(checkboxes).map(chk => Number(chk.value));
-  showMobileLoading();
-  try {
-    const res = await fetch('/api/user/preferred-menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: currentUser.phone, preferredItems })
-    });
-    const data = await res.json();
-    hideMobileLoading();
-    if (res.ok && data.success) {
-      currentUser.preferredItems = data.preferredItems || preferredItems;
-      localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
-      showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
-      
-      // Instantly update button state without requiring page reload
-      loadPreferredMenuSelection();
-    } else {
-      alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
-    }
-  } catch (err) {
-    hideMobileLoading();
-    console.error(err);
-    alert('সার্ভার ত্রুটি!');
-  }
 }
 
 async function addSavedMenuToCart() {
@@ -1959,11 +1967,31 @@ async function loadHomeSpotlight() {
       const slidingCard = document.getElementById('hero-sliding-tile');
       
       function getFoodIcon(name) {
-        let n = name.toLowerCase();
+        let n = (name || '').toLowerCase();
         if (n.includes('fish') || n.includes('রুই') || n.includes('কাতলা')) return '🐟';
         if (n.includes('chicken') || n.includes('চিকেন')) return '🍗';
         if (n.includes('egg') || n.includes('ডিম')) return '🥚';
         return '🍲';
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function escapeJsString(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/\\/g, '\\\\')
+          .replace(/'/g, "\\'")
+          .replace(/"/g, '&quot;')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r');
       }
 
       function renderSpotlight(idx) {
@@ -1977,11 +2005,11 @@ async function loadHomeSpotlight() {
         setTimeout(() => {
           slidingCard.innerHTML = `
             <div style="font-size:2.2rem; margin-bottom:6px;">${icon}</div>
-            <h3 class="tile-title">${item.name}</h3>
-            <p class="tile-desc">${item.desc}</p>
+            <h3 class="tile-title">${escapeHtml(item.name)}</h3>
+            <p class="tile-desc">${escapeHtml(item.desc)}</p>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
-              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
+              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${escapeJsString(item.name)}', ${item.price}, '${escapeJsString(item.desc)}')">+ Add to Cart</button>
             </div>
           `;
           slidingCard.classList.remove('slide-out-left');
@@ -2003,12 +2031,12 @@ async function loadHomeSpotlight() {
           <div class="tile-card">
             <div>
               <div style="font-size:1.8rem; margin-bottom:4px;">${getFoodIcon(item.name)}</div>
-              <h3 class="tile-title">${item.name}</h3>
-              <p class="tile-desc">${item.desc}</p>
+              <h3 class="tile-title">${escapeHtml(item.name)}</h3>
+              <p class="tile-desc">${escapeHtml(item.desc)}</p>
             </div>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
-              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add</button>
+              <button class="btn-add-tile" onclick="addToCart(${item.id}, '${escapeJsString(item.name)}', ${item.price}, '${escapeJsString(item.desc)}')">+ Add</button>
             </div>
           </div>
         `).join('');
