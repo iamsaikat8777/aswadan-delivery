@@ -329,6 +329,8 @@ body {
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
 .hero-spotlight-card:hover, .tile-card:hover {
