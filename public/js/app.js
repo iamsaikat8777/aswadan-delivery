@@ -167,7 +167,6 @@ let specPaymentScreenshotBase64 = '';
 let isOrderSubmitting = false;
 let userSpecialRequestsCache = [];
 
-
 async function loadDynamicDeliveryPincodes() {
   const elements = document.querySelectorAll('.pincode-tag');
   if (!elements || elements.length === 0) return;
@@ -204,6 +203,7 @@ async function loadDynamicDeliveryPincodes() {
     console.error('Error loading delivery pincodes:', err);
   }
 }
+
 window.addEventListener('DOMContentLoaded', () => {
   updateCartCount();
   updateAuthNavUI();
@@ -2004,9 +2004,11 @@ async function loadHomeSpotlight() {
 
         setTimeout(() => {
           slidingCard.innerHTML = `
-            <div style="font-size:2.2rem; margin-bottom:6px;">${icon}</div>
-            <h3 class="tile-title">${escapeHtml(item.name)}</h3>
-            <p class="tile-desc">${escapeHtml(item.desc)}</p>
+            <div>
+              <div style="font-size:2.2rem; margin-bottom:6px;">${icon}</div>
+              <h3 class="tile-title">${escapeHtml(item.name)}</h3>
+              <p class="tile-desc">${escapeHtml(item.desc)}</p>
+            </div>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
               <button class="btn-add-tile" onclick="addToCart(${item.id}, '${escapeJsString(item.name)}', ${item.price}, '${escapeJsString(item.desc)}')">+ Add to Cart</button>
@@ -2073,7 +2075,7 @@ function triggerPWAInstall() {
   } else {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS) {
-      alert('আইওএস (iOS) ব্রাউজারে অ্যাপ ইন্সটল করতে সাফারি মেনু থেকে শেয়ার (Share) আইকনে ক্লিক করে "Add to Home Screen" সিলেক্ট করুন।');
+      alert('আইওএস (iOS) ব্রাউজারে অ্যাপ ইনস্টল করতে সাফারি মেনু থেকে শেয়ার (Share) আইকনে ক্লিক করে "Add to Home Screen" সিলেক্ট করুন।');
     } else {
       alert('আপনার ব্রাউজার মেনু (তিনটি ডট) থেকে "Add to Home Screen" বা "Install App" অপশনটি সিলেক্ট করুন।');
     }
