@@ -331,6 +331,17 @@ body {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   backface-visibility: hidden;
   will-change: transform, opacity;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  max-width: 100%;
+}
+
+.hero-spotlight-card .tile-title,
+.hero-spotlight-card .tile-desc {
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .hero-spotlight-card:hover, .tile-card:hover {
