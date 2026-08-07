@@ -334,12 +334,26 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 220px;
+  min-height: 250px;
   max-width: 100%;
 }
 
-.hero-spotlight-card .tile-title,
+.hero-spotlight-card .tile-title {
+  min-height: 2.7em;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
 .hero-spotlight-card .tile-desc {
+  min-height: 2.8em;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   word-break: break-word;
   overflow-wrap: break-word;
 }
