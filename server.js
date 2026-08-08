@@ -703,7 +703,7 @@ app.post('/api/orders', async (req, res) => {
       const userHtml = createBrandEmail(
         `📦 অর্ডার সফলভাবে জমা হয়েছে: #${orderId}`,
         `<p>ধন্যবাদ <b>${customerName}</b>,</p>
-         <p>আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে এবং বর্তমানে পর্যালোচনার অপেক্ষায় রয়েছে।</p>
+         <p>আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে এবং বর্তমানে অনুমোদনের অপেক্ষায় রয়েছে।</p>
          <p><b>Order ID:</b> <span style="color:#d4af37;">#${orderId}</span><br>
             <b>ডেলিভারির তারিখ:</b> ${deliveryDate}<br>
             <b>খাবারের তালিকা:</b><br>${itemsListStr}<br>
@@ -921,7 +921,7 @@ app.post('/api/admin/order-status', async (req, res) => {
           const acceptHtml = createBrandEmail(
             `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`,
             `<p>সুসংবাদ <b>${order.customerName}</b>,</p>
-             <p>আপনার অর্ডারটি (#${orderId}) সফলভাবে এপ্রুভ করা হয়েছে এবং বর্তমানে আমাদের কিচেনে রান্নার প্রস্তুতি চলছে।</p>`
+             <p>আপনার অর্ডারটি (#${orderId}) সফলভাবে এপ্রুভ করা হয়েছে এবং নির্ধারিত সময় অনুযায়ী ডেলিভারির প্রস্তুতি চলছে।</p>`
           );
           sendEmail(order.email, `✅ আপনার অর্ডার গৃহীত হয়েছে: #${orderId}`, acceptHtml);
         } else if (status === 'REJECTED') {
