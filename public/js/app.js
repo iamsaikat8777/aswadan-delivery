@@ -434,7 +434,7 @@ function setupGlobalAuthModalFix() {
         <input type="hidden" id="signup-lng" value="">
 
         <label class="input-label">📍 পিনকোড:</label>
-        <input type="text" id="signup-pincode" class="input-field" value="700036" style="margin-bottom:15px;" onkeydown="if(event.key==='Enter') signupUser()">
+        <input type="text" id="signup-pincode" class="input-field" value="" style="margin-bottom:15px;" onkeydown="if(event.key==='Enter') signupUser()">
 
         <button type="button" class="btn-primary" onclick="signupUser()">সাইন-আপ সম্পন্ন করুন</button>
       </div>
@@ -932,7 +932,7 @@ function injectUserDashboardModalIfNeeded() {
           <input type="hidden" id="prof-lng" value="">
 
           <label class="input-label">📍 পিনকোড:</label>
-          <input type="text" id="prof-pincode" class="input-field" value="700036">
+          <input type="text" id="prof-pincode" class="input-field" value="">
           <button type="button" class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
           
           <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
@@ -1374,7 +1374,7 @@ function loadUserProfileData() {
   document.getElementById('prof-phone').value = currentUser.phone || '';
   document.getElementById('prof-email').value = currentUser.email || '';
   document.getElementById('prof-address').value = currentUser.address || '';
-  document.getElementById('prof-pincode').value = currentUser.pincode || '700036';
+  document.getElementById('prof-pincode').value = currentUser.pincode || '';
   document.getElementById('prof-lat').value = currentUser.lat || '';
   document.getElementById('prof-lng').value = currentUser.lng || '';
   document.getElementById('prof-location').value = currentUser.location || '';
