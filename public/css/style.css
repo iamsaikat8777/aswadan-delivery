@@ -464,6 +464,10 @@ body {
   padding: 12px;
 }
 
+#map-picker-modal {
+  z-index: 1000005 !important;
+}
+
 .modal-content {
   background: #12121a;
   border: 1px solid var(--border-gold);
@@ -650,6 +654,10 @@ body {
     align-items: center !important;
     padding: 15px !important;
     box-sizing: border-box !important;
+  }
+
+  #map-picker-modal {
+    z-index: 1000005 !important;
   }
 
   .modal-content {
