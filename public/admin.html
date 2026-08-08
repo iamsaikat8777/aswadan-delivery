@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>আস্বাদন Admin Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css">
   <style>
     .admin-tab-btn {
@@ -180,6 +181,20 @@
     </div>
   </div>
 
+  <!-- ADMIN USER LOCATION MAP MODAL -->
+  <div id="admin-user-map-modal" class="modal" onclick="closeAdminUserMapModal()" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,8,0.85); backdrop-filter:blur(6px); z-index:999999; align-items:center; justify-content:center; padding:15px;">
+    <div class="modal-content" style="max-width:600px; width:100%; text-align:center; background:#12121a; border:2px solid var(--border-gold); padding:20px; border-radius:16px; position:relative;" onclick="event.stopPropagation()">
+      <button class="close-btn" style="position:absolute; right:15px; top:10px; background:none; border:none; color:#d4af37; font-size:1.6rem; cursor:pointer;" onclick="closeAdminUserMapModal()">&times;</button>
+      <h3 id="admin-map-user-title" style="color:var(--gold-bright); margin-bottom:10px; font-size:1.1rem;">📍 User Location Map</h3>
+      <p id="admin-map-coords-desc" style="font-size:0.85rem; color:#aaa; margin-bottom:12px;"></p>
+      <div id="admin-user-leaflet-map" style="width:100%; height:320px; border-radius:10px; border:1px solid var(--border-gold); margin-bottom:12px; z-index:1;"></div>
+      <div style="display:flex; gap:10px;">
+        <a id="admin-map-external-link" href="#" target="_blank" class="btn-primary" style="margin:0; flex:1; padding:10px; background:var(--gold-gradient); color:#000; text-decoration:none; display:inline-block; font-weight:bold; font-size:0.9rem;">🗺️ Open in Google Maps</a>
+        <button type="button" onclick="closeAdminUserMapModal()" style="flex:1; background:#333; border:none; border-radius:8px; color:#fff; cursor:pointer; font-weight:bold; padding:10px;">বন্ধ করুন</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ADMIN LOADING SPINNER OVERLAY -->
   <div id="mobile-loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(9,8,12,0.88); backdrop-filter:blur(6px); z-index:999999; justify-content:center; align-items:center;">
     <div class="spinner-box" style="text-align:center; background:#181824; border:1px solid var(--border-gold); padding:25px 35px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.8);">
@@ -194,6 +209,7 @@
     }
   </style>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // --- ADMIN SAFE FETCH LOADING SPINNER (CLICK INTERCEPTION REMOVED) ---
     function showMobileLoading() {
@@ -253,6 +269,9 @@
     let selectedMonthForGraph = currentMonthStr;
     let offerImageBase64 = '';
     let activeFactoryOption = null;
+
+    let adminUserMap = null;
+    let adminUserMarker = null;
 
     if (adminToken) showDashboard();
 
@@ -551,6 +570,70 @@
       } else if (currentTab === 'factory') {
         renderFactorySettingsManagement(container);
       }
+    }
+
+    // --- USER LOCATION MAP MODAL FUNCTIONS ---
+    function viewUserLocationMap(latVal, lngVal, userName) {
+      const lat = parseFloat(latVal);
+      const lng = parseFloat(lngVal);
+
+      const modal = document.getElementById('admin-user-map-modal');
+      const titleEl = document.getElementById('admin-map-user-title');
+      const descEl = document.getElementById('admin-map-coords-desc');
+      const extLink = document.getElementById('admin-map-external-link');
+
+      if (!modal) return;
+
+      const hasValidCoords = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+
+      const displayLat = hasValidCoords ? lat : 22.5726;
+      const displayLng = hasValidCoords ? lng : 88.3639;
+
+      if (titleEl) titleEl.innerText = `📍 ${userName || 'User'} - Location Map`;
+      if (descEl) {
+        descEl.innerText = hasValidCoords 
+          ? `Latitude: ${lat.toFixed(5)}, Longitude: ${lng.toFixed(5)}` 
+          : '⚠️ Saved coordinates not available for this user.';
+      }
+      if (extLink) {
+        extLink.href = hasValidCoords 
+          ? `https://maps.google.com/?q=${lat},${lng}` 
+          : `https://maps.google.com/?q=Kolkata`;
+      }
+
+      modal.style.display = 'flex';
+
+      setTimeout(() => {
+        if (!window.L) return;
+        const mapContainer = document.getElementById('admin-user-leaflet-map');
+        if (!mapContainer) return;
+
+        if (!adminUserMap) {
+          adminUserMap = L.map('admin-user-leaflet-map').setView([displayLat, displayLng], 15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+          }).addTo(adminUserMap);
+
+          adminUserMarker = L.marker([displayLat, displayLng]).addTo(adminUserMap);
+        } else {
+          adminUserMap.setView([displayLat, displayLng], 15);
+          adminUserMarker.setLatLng([displayLat, displayLng]);
+        }
+
+        if (hasValidCoords) {
+          adminUserMarker.bindPopup(`<b>${userName || 'User'}</b><br>Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`).openPopup();
+        } else {
+          adminUserMarker.bindPopup(`<b>${userName || 'User'}</b><br>No exact coordinates saved`).openPopup();
+        }
+
+        adminUserMap.invalidateSize();
+      }, 200);
+    }
+
+    function closeAdminUserMapModal() {
+      const modal = document.getElementById('admin-user-map-modal');
+      if (modal) modal.style.display = 'none';
     }
 
     // --- PINCODES MANAGEMENT TAB ---
@@ -958,7 +1041,36 @@
 
     function renderUsersCardsHTML(list) {
       return list.map(u => {
-        const uMaps = u.location ? (u.location.startsWith('http') ? u.location.split(' ')[0] : `https://maps.google.com/?q=${u.location}`) : '';
+        let latNum = parseFloat(u.lat);
+        let lngNum = parseFloat(u.lng);
+        let hasValidCoords = !isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0;
+
+        let locationUrl = '';
+        if (hasValidCoords) {
+          locationUrl = `https://maps.google.com/?q=${latNum},${lngNum}`;
+        } else if (u.location && u.location.startsWith('http')) {
+          locationUrl = u.location.split(' ')[0];
+        } else if (u.location && u.location.includes(',') && !isNaN(parseFloat(u.location.split(',')[0]))) {
+          const parts = u.location.split(',');
+          latNum = parseFloat(parts[0]);
+          lngNum = parseFloat(parts[1]);
+          if (!isNaN(latNum) && !isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
+            hasValidCoords = true;
+            locationUrl = `https://maps.google.com/?q=${latNum},${lngNum}`;
+          }
+        }
+
+        const safeName = (u.name || 'User').replace(/'/g, "\\'");
+
+        let locationHtml = '';
+        if (hasValidCoords) {
+          locationHtml = `<br><small><a href="javascript:void(0)" onclick="viewUserLocationMap(${latNum}, ${lngNum}, '${safeName}')" style="color:var(--gold-bright); text-decoration:underline; font-weight:bold;">📍 View Location on Map (${latNum.toFixed(3)}, ${lngNum.toFixed(3)})</a></small>`;
+        } else if (locationUrl) {
+          locationHtml = `<br><small><a href="${locationUrl}" target="_blank" style="color:var(--gold-bright); text-decoration:underline;">📍 View Location on Map</a></small>`;
+        } else {
+          locationHtml = `<br><small style="color:#aaa;">📍 Location not available</small>`;
+        }
+
         return `
           <div style="background:#1c1c28; border:1px solid ${u.isBlocked ? 'var(--red-accent)' : 'var(--border-gold)'}; padding:14px; margin-bottom:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div>
@@ -967,7 +1079,7 @@
               <br>
               <small style="color:#aaa;">📱 ${u.phone} | 📧 ${u.email || 'N/A'}</small><br>
               <small style="color:#aaa;">🏠 ${u.address} (${u.pincode})</small>
-              ${u.location ? `<br><small><a href="${uMaps}" target="_blank" style="color:var(--gold-bright); text-decoration:underline;">📍 View Location on Map</a></small>` : ''}
+              ${locationHtml}
             </div>
             <div style="display:flex; gap:8px;">
               <button onclick="toggleBlockUser('${u.phone}')" style="background:${u.isBlocked ? 'var(--green-accent)' : 'var(--red-accent)'}; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">
