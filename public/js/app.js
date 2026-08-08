@@ -341,7 +341,7 @@ function injectGlobalMapPickerModalIfNeeded() {
     const mapModal = document.createElement('div');
     mapModal.id = 'map-picker-modal';
     mapModal.className = 'modal';
-    mapModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 999999; padding: 15px;';
+    mapModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 5, 8, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000005; padding: 15px;';
     mapModal.innerHTML = `
       <div class="modal-content" style="max-width:480px; width:100%; text-align:center; background:#12121a; border:2px solid var(--border-gold); border-radius:16px; padding:20px; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.9);" onclick="event.stopPropagation()">
         <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -617,6 +617,7 @@ function openMapLocationPickerModal(latId = 'signup-lat', lngId = 'signup-lng', 
   activeLngField = lngId;
   activeBadgeField = badgeId;
 
+  injectGlobalMapPickerModalIfNeeded();
   const m = document.getElementById('map-picker-modal');
   if (m) {
     m.style.display = 'flex';
@@ -635,11 +636,13 @@ function initInteractiveLeafletMap(lat, lng) {
     return;
   }
 
-  const container = document.getElementById('leaflet-map');
+  const container = document.getElementById('interactive-leaflet-map') || document.getElementById('leaflet-map');
   if (!container) return;
 
+  const containerId = container.id;
+
   if (!activeLeafletMap) {
-    activeLeafletMap = L.map('leaflet-map').setView([lat, lng], 15);
+    activeLeafletMap = L.map(containerId).setView([lat, lng], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
