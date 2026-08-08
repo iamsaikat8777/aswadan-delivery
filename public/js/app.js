@@ -434,7 +434,7 @@ function setupGlobalAuthModalFix() {
         <input type="hidden" id="signup-lng" value="">
 
         <label class="input-label">📍 পিনকোড:</label>
-        <input type="text" id="signup-pincode" class="input-field" value="" style="margin-bottom:15px;" onkeydown="if(event.key==='Enter') signupUser()">
+        <input type="text" id="signup-pincode" class="input-field" value="" placeholder="Type your pincode here..." style="margin-bottom:15px;" onkeydown="if(event.key==='Enter') signupUser()">
 
         <button type="button" class="btn-primary" onclick="signupUser()">সাইন-আপ সম্পন্ন করুন</button>
       </div>
@@ -932,7 +932,7 @@ function injectUserDashboardModalIfNeeded() {
           <input type="hidden" id="prof-lng" value="">
 
           <label class="input-label">📍 পিনকোড:</label>
-          <input type="text" id="prof-pincode" class="input-field" value="">
+          <input type="text" id="prof-pincode" class="input-field" value="" placeholder="Type your pincode here...">
           <button type="button" class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
           
           <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
