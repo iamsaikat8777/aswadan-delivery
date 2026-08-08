@@ -935,13 +935,11 @@ function injectUserDashboardModalIfNeeded() {
           <input type="text" id="prof-pincode" class="input-field" value="" placeholder="Type your pincode here...">
           <button type="button" class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
           
-          <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            <button type="button" onclick="confirmAndDeleteUserHistory()" style="width: 100%; background: #e63946; color: #fff; font-weight: bold; padding: 12px; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.92rem; box-shadow: 0 4px 15px rgba(230,57,70,0.4);">
-              🗑️ Delete All Data History
-            </button>
-          </div>
-        </div>
 
+
+
+
+          
         <div id="dash-view-history" style="display:none;"><div id="user-orders-history-list"></div></div>
         <div id="dash-view-status" style="display:none;"><div id="current-orders-status-list"></div></div>
         <div id="dash-view-preferred" style="display:none;"><div id="preferred-selection-list"></div></div>
