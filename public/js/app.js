@@ -853,6 +853,15 @@ function syncDisplayDate(inputId, displayId) {
   const input = document.getElementById(inputId);
   const display = document.getElementById(displayId);
   if (input && display && input.value) {
+    
+    // Mobile fallback safety check: 
+    // If the native mobile picker bypassed the restriction, intercept and revert it.
+    const minDate = input.getAttribute('min');
+    if (minDate && input.value < minDate) {
+      alert('⚠️ আজ বা অতীতের তারিখ নির্বাচন করা যাবে না। অনুগ্রহ করে আগামীকালের বা ভবিষ্যতের তারিখ বেছে নিন।');
+      input.value = minDate; // Instantly reverts the selection back to tomorrow
+    }
+    
     display.value = formatDateDDMMYYYY(input.value);
   }
 }
