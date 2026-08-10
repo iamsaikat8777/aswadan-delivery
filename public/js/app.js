@@ -1787,7 +1787,7 @@ function openCartModal() {
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
     const tomorrowDate = getTomorrowDateString();
-    delDateInput.min = tomorrowDate; // ✅ Enforces minimum date restriction dynamically
+    delDateInput.min = tomorrowDate; // ✅ Add this line to restrict past/today dates
     delDateInput.value = tomorrowDate;
     syncDisplayDate('delivery-date', 'delivery-date-display');
   }
@@ -1862,7 +1862,7 @@ function proceedToPaymentStep() {
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
     const tomorrowDate = getTomorrowDateString();
-    delDateInput.min = tomorrowDate; // ✅ Enforces minimum date restriction dynamically
+    delDateInput.min = tomorrowDate; // ✅ Add this line to enforce minimum date
     delDateInput.value = tomorrowDate;
     syncDisplayDate('delivery-date', 'delivery-date-display');
   }
