@@ -810,8 +810,8 @@ function injectCartModalIfNeeded() {
           
           <label class="input-label">📅 ডেলিভারির তারিখ (DD/MM/YYYY):</label>
           <div style="position:relative;">
-            <input type="date" id="delivery-date" class="input-field" style="margin-bottom:12px;" onchange="syncDisplayDate('delivery-date', 'delivery-date-display')">
-            <input type="text" id="delivery-date-display" class="input-field" readonly style="position:absolute; top:0; left:0; width:100%; background:#1c1c28; pointer-events:none;" placeholder="DD/MM/YYYY">
+            <input type="date" id="delivery-date" class="input-field" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;" onchange="syncDisplayDate('delivery-date', 'delivery-date-display')" onclick="try{this.showPicker()}catch(e){}">
+            <input type="text" id="delivery-date-display" class="input-field" readonly style="width:100%; background:#1c1c28; margin-bottom:12px;" placeholder="DD/MM/YYYY">
           </div>
 
           <div style="margin-bottom: 12px; background: #1c1c28; padding: 12px; border-radius: 10px; border: 1px solid var(--border-gold);">
@@ -1786,7 +1786,9 @@ function openCartModal() {
 
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
-    delDateInput.value = getTomorrowDateString();
+    const tomorrowDate = getTomorrowDateString();
+    delDateInput.min = tomorrowDate; // ✅ Enforces minimum date restriction dynamically
+    delDateInput.value = tomorrowDate;
     syncDisplayDate('delivery-date', 'delivery-date-display');
   }
 }
@@ -1859,7 +1861,9 @@ function proceedToPaymentStep() {
 
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
-    delDateInput.value = getTomorrowDateString();
+    const tomorrowDate = getTomorrowDateString();
+    delDateInput.min = tomorrowDate; // ✅ Enforces minimum date restriction dynamically
+    delDateInput.value = tomorrowDate;
     syncDisplayDate('delivery-date', 'delivery-date-display');
   }
 }
