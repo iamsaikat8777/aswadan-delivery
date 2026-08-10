@@ -1248,17 +1248,31 @@ async function checkSpecialRequestNotificationBadge() {
     const res = await fetch(`/api/special-request/user/${currentUser.phone}`);
     const data = await res.json();
     if (data.success && data.requests) {
-      const signatures = data.requests.map(r => `${r.requestId}_${r.status}`).join(',');
-      const lastSeenSig = localStorage.getItem(`aswadan_spec_sig_${currentUser.phone}`);
+      const currentStatuses = {};
+      data.requests.forEach(r => { currentStatuses[r.requestId] = r.status; });
       
-      const modalBadge = document.getElementById('modal-spec-badge');
-      const hasUnread = lastSeenSig !== null && lastSeenSig !== signatures;
-
-      if (modalBadge) modalBadge.style.display = hasUnread ? 'inline-block' : 'none';
-
-      if (lastSeenSig === null) {
-        localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, signatures);
+      const lastSeenStr = localStorage.getItem(`aswadan_spec_sig_${currentUser.phone}`);
+      let hasUnread = false;
+      
+      if (lastSeenStr) {
+        let lastSeen = {};
+        try { lastSeen = JSON.parse(lastSeenStr); } catch(e) {}
+        if (typeof lastSeen !== 'object' || lastSeen === null) lastSeen = {};
+        
+        for (const [id, status] of Object.entries(currentStatuses)) {
+          if (lastSeen[id] !== status && status !== 'PENDING') {
+            hasUnread = true;
+            break;
+          }
+        }
+      } else {
+        localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, JSON.stringify(currentStatuses));
       }
+
+      const modalBadge = document.getElementById('modal-spec-badge');
+      const dropdownBadge = document.getElementById('dropdown-spec-badge');
+      if (modalBadge) modalBadge.style.display = hasUnread ? 'inline-block' : 'none';
+      if (dropdownBadge) dropdownBadge.style.display = hasUnread ? 'inline-block' : 'none';
     }
   } catch (err) {
     console.error(err);
@@ -1271,10 +1285,14 @@ function clearSpecialRequestNotification() {
     .then(res => res.json())
     .then(data => {
       if (data.success && data.requests) {
-        const signatures = data.requests.map(r => `${r.requestId}_${r.status}`).join(',');
-        localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, signatures);
+        const currentStatuses = {};
+        data.requests.forEach(r => { currentStatuses[r.requestId] = r.status; });
+        localStorage.setItem(`aswadan_spec_sig_${currentUser.phone}`, JSON.stringify(currentStatuses));
+        
         const modalBadge = document.getElementById('modal-spec-badge');
+        const dropdownBadge = document.getElementById('dropdown-spec-badge');
         if (modalBadge) modalBadge.style.display = 'none';
+        if (dropdownBadge) dropdownBadge.style.display = 'none';
       }
     }).catch(err => console.error(err));
 }
@@ -1285,19 +1303,32 @@ async function checkNormalOrderNotificationBadge() {
     const res = await fetch(`/api/orders/user/${currentUser.phone}`);
     const data = await res.json();
     if (data.success && data.orders) {
-      const signatures = data.orders.map(o => `${o.orderId}_${o.status}`).join(',');
-      const lastSeenSig = localStorage.getItem(`aswadan_norm_sig_${currentUser.phone}`);
+      const currentStatuses = {};
+      data.orders.forEach(o => { currentStatuses[o.orderId] = o.status; });
       
+      const lastSeenStr = localStorage.getItem(`aswadan_norm_sig_${currentUser.phone}`);
+      let hasUnread = false;
+      
+      if (lastSeenStr) {
+        let lastSeen = {};
+        try { lastSeen = JSON.parse(lastSeenStr); } catch(e) {}
+        if (typeof lastSeen !== 'object' || lastSeen === null) lastSeen = {};
+        
+        // Trigger notification only if an existing order's status changed
+        for (const [id, status] of Object.entries(currentStatuses)) {
+          if (lastSeen[id] !== status && status !== 'PENDING') {
+            hasUnread = true;
+            break;
+          }
+        }
+      } else {
+        localStorage.setItem(`aswadan_norm_sig_${currentUser.phone}`, JSON.stringify(currentStatuses));
+      }
+
       const historyBadge = document.getElementById('tab-history-badge');
       const statusBadge = document.getElementById('tab-status-badge');
-      const hasUnread = lastSeenSig !== null && lastSeenSig !== signatures;
-
       if (historyBadge) historyBadge.style.display = hasUnread ? 'inline-block' : 'none';
       if (statusBadge) statusBadge.style.display = hasUnread ? 'inline-block' : 'none';
-
-      if (lastSeenSig === null) {
-        localStorage.setItem(`aswadan_norm_sig_${currentUser.phone}`, signatures);
-      }
     }
   } catch (err) {
     console.error(err);
@@ -1310,8 +1341,10 @@ function clearNormalOrderNotification() {
     .then(res => res.json())
     .then(data => {
       if (data.success && data.orders) {
-        const signatures = data.orders.map(o => `${o.orderId}_${o.status}`).join(',');
-        localStorage.setItem(`aswadan_norm_sig_${currentUser.phone}`, signatures);
+        const currentStatuses = {};
+        data.orders.forEach(o => { currentStatuses[o.orderId] = o.status; });
+        localStorage.setItem(`aswadan_norm_sig_${currentUser.phone}`, JSON.stringify(currentStatuses));
+        
         const historyBadge = document.getElementById('tab-history-badge');
         const statusBadge = document.getElementById('tab-status-badge');
         if (historyBadge) historyBadge.style.display = 'none';
@@ -1542,7 +1575,12 @@ async function loadUserOrderStatus() {
   const data = await res.json();
   const container = document.getElementById('current-orders-status-list');
   if (container && data.success) {
-    const active = data.orders.filter(o => o.status === 'PENDING' || o.status === 'ACCEPTED' || o.status === 'REJECTED');
+    // Determine finalized states. Orders in these states will disappear from Status and stay in History.
+    const finalStates = ['DELIVERED', 'COMPLETED', 'REJECTED', 'CANCELLED'];
+    
+    // Filter the active orders dynamically
+    const active = data.orders.filter(o => !finalStates.includes(String(o.status || '').toUpperCase()));
+    
     container.innerHTML = active.length === 0 ? '<p style="color:#aaa;">কোনো সক্রিয় অর্ডার নেই।</p>' : active.map(o => {
       const formattedOrderDate = formatDateDDMMYYYY(o.orderDate || o.createdAt || o.date);
       const formattedDelDate = formatDateDDMMYYYY(o.deliveryDate);
