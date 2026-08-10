@@ -934,11 +934,7 @@ function injectUserDashboardModalIfNeeded() {
           <label class="input-label">📍 পিনকোড:</label>
           <input type="text" id="prof-pincode" class="input-field" value="" placeholder="Type your pincode here...">
           <button type="button" class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
-          
-
-
-
-
+        </div> <!-- ✅ ADDED THE MISSING CLOSING DIV HERE -->
           
         <div id="dash-view-history" style="display:none;"><div id="user-orders-history-list"></div></div>
         <div id="dash-view-status" style="display:none;"><div id="current-orders-status-list"></div></div>
@@ -967,6 +963,8 @@ function injectUserDashboardModalIfNeeded() {
     `;
     document.body.appendChild(modalDiv);
   }
+
+  // ... rest of the function remains completely unchanged
 
   if (!document.getElementById('order-cancel-modal')) {
     const cancelModal = document.createElement('div');
