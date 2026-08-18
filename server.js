@@ -362,7 +362,25 @@ app.post('/api/special-request', async (req, res) => {
 
 app.get('/api/special-request/user/:phone', async (req, res) => {
   try {
-    const userReqs = await SpecialRequest.find({ phone: String(req.params.phone).trim() }).lean();
+    const phone = String(req.params.phone).trim();
+    const userReqs = await SpecialRequest.find({ phone }).lean();
+    
+    // --- DYNAMIC SYNC FOR EXISTING STUCK SPECIAL REQUESTS ---
+    const orders = await Order.find({ phone, orderId: /^ASW-SRQ-/ }).lean();
+    for (let r of userReqs) {
+      if (['ORDERED', 'ACCEPTED', 'PROCESSING'].includes(r.status)) {
+        let matchedOrder = orders.find(o => o.orderId === 'ASW-' + r.requestId);
+        if (!matchedOrder) matchedOrder = orders.find(o => o.totalAmount === r.totalAmount && o.items && o.items[0] && o.items[0].name.includes(r.itemName));
+        
+        if (matchedOrder && matchedOrder.status !== r.status) {
+          r.status = matchedOrder.status;
+          if (matchedOrder.rejectionReason) r.rejectionReason = matchedOrder.rejectionReason;
+          SpecialRequest.updateOne({ _id: r._id }, { status: matchedOrder.status, rejectionReason: matchedOrder.rejectionReason }).catch(()=>{});
+        }
+      }
+    }
+    // --- END DYNAMIC SYNC ---
+    
     res.json({ success: true, requests: userReqs });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error loading special requests' });
@@ -380,7 +398,9 @@ app.post('/api/special-request/pay', async (req, res) => {
     reqItem.status = 'ORDERED';
     await reqItem.save();
 
-    const orderId = 'ASW-SRQ-' + Math.floor(100000 + Math.random() * 900000);
+    // REPLACE THIS: const orderId = 'ASW-SRQ-' + Math.floor(100000 + Math.random() * 900000);
+    const orderId = 'ASW-' + reqItem.requestId; // Guaranteed exact mapping matching pattern ASW-SRQ-XXXXXX
+    
     const newOrder = await Order.create({
       orderId,
       phone: reqItem.phone,
@@ -582,7 +602,33 @@ app.get('/api/orders/user/:phone', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error loading orders' });
   }
 });
-
+// --- NEW: SPECIAL REQUEST STATUS SYNCHRONIZER ---
+async function syncSpecialRequestStatus(orderId, status, reason = null) {
+  if (!orderId || !orderId.startsWith('ASW-SRQ-')) return;
+  try {
+    const potentialReqId = orderId.replace('ASW-', '');
+    let sReq = await SpecialRequest.findOne({ requestId: potentialReqId });
+    
+    if (!sReq) {
+      // Fallback: Auto-heal older random-ID mismatches
+      const order = await Order.findOne({ orderId });
+      if (order && order.items && order.items.length > 0) {
+        const match = order.items[0].name.match(/\[Special\] (.*?) \(/);
+        const iName = match ? match[1] : null;
+        if (iName) {
+          sReq = await SpecialRequest.findOne({ phone: order.phone, itemName: iName, status: { $nin: ['DELIVERED', 'REJECTED', 'CANCELLED'] } });
+        }
+      }
+    }
+    
+    if (sReq) {
+      sReq.status = status;
+      if (reason) sReq.rejectionReason = reason;
+      await sReq.save();
+    }
+  } catch (e) { console.error('Sync Special Request error:', e.message); }
+}
+// ------------------------------------------------
 app.post('/api/orders/cancel', async (req, res) => {
   try {
     const { orderId, phone, refundInfo } = req.body;
@@ -609,6 +655,9 @@ app.post('/api/orders/cancel', async (req, res) => {
       order.refundInfo = refundInfo;
     }
     await order.save();
+    // --- NEW: SYNC SPECIAL REQUEST ---
+    await syncSpecialRequestStatus(orderId, 'CANCELLED');
+    // ---------------------------------
 
     let refundHtml = '';
     if (refundInfo) {
@@ -946,7 +995,9 @@ app.post('/api/admin/order-status', async (req, res) => {
       order.status = status;
       if (reason) order.rejectionReason = reason;
       await order.save();
-
+        // --- NEW: SYNC SPECIAL REQUEST ---
+      await syncSpecialRequestStatus(orderId, status, reason);
+      // ---------------------------------
       if (order.email) {
         if (status === 'ACCEPTED') {
           const acceptHtml = createBrandEmail(
@@ -1060,6 +1111,23 @@ app.get('/api/admin/special-requests', async (req, res) => {
   if (!verifyAdminToken(req)) return res.status(401).json({ success: false, message: 'Unauthorized' });
   try {
     const specialRequestsDB = await SpecialRequest.find({}).lean();
+    
+    // --- DYNAMIC SYNC FOR EXISTING STUCK SPECIAL REQUESTS ---
+    const orders = await Order.find({ orderId: /^ASW-SRQ-/ }).lean();
+    for (let r of specialRequestsDB) {
+      if (['ORDERED', 'ACCEPTED', 'PROCESSING'].includes(r.status)) {
+        let matchedOrder = orders.find(o => o.orderId === 'ASW-' + r.requestId);
+        if (!matchedOrder) matchedOrder = orders.find(o => o.phone === r.phone && o.totalAmount === r.totalAmount && o.items && o.items[0] && o.items[0].name.includes(r.itemName));
+        
+        if (matchedOrder && matchedOrder.status !== r.status) {
+          r.status = matchedOrder.status;
+          if (matchedOrder.rejectionReason) r.rejectionReason = matchedOrder.rejectionReason;
+          SpecialRequest.updateOne({ _id: r._id }, { status: matchedOrder.status, rejectionReason: matchedOrder.rejectionReason }).catch(()=>{});
+        }
+      }
+    }
+    // --- END DYNAMIC SYNC ---
+    
     res.json({ success: true, requests: specialRequestsDB });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
