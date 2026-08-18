@@ -896,22 +896,20 @@ function syncDisplayDate(inputId, displayId) {
       input.value = minDate; // Instantly reverts the selection back to tomorrow
     }
     // --- NEW: CART DATE CHANGE VALIDATION ---
-    if (inputId === 'delivery-date') {
+    if (inputId === 'delivery-date' && !isSilent) {
       const newDate = input.value;
-      const invalidItem = cart.find(cartItem => {
+      const invalidItems = cart.filter(cartItem => {
         const mItem = window.allMenuData ? window.allMenuData.find(m => Number(m.id) === Number(cartItem.id)) : null;
-        if (!mItem) return false;
-        return !window.isMenuAvailableOnDate(mItem, newDate);
+        return mItem && !window.isMenuAvailableOnDate(mItem, newDate);
       });
 
-      if (invalidItem) {
-        const mItem = window.allMenuData.find(m => Number(m.id) === Number(invalidItem.id));
-        alert(`Cannot change delivery date. "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please remove it from the cart to change the date, or select a valid date.`);
-        input.value = window.previousValidDate;
-        display.value = formatDateDDMMYYYY(window.previousValidDate);
-        return;
+      if (invalidItems.length > 0) {
+        const messages = invalidItems.map(invalidItem => {
+          const mItem = window.allMenuData.find(m => Number(m.id) === Number(invalidItem.id));
+          return `The menu "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please select the correct delivery date or remove this menu.`;
+        });
+        alert(messages.join('\n\n'));
       }
-      window.previousValidDate = newDate;
     }
     // --- END VALIDATION ---
     display.value = formatDateDDMMYYYY(input.value);
@@ -1810,7 +1808,7 @@ function openSpecialPaymentModal(requestId) {
   const specDelDateInput = document.getElementById('spec-delivery-date');
   if (specDelDateInput) {
     specDelDateInput.value = getTomorrowDateString();
-    syncDisplayDate('spec-delivery-date', 'spec-delivery-date-display');
+    syncDisplayDate('spec-delivery-date', 'spec-delivery-date-display', true);
   }
 
   document.getElementById('special-payment-modal').style.display = 'flex';
@@ -1857,20 +1855,10 @@ async function confirmSpecialPayment() {
   }
 }
 
-function addToCart(id, name, price, desc) {
+
+  function addToCart(id, name, price, desc) {
   const numericPrice = Number(price) || 0;
-  // --- NEW: ADD TO CART VALIDATION ---
-  const menuItem = window.allMenuData.find(m => Number(m.id) === Number(id));
-  if (menuItem) {
-    const delDateInput = document.getElementById('delivery-date');
-    const deliveryDate = (delDateInput && delDateInput.value) ? delDateInput.value : getTomorrowDateString();
-    
-    if (!window.isMenuAvailableOnDate(menuItem, deliveryDate)) {
-      alert(`This menu is ${window.formatAvailabilityNote(menuItem).toLowerCase()}. Please select the correct delivery date.`);
-      return; // Do NOT add to cart
-    }
-  }
-  // --- END VALIDATION ---
+  
   const existing = cart.find(item => Number(item.id) === Number(id));
   if (existing) {
     existing.price = numericPrice;
@@ -1900,7 +1888,7 @@ function openCartModal() {
     const tomorrowDate = getTomorrowDateString();
     delDateInput.min = tomorrowDate; // ✅ Add this line to restrict past/today dates
     delDateInput.value = tomorrowDate;
-    syncDisplayDate('delivery-date', 'delivery-date-display');
+   syncDisplayDate('delivery-date', 'delivery-date-display', true);
   }
 }
 
@@ -1975,7 +1963,7 @@ function proceedToPaymentStep() {
     const tomorrowDate = getTomorrowDateString();
     delDateInput.min = tomorrowDate; // ✅ Add this line to enforce minimum date
     delDateInput.value = tomorrowDate;
-    syncDisplayDate('delivery-date', 'delivery-date-display');
+    syncDisplayDate('delivery-date', 'delivery-date-display', true);
   }
 }
 
@@ -2003,7 +1991,21 @@ async function placeOrder() {
   const deliveryDateInput = document.getElementById('delivery-date');
   const deliveryDate = deliveryDateInput ? deliveryDateInput.value : getTomorrowDateString();
   if (!deliveryDate) return alert('তারিখ সিলেক্ট করুন।');
-  
+  // --- NEW: PLACE ORDER VALIDATION ---
+  const invalidItems = cart.filter(cartItem => {
+    const mItem = window.allMenuData ? window.allMenuData.find(m => Number(m.id) === Number(cartItem.id)) : null;
+    return mItem && !window.isMenuAvailableOnDate(mItem, deliveryDate);
+  });
+
+  if (invalidItems.length > 0) {
+    const messages = invalidItems.map(invalidItem => {
+      const mItem = window.allMenuData.find(m => Number(m.id) === Number(invalidItem.id));
+      return `The menu "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please select the correct delivery date or remove this menu.`;
+    });
+    alert(messages.join('\n\n'));
+    return; // Block order submission
+  }
+  // --- END VALIDATION ---
   const paymentMethodInput = document.querySelector('input[name="payment-method"]:checked');
   const paymentMethod = paymentMethodInput ? paymentMethodInput.value : 'online';
 
