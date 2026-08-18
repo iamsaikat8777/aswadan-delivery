@@ -61,7 +61,10 @@ const menuSchema = new mongoose.Schema({
   id: { type: Number, required: true, unique: true },
   name: String,
   price: Number,
-  desc: String
+  desc: String,
+  availabilityType: { type: String, default: 'all' }, // 'all', 'days', 'custom'
+  availableDays: { type: [String], default: [] }, // e.g. ['monday', 'tuesday']
+  availableDate: { type: String, default: '' } // e.g. 'YYYY-MM-DD'
 });
 const MenuItem = mongoose.model('MenuItem', menuSchema);
 
@@ -666,7 +669,35 @@ app.post('/api/user/preferred-menu', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
   try {
     const { phone, customerName, email, address, location, items, totalAmount, paymentScreenshot, deliveryDate } = req.body;
-    
+    // --- NEW: AVAILABILITY BACKEND VALIDATION ---
+    const allMenuItems = await MenuItem.find({ id: { $in: (items || []).map(i => i.id) } });
+    for (let cartItem of (items || [])) {
+      const dbItem = allMenuItems.find(m => m.id === cartItem.id);
+      if (dbItem) {
+        const aType = dbItem.availabilityType || 'all';
+        if (aType === 'days' && dbItem.availableDays && dbItem.availableDays.length > 0) {
+          // Compare against standard UTC weekday to prevent timezone shift issues
+          const reqDay = new Date(deliveryDate).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
+          if (!dbItem.availableDays.includes(reqDay)) {
+            const daysMap = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday' };
+            const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const sorted = dbItem.availableDays.slice().sort((a,b) => order.indexOf(a) - order.indexOf(b));
+            const capDays = sorted.map(d => daysMap[d]);
+            let note = capDays.length === 1 ? capDays[0] : capDays.slice(0, -1).join(', ') + ' & ' + capDays[capDays.length - 1];
+            return res.status(400).json({ success: false, message: `This menu is only available on ${note}. Please select the correct delivery date.` });
+          }
+        } else if (aType === 'custom' && dbItem.availableDate) {
+          if (dbItem.availableDate !== deliveryDate) {
+            const d = new Date(dbItem.availableDate);
+            const date = d.getUTCDate();
+            const month = d.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
+            const suffix = (date % 10 === 1 && date !== 11) ? 'st' : (date % 10 === 2 && date !== 12) ? 'nd' : (date % 10 === 3 && date !== 13) ? 'rd' : 'th';
+            return res.status(400).json({ success: false, message: `This menu is only available on ${date}${suffix} ${month}. Please select the correct delivery date.` });
+          }
+        }
+      }
+    }
+    // --- END AVAILABILITY VALIDATION ---
     const latestUser = await User.findOne({ phone: String(phone).trim() });
     
     const finalAddress = latestUser && latestUser.address ? latestUser.address : address;
