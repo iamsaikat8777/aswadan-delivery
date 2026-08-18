@@ -1299,7 +1299,7 @@
             ${specialReqsList.map(r => `
               <div style="background:#1c1c28; border:1px solid var(--border-gold); padding:15px; border-radius:10px; position:relative;">
                 <div style="position:absolute; top:15px; right:15px;">
-                  <span style="background:${r.status==='PRICED'||r.status==='ORDERED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; color:#fff; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; display:inline-block;">${r.status}</span>
+                  <span style="background:${['PRICED','ORDERED','ACCEPTED','DELIVERED'].includes(r.status)?'#2a9d8f':['REJECTED','CANCELLED'].includes(r.status)?'#e63946':'#ffb703'}; color:#fff; font-weight:bold; padding:4px 10px; border-radius:6px; font-size:0.75rem; display:inline-block;">${r.status}</span>
                 </div>
 
                 <div style="padding-right: 90px;">
