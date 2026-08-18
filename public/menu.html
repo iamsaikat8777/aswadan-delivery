@@ -213,41 +213,50 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/app.js"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/menu');
-        const data = await res.json();
-        const container = document.getElementById('menu-tiles-container');
-        if (data.success && data.menu.length > 0) {
-          container.innerHTML = data.menu.map(item => {
-            let foodIcon = '🍲';
-            if (item.name.toLowerCase().includes('fish') || item.name.includes('রুই') || item.name.includes('কাতলা')) foodIcon = '🐟';
-            else if (item.name.toLowerCase().includes('chicken') || item.name.includes('চিকেন')) foodIcon = '🍗';
-            else if (item.name.toLowerCase().includes('egg') || item.name.includes('ডিম')) foodIcon = '🥚';
-            else if (item.name.toLowerCase().includes('veg') || item.name.includes('নিরামিষ')) foodIcon = '🍲';
+  window.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/api/menu');
+      const data = await res.json();
+      
+      // Store globally for cart validation lookup
+      window.allMenuData = data.menu || [];
 
-            return `
-              <div class="tile-card">
-                <div>
-                  <div style="font-size: 1.8rem; margin-bottom: 6px;">${foodIcon}</div>
-                  <h3 class="tile-title">${item.name}</h3>
-                  <p class="tile-desc">${item.desc}</p>
-                </div>
-                <div class="tile-bottom">
-                  <span class="tile-price">₹${item.price}</span>
-                  <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name}', ${item.price}, '${item.desc}')">+ Add to Cart</button>
-                </div>
+      const container = document.getElementById('menu-tiles-container');
+      if (data.success && data.menu.length > 0) {
+        container.innerHTML = data.menu.map(item => {
+          let foodIcon = '🍲';
+          if (item.name.toLowerCase().includes('fish') || item.name.includes('রুই') || item.name.includes('কাতলা')) foodIcon = '🐟';
+          else if (item.name.toLowerCase().includes('chicken') || item.name.includes('চিকেন')) foodIcon = '🍗';
+          else if (item.name.toLowerCase().includes('egg') || item.name.includes('ডিম')) foodIcon = '🥚';
+          else if (item.name.toLowerCase().includes('veg') || item.name.includes('নিরামিষ')) foodIcon = '🍲';
+
+          // Ensure Note Display
+          const availNote = typeof window.formatAvailabilityNote === 'function' ? window.formatAvailabilityNote(item) : '';
+          const availHtml = availNote ? `<p style="font-size:0.8rem; color:#ffb703; font-weight:bold; margin-top:4px;">${availNote}</p>` : '';
+
+          return `
+            <div class="tile-card">
+              <div>
+                <div style="font-size: 1.8rem; margin-bottom: 6px;">${foodIcon}</div>
+                <h3 class="tile-title">${item.name}</h3>
+                <p class="tile-desc">${item.desc}</p>
+                ${availHtml}
               </div>
-            `;
-          }).join('');
-        } else {
-          container.innerHTML = `<p style="text-align:center; color:#aaa; grid-column:1/-1;">কোনো মেনু আইটেম পাওয়া যায়নি।</p>`;
-        }
-      } catch (err) {
-        console.error('Error loading menu:', err);
-        document.getElementById('menu-tiles-container').innerHTML = `<p style="text-align:center; color:#e63946; grid-column:1/-1;">মেনু লোড করতে সমস্যা হয়েছে।</p>`;
+              <div class="tile-bottom">
+                <span class="tile-price">₹${item.price}</span>
+                <button class="btn-add-tile" onclick="addToCart(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.price}, '${item.desc.replace(/'/g, "\\'")}')">+ Add to Cart</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = `<p style="text-align:center; color:#aaa; grid-column:1/-1;">কোনো মেনু আইটেম পাওয়া যায়নি।</p>`;
       }
-    });
-  </script>
+    } catch (err) {
+      console.error('Error loading menu:', err);
+      document.getElementById('menu-tiles-container').innerHTML = `<p style="text-align:center; color:#e63946; grid-column:1/-1;">মেনু লোড করতে সমস্যা হয়েছে।</p>`;
+    }
+  });
+</script>
 </body>
 </html>

@@ -211,6 +211,25 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+
+    function toggleAdminAvail(suffix) {
+  const typeEl = document.querySelector(`input[name="avail-type-${suffix}"]:checked`);
+  if (!typeEl) return;
+  const type = typeEl.value;
+  const daysBox = document.getElementById(`avail-days-box-${suffix}`);
+  const customBox = document.getElementById(`avail-custom-box-${suffix}`);
+  
+  if (type === 'all') {
+    daysBox.style.display = 'none';
+    customBox.style.display = 'none';
+  } else if (type === 'days') {
+    daysBox.style.display = 'flex';
+    customBox.style.display = 'none';
+  } else if (type === 'custom') {
+    daysBox.style.display = 'none';
+    customBox.style.display = 'block';
+  }
+}
     // --- ADMIN SAFE FETCH LOADING SPINNER (CLICK INTERCEPTION REMOVED) ---
     function showMobileLoading() {
       const overlay = document.getElementById('mobile-loading-overlay');
@@ -858,56 +877,99 @@
     }
 
     function renderMenuManagement(container) {
-      container.innerHTML = `
-        <div class="admin-section-box">
-          <h3 style="color:var(--gold-bright); margin-bottom:15px;">🍔 নতুন খাবারের আইটেম যোগ করুন</h3>
-          <label class="input-label">খাবারের নাম:</label>
-          <input type="text" id="new-item-name" class="input-field" placeholder="e.g. ইলিশ মাছের থালি">
+  const daysArr = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  
+  container.innerHTML = `
+    <div class="admin-section-box">
+      <h3 style="color:var(--gold-bright); margin-bottom:15px;">🍔 নতুন খাবারের আইটেম যোগ করুন</h3>
+      <label class="input-label">খাবারের নাম:</label>
+      <input type="text" id="new-item-name" class="input-field" placeholder="e.g. ইলিশ মাছের থালি">
 
-          <label class="input-label">মূল্য (₹):</label>
-          <input type="number" id="new-item-price" class="input-field" placeholder="e.g. 180">
+      <label class="input-label">মূল্য (₹):</label>
+      <input type="number" id="new-item-price" class="input-field" placeholder="e.g. 180">
 
-          <label class="input-label">বিবরণ:</label>
-          <input type="text" id="new-item-desc" class="input-field" placeholder="e.g. ভাত, ডাল, ভাজা, সর্ষে ইলিশ ও চাটনি">
+      <label class="input-label">বিবরণ:</label>
+      <input type="text" id="new-item-desc" class="input-field" placeholder="e.g. ভাত, ডাল, ভাজা, সর্ষে ইলিশ ও চাটনি">
 
-          <button class="btn-primary" onclick="addNewMenuItem()">➕ নতুন আইটেম যোগ করুন</button>
+      <div style="background:#1c1c28; padding:12px; border-radius:8px; margin-top:10px; margin-bottom:15px; border:1px solid var(--border-gold);">
+        <label class="input-label" style="color:var(--gold-bright);">📅 Available Day / Date:</label>
+        <div style="display:flex; gap:15px; margin-bottom:10px; flex-wrap:wrap;">
+          <label style="color:#fff;"><input type="radio" name="avail-type-new" value="all" checked onchange="toggleAdminAvail('new')"> All Day</label>
+          <label style="color:#fff;"><input type="radio" name="avail-type-new" value="days" onchange="toggleAdminAvail('new')"> Specific Weekdays</label>
+          <label style="color:#fff;"><input type="radio" name="avail-type-new" value="custom" onchange="toggleAdminAvail('new')"> Custom Date</label>
         </div>
+        <div id="avail-days-box-new" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          ${daysArr.map(d => `<label style="color:#aaa;"><input type="checkbox" value="${d}" class="avail-chk-new"> ${d.charAt(0).toUpperCase() + d.slice(1)}</label>`).join('')}
+        </div>
+        <div id="avail-custom-box-new" style="display:none; margin-bottom:10px;">
+          <input type="date" id="avail-custom-date-new" class="input-field" style="max-width:200px;">
+        </div>
+      </div>
 
-        <div class="admin-section-box">
-          <h3 style="color:var(--gold-bright); margin-bottom:15px;">✏️ বিদ্যমান মেনু ও মূল্য এডিট করুন</h3>
-          <div id="admin-menu-list">
-            ${menuList.map((item, index) => `
-              <div style="background:#1c1c28; border:1px solid #333; padding:12px; margin-bottom:10px; border-radius:10px;">
-                <label class="input-label">আইটেম #${item.id} নাম:</label>
-                <input type="text" id="edit-name-${index}" class="input-field" value="${item.name}">
+      <button class="btn-primary" onclick="addNewMenuItem()">➕ নতুন আইটেম যোগ করুন</button>
+    </div>
 
-                <label class="input-label">মূল্য (₹):</label>
-                <input type="number" id="edit-price-${index}" class="input-field" value="${item.price}">
+    <div class="admin-section-box">
+      <h3 style="color:var(--gold-bright); margin-bottom:15px;">✏️ বিদ্যমান মেনু ও মূল্য এডিট করুন</h3>
+      <div id="admin-menu-list">
+        ${menuList.map((item, index) => {
+          let atype = item.availabilityType || 'all';
+          let adays = item.availableDays || [];
+          let adate = item.availableDate || '';
+          return `
+            <div style="background:#1c1c28; border:1px solid #333; padding:12px; margin-bottom:10px; border-radius:10px;">
+              <label class="input-label">আইটেম #${item.id} নাম:</label>
+              <input type="text" id="edit-name-${index}" class="input-field" value="${item.name}">
 
-                <label class="input-label">বিবরণ:</label>
-                <input type="text" id="edit-desc-${index}" class="input-field" value="${item.desc}">
+              <label class="input-label">মূল্য (₹):</label>
+              <input type="number" id="edit-price-${index}" class="input-field" value="${item.price}">
 
-                <button onclick="deleteMenuItem(${index})" style="background:var(--red-accent); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; margin-top:8px;">❌ ডিলিট করুন</button>
+              <label class="input-label">বিবরণ:</label>
+              <input type="text" id="edit-desc-${index}" class="input-field" value="${item.desc}">
+
+              <div style="background:#12121a; padding:12px; border-radius:8px; margin-top:10px; border:1px solid rgba(229,193,88,0.3);">
+                <label class="input-label" style="color:var(--gold-bright);">📅 Available Day / Date:</label>
+                <div style="display:flex; gap:15px; margin-bottom:10px; flex-wrap:wrap;">
+                  <label style="color:#fff;"><input type="radio" name="avail-type-${index}" value="all" ${atype==='all'?'checked':''} onchange="toggleAdminAvail(${index})"> All Day</label>
+                  <label style="color:#fff;"><input type="radio" name="avail-type-${index}" value="days" ${atype==='days'?'checked':''} onchange="toggleAdminAvail(${index})"> Specific Weekdays</label>
+                  <label style="color:#fff;"><input type="radio" name="avail-type-${index}" value="custom" ${atype==='custom'?'checked':''} onchange="toggleAdminAvail(${index})"> Custom Date</label>
+                </div>
+                <div id="avail-days-box-${index}" style="display:${atype==='days'?'flex':'none'}; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                  ${daysArr.map(d => `<label style="color:#aaa;"><input type="checkbox" value="${d}" class="avail-chk-${index}" ${adays.includes(d)?'checked':''}> ${d.charAt(0).toUpperCase() + d.slice(1)}</label>`).join('')}
+                </div>
+                <div id="avail-custom-box-${index}" style="display:${atype==='custom'?'block':'none'}; margin-bottom:10px;">
+                  <input type="date" id="avail-custom-date-${index}" class="input-field" value="${adate}" style="max-width:200px;">
+                </div>
               </div>
-            `).join('')}
-          </div>
-          <button class="btn-primary" style="background:var(--green-accent); color:#fff;" onclick="saveAllMenuChanges()">💾 সমস্ত পরিবর্তন সেভ করুন</button>
-        </div>
-      `;
-    }
+
+              <button onclick="deleteMenuItem(${index})" style="background:var(--red-accent); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; margin-top:12px;">❌ ডিলিট করুন</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <button class="btn-primary" style="background:var(--green-accent); color:#fff;" onclick="saveAllMenuChanges()">💾 সমস্ত পরিবর্তন সেভ করুন</button>
+    </div>
+  `;
+}
 
     function addNewMenuItem() {
-      const name = document.getElementById('new-item-name').value.trim();
-      const price = Number(document.getElementById('new-item-price').value);
-      const desc = document.getElementById('new-item-desc').value.trim();
+  const name = document.getElementById('new-item-name').value.trim();
+  const price = Number(document.getElementById('new-item-price').value);
+  const desc = document.getElementById('new-item-desc').value.trim();
 
-      if (!name || !price || !desc) return alert('সমস্ত ফিল্ড পূরণ করুন!');
+  const typeEl = document.querySelector('input[name="avail-type-new"]:checked');
+  const type = typeEl ? typeEl.value : 'all';
+  const daysEls = document.querySelectorAll('.avail-chk-new:checked');
+  const availableDays = Array.from(daysEls).map(cb => cb.value);
+  const dateEl = document.getElementById('avail-custom-date-new');
+  const availableDate = dateEl ? dateEl.value : '';
 
-      const newId = menuList.length > 0 ? Math.max(...menuList.map(i => i.id)) + 1 : 1;
-      menuList.push({ id: newId, name, price, desc });
-      saveAllMenuChanges();
-    }
+  if (!name || !price || !desc) return alert('সমস্ত ফিল্ড পূরণ করুন!');
 
+  const newId = menuList.length > 0 ? Math.max(...menuList.map(i => i.id)) + 1 : 1;
+  menuList.push({ id: newId, name, price, desc, availabilityType: type, availableDays, availableDate });
+  saveAllMenuChanges();
+}
     function deleteMenuItem(index) {
       if (confirm('আপনি কি এই আইটেমটি ডিলিট করতে চান?')) {
         menuList.splice(index, 1);
@@ -916,29 +978,37 @@
     }
 
     async function saveAllMenuChanges() {
-      menuList.forEach((item, index) => {
-        const nameEl = document.getElementById(`edit-name-${index}`);
-        const priceEl = document.getElementById(`edit-price-${index}`);
-        const descEl = document.getElementById(`edit-desc-${index}`);
-        if (nameEl && priceEl && descEl) {
-          item.name = nameEl.value.trim();
-          item.price = Number(priceEl.value);
-          item.desc = descEl.value.trim();
-        }
-      });
+  menuList.forEach((item, index) => {
+    const nameEl = document.getElementById(`edit-name-${index}`);
+    const priceEl = document.getElementById(`edit-price-${index}`);
+    const descEl = document.getElementById(`edit-desc-${index}`);
+    
+    const typeEl = document.querySelector(`input[name="avail-type-${index}"]:checked`);
+    const daysEls = document.querySelectorAll(`.avail-chk-${index}:checked`);
+    const dateEl = document.getElementById(`avail-custom-date-${index}`);
 
-      const res = await fetch('/api/admin/menu/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
-        body: JSON.stringify({ menu: menuList })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        await fetchAdminMenu();
-        renderAdminTab();
-      }
+    if (nameEl && priceEl && descEl) {
+      item.name = nameEl.value.trim();
+      item.price = Number(priceEl.value);
+      item.desc = descEl.value.trim();
+      item.availabilityType = typeEl ? typeEl.value : 'all';
+      item.availableDays = Array.from(daysEls).map(cb => cb.value);
+      item.availableDate = dateEl ? dateEl.value : '';
     }
+  });
+
+  const res = await fetch('/api/admin/menu/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+    body: JSON.stringify({ menu: menuList })
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert(data.message);
+    await fetchAdminMenu();
+    renderAdminTab();
+  }
+}
 
     async function renderOfferManagement(container) {
       const res = await fetch('/api/offer');
