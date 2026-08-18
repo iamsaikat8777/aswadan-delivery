@@ -22,7 +22,41 @@
       }
     });
   };
+window.allMenuData = [];
+window.previousValidDate = null; // Used to safely revert cart date
 
+window.formatAvailabilityNote = function(item) {
+  if (!item.availabilityType || item.availabilityType === 'all') return '';
+  if (item.availabilityType === 'days' && item.availableDays && item.availableDays.length > 0) {
+    const daysMap = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday' };
+    const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const sorted = item.availableDays.slice().sort((a,b) => order.indexOf(a) - order.indexOf(b));
+    const capDays = sorted.map(d => daysMap[d]);
+    if (capDays.length === 1) return `Only available on ${capDays[0]}`;
+    const last = capDays.pop();
+    return `Only available on ${capDays.join(', ')} & ${last}`;
+  }
+  if (item.availabilityType === 'custom' && item.availableDate) {
+    const d = new Date(item.availableDate);
+    const date = d.getUTCDate();
+    const month = d.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
+    const suffix = (date % 10 === 1 && date !== 11) ? 'st' : (date % 10 === 2 && date !== 12) ? 'nd' : (date % 10 === 3 && date !== 13) ? 'rd' : 'th';
+    return `Only available on ${date}${suffix} ${month}`;
+  }
+  return '';
+};
+
+window.isMenuAvailableOnDate = function(item, dateStr) {
+  if (!item.availabilityType || item.availabilityType === 'all') return true;
+  if (item.availabilityType === 'days' && item.availableDays && item.availableDays.length > 0) {
+    const wd = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
+    return item.availableDays.includes(wd);
+  }
+  if (item.availabilityType === 'custom' && item.availableDate) {
+    return item.availableDate === dateStr;
+  }
+  return true;
+};
   window.toggleGlobalLanguage = function() {
     const newLang = (window.currentLang === 'bn') ? 'en' : 'bn';
     window.applyGlobalLanguage(newLang);
@@ -861,7 +895,25 @@ function syncDisplayDate(inputId, displayId) {
       alert('⚠️ আজ বা অতীতের তারিখ নির্বাচন করা যাবে না। অনুগ্রহ করে আগামীকালের বা ভবিষ্যতের তারিখ বেছে নিন।');
       input.value = minDate; // Instantly reverts the selection back to tomorrow
     }
-    
+    // --- NEW: CART DATE CHANGE VALIDATION ---
+    if (inputId === 'delivery-date') {
+      const newDate = input.value;
+      const invalidItem = cart.find(cartItem => {
+        const mItem = window.allMenuData ? window.allMenuData.find(m => Number(m.id) === Number(cartItem.id)) : null;
+        if (!mItem) return false;
+        return !window.isMenuAvailableOnDate(mItem, newDate);
+      });
+
+      if (invalidItem) {
+        const mItem = window.allMenuData.find(m => Number(m.id) === Number(invalidItem.id));
+        alert(`Cannot change delivery date. "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please remove it from the cart to change the date, or select a valid date.`);
+        input.value = window.previousValidDate;
+        display.value = formatDateDDMMYYYY(window.previousValidDate);
+        return;
+      }
+      window.previousValidDate = newDate;
+    }
+    // --- END VALIDATION ---
     display.value = formatDateDDMMYYYY(input.value);
   }
 }
@@ -1807,6 +1859,18 @@ async function confirmSpecialPayment() {
 
 function addToCart(id, name, price, desc) {
   const numericPrice = Number(price) || 0;
+  // --- NEW: ADD TO CART VALIDATION ---
+  const menuItem = window.allMenuData.find(m => Number(m.id) === Number(id));
+  if (menuItem) {
+    const delDateInput = document.getElementById('delivery-date');
+    const deliveryDate = (delDateInput && delDateInput.value) ? delDateInput.value : getTomorrowDateString();
+    
+    if (!window.isMenuAvailableOnDate(menuItem, deliveryDate)) {
+      alert(`This menu is ${window.formatAvailabilityNote(menuItem).toLowerCase()}. Please select the correct delivery date.`);
+      return; // Do NOT add to cart
+    }
+  }
+  // --- END VALIDATION ---
   const existing = cart.find(item => Number(item.id) === Number(id));
   if (existing) {
     existing.price = numericPrice;
@@ -2013,6 +2077,8 @@ async function loadHomeSpotlight() {
     const data = await res.json();
     if (data.success && data.menu.length > 0) {
       const menu = data.menu;
+      window.allMenuData = data.menu; // Store for global cart validation
+
       let currentIndex = 0;
       const slidingCard = document.getElementById('hero-sliding-tile');
       
@@ -2049,6 +2115,10 @@ async function loadHomeSpotlight() {
         const item = menu[idx];
         const icon = getFoodIcon(item.name);
         
+        // --- NEW: Generate availability note for the sliding card ---
+        const availNote = typeof window.formatAvailabilityNote === 'function' ? window.formatAvailabilityNote(item) : '';
+        const availHtml = availNote ? `<p style="font-size:0.8rem; color:#ffb703; font-weight:bold; margin-top:4px;">${availNote}</p>` : '';
+        
         slidingCard.classList.remove('slide-in-right');
         slidingCard.classList.add('slide-out-left');
 
@@ -2058,6 +2128,7 @@ async function loadHomeSpotlight() {
               <div style="font-size:2.2rem; margin-bottom:6px;">${icon}</div>
               <h3 class="tile-title">${escapeHtml(item.name)}</h3>
               <p class="tile-desc">${escapeHtml(item.desc)}</p>
+              ${availHtml}
             </div>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
@@ -2079,24 +2150,29 @@ async function loadHomeSpotlight() {
 
       const gridContainer = document.getElementById('home-spotlight-container');
       if (gridContainer) {
-        gridContainer.innerHTML = menu.slice(0, 4).map(item => `
+        gridContainer.innerHTML = menu.slice(0, 4).map(item => {
+          // --- NEW: Generate availability note for the 4 grid items ---
+          const availNote = typeof window.formatAvailabilityNote === 'function' ? window.formatAvailabilityNote(item) : '';
+          const availHtml = availNote ? `<p style="font-size:0.8rem; color:#ffb703; font-weight:bold; margin-top:4px;">${availNote}</p>` : '';
+          
+          return `
           <div class="tile-card">
             <div>
               <div style="font-size:1.8rem; margin-bottom:4px;">${getFoodIcon(item.name)}</div>
               <h3 class="tile-title">${escapeHtml(item.name)}</h3>
               <p class="tile-desc">${escapeHtml(item.desc)}</p>
+              ${availHtml}
             </div>
             <div class="tile-bottom">
               <span class="tile-price">₹${item.price}</span>
               <button class="btn-add-tile" onclick="addToCart(${item.id}, '${escapeJsString(item.name)}', ${item.price}, '${escapeJsString(item.desc)}')">+ Add</button>
             </div>
           </div>
-        `).join('');
+        `}).join('');
       }
     }
   } catch (err) { console.error(err); }
 }
-
 let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
