@@ -1779,7 +1779,7 @@ async function loadUserSpecialRequests() {
         <div style="background:#181824; border:1px solid var(--border-gold); padding:12px; border-radius:8px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between;">
             <strong style="color:var(--gold-bright);">${r.itemName} (${r.qty} প্লেট)</strong>
-            <span style="color:${r.status==='PRICED'?'#2a9d8f':r.status==='REJECTED'?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
+            <span style="color:${['PRICED','ORDERED','ACCEPTED','DELIVERED'].includes(r.status)?'#2a9d8f':['REJECTED','CANCELLED'].includes(r.status)?'#e63946':'#ffb703'}; font-weight:bold;">${r.status}</span>
           </div>
           <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${r.description || ''}</p>
           
