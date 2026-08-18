@@ -683,8 +683,8 @@ app.post('/api/orders', async (req, res) => {
             const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             const sorted = dbItem.availableDays.slice().sort((a,b) => order.indexOf(a) - order.indexOf(b));
             const capDays = sorted.map(d => daysMap[d]);
-            let note = capDays.length === 1 ? capDays[0] : capDays.slice(0, -1).join(', ') + ' & ' + capDays[capDays.length - 1];
-            return res.status(400).json({ success: false, message: `This menu is only available on ${note}. Please select the correct delivery date.` });
+            let note = capDays.length === 1 ? `only available on ${capDays[0]}` : `only available on ${capDays.slice(0, -1).join(', ')} & ${capDays[capDays.length - 1]}`;
+            return res.status(400).json({ success: false, message: `The menu "${dbItem.name}" is ${note}. Please select the correct delivery date or remove this menu.` });
           }
         } else if (aType === 'custom' && dbItem.availableDate) {
           if (dbItem.availableDate !== deliveryDate) {
@@ -692,7 +692,7 @@ app.post('/api/orders', async (req, res) => {
             const date = d.getUTCDate();
             const month = d.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
             const suffix = (date % 10 === 1 && date !== 11) ? 'st' : (date % 10 === 2 && date !== 12) ? 'nd' : (date % 10 === 3 && date !== 13) ? 'rd' : 'th';
-            return res.status(400).json({ success: false, message: `This menu is only available on ${date}${suffix} ${month}. Please select the correct delivery date.` });
+            return res.status(400).json({ success: false, message: `The menu "${dbItem.name}" is only available on ${date}${suffix} ${month}. Please select the correct delivery date or remove this menu.` });
           }
         }
       }
