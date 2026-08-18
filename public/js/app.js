@@ -883,19 +883,24 @@ function injectCartModalIfNeeded() {
   }
 }
 
-function syncDisplayDate(inputId, displayId) {
+function syncDisplayDate(inputId, displayId, suppressAlert) {
+  const isSilent = suppressAlert === true;
   const input = document.getElementById(inputId);
   const display = document.getElementById(displayId);
+  
   if (input && display && input.value) {
     
-    // Mobile fallback safety check: 
-    // If the native mobile picker bypassed the restriction, intercept and revert it.
+    // 1. Existing Mobile Fallback / Minimum Date Check
     const minDate = input.getAttribute('min');
     if (minDate && input.value < minDate) {
-      alert('⚠️ আজ বা অতীতের তারিখ নির্বাচন করা যাবে না। অনুগ্রহ করে আগামীকালের বা ভবিষ্যতের তারিখ বেছে নিন।');
-      input.value = minDate; // Instantly reverts the selection back to tomorrow
+      if (!isSilent) alert('⚠️ আজ বা অতীতের তারিখ নির্বাচন করা যাবে না। অনুগ্রহ করে আগামীকালের বা ভবিষ্যতের তারিখ বেছে নিন।');
+      input.value = minDate; // Reverts to tomorrow
     }
-    // --- NEW: CART DATE CHANGE VALIDATION ---
+    
+    // 2. Immediately sync the visual display so the calendar selection actually works
+    display.value = formatDateDDMMYYYY(input.value);
+
+    // 3. CART DATE CHANGE VALIDATION (Runs only when user manually changes date)
     if (inputId === 'delivery-date' && !isSilent) {
       const newDate = input.value;
       const invalidItems = cart.filter(cartItem => {
@@ -908,14 +913,14 @@ function syncDisplayDate(inputId, displayId) {
           const mItem = window.allMenuData.find(m => Number(m.id) === Number(invalidItem.id));
           return `The menu "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please select the correct delivery date or remove this menu.`;
         });
+        
+        // Show the warning, but leave the chosen date in the input field
+        // so the user controls how to resolve it (change date or remove item).
         alert(messages.join('\n\n'));
       }
     }
-    // --- END VALIDATION ---
-    display.value = formatDateDDMMYYYY(input.value);
   }
 }
-
 function togglePaymentMethodUI() {
   const method = document.querySelector('input[name="payment-method"]:checked').value;
   const onlineSec = document.getElementById('online-payment-section');
