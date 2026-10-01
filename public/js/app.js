@@ -245,7 +245,7 @@ window.addEventListener('DOMContentLoaded', () => {
   checkPWAInstallPrompt();
   injectUserDashboardModalIfNeeded();
   injectCartModalIfNeeded();
-  ensureQRDownloadButtons(); // Universal safeguard for any pre-existing or injected QR box
+  ensureQRDownloadButtons();
   checkSpecialRequestNotificationBadge();
   checkNormalOrderNotificationBadge();
   setupGlobalAuthModalFix();
@@ -866,7 +866,7 @@ function injectCartModalIfNeeded() {
               <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="Aswadan UPI QR">
               <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
-              <button type="button" onclick="downloadPaymentQR()" style="margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">📥 Download QR</button>
+              <button type="button" class="download-qr-btn" onclick="downloadPaymentQR()" style="margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">📥 Download QR</button>
             </div>
             <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
             <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)" style="margin-bottom:8px;">
@@ -885,12 +885,13 @@ function injectCartModalIfNeeded() {
   }
 }
 
-// --- UNIVERSAL SAFEGUARD: ENSURE DOWNLOAD QR BUTTON EXISTS ON ALL .qr-box ---
+// --- UNIVERSAL SAFEGUARD: ENSURE DOWNLOAD QR BUTTON EXISTS ON ALL .qr-box (WITHOUT DUPLICATING) ---
 function ensureQRDownloadButtons() {
   document.querySelectorAll('.qr-box').forEach(box => {
-    if (!box.querySelector('button[onclick*="downloadPaymentQR"]')) {
+    if (!box.querySelector('.download-qr-btn')) {
       const btn = document.createElement('button');
       btn.type = 'button';
+      btn.className = 'download-qr-btn';
       btn.onclick = downloadPaymentQR;
       btn.style.cssText = 'margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;';
       btn.innerHTML = '📥 Download QR';
@@ -1151,7 +1152,7 @@ function injectUserDashboardModalIfNeeded() {
             <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="Aswadan UPI QR">
             <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
-            <button type="button" onclick="downloadPaymentQR()" style="margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">📥 Download QR</button>
+            <button type="button" class="download-qr-btn" onclick="downloadPaymentQR()" style="margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">📥 Download QR</button>
           </div>
           <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
           <input type="file" id="spec-payment-screenshot-input" accept="image/*" class="input-field" onchange="handleSpecScreenshotUpload(event)" style="margin-bottom:8px;">
@@ -1846,7 +1847,7 @@ function openSpecialPaymentModal(requestId) {
     syncDisplayDate('spec-delivery-date', 'spec-delivery-date-display', true);
   }
 
-  ensureQRDownloadButtons(); // Safeguard when opening special payment modal
+  ensureQRDownloadButtons();
   document.getElementById('special-payment-modal').style.display = 'flex';
 }
 
@@ -1907,7 +1908,7 @@ function addToCart(id, name, price, desc) {
 
 function openCartModal() {
   injectCartModalIfNeeded();
-  ensureQRDownloadButtons(); // Safeguard when opening cart modal from any page (including menu)
+  ensureQRDownloadButtons();
   const m = document.getElementById('cart-modal');
   if (m) {
     m.style.display = 'flex';
@@ -1994,7 +1995,7 @@ function proceedToPaymentStep() {
   document.getElementById('cart-step-1').style.display = 'none';
   document.getElementById('cart-step-2').style.display = 'block';
 
-  ensureQRDownloadButtons(); // Safeguard when moving to payment step
+  ensureQRDownloadButtons();
 
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
@@ -2052,7 +2053,7 @@ async function placeOrder() {
     finalScreenshot = 'CASH ON DELIVERY';
   } else {
     if (!paymentScreenshotBase64) {
-      return alert('⚠️ অনলাইন পেমেন্টের জন্য স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
+      return alert('⚠️️ অনলাইন পেমেন্টের জন্য স্ক্রিনশট আপলোড করা বাধ্যতামূলক!');
     }
     finalScreenshot = paymentScreenshotBase64;
   }
