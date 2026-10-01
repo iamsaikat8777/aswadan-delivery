@@ -245,6 +245,7 @@ window.addEventListener('DOMContentLoaded', () => {
   checkPWAInstallPrompt();
   injectUserDashboardModalIfNeeded();
   injectCartModalIfNeeded();
+  ensureQRDownloadButtons(); // Universal safeguard for any pre-existing or injected QR box
   checkSpecialRequestNotificationBadge();
   checkNormalOrderNotificationBadge();
   setupGlobalAuthModalFix();
@@ -379,7 +380,7 @@ function injectGlobalMapPickerModalIfNeeded() {
     mapModal.innerHTML = `
       <div class="modal-content" style="max-width:480px; width:100%; text-align:center; background:#12121a; border:2px solid var(--border-gold); border-radius:16px; padding:20px; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.9);" onclick="event.stopPropagation()">
         <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h3 style="color:var(--gold-bright); margin:0; font-size:1.1rem;">🗺️️ Tap & Drop Pin on Map</h3>
+          <h3 style="color:var(--gold-bright); margin:0; font-size:1.1rem;">🗺 Tap & Drop Pin on Map</h3>
           <button class="close-btn" onclick="closeModal('map-picker-modal')" style="background:rgba(255,255,255,0.08); border:1px solid rgba(212,175,55,0.3); width:32px; height:32px; border-radius:50%; color:#d4af37; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
         </div>
         <p style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
@@ -884,10 +885,24 @@ function injectCartModalIfNeeded() {
   }
 }
 
-// --- NEW: DOWNLOAD PAYMENT QR FUNCTION ---
+// --- UNIVERSAL SAFEGUARD: ENSURE DOWNLOAD QR BUTTON EXISTS ON ALL .qr-box ---
+function ensureQRDownloadButtons() {
+  document.querySelectorAll('.qr-box').forEach(box => {
+    if (!box.querySelector('button[onclick*="downloadPaymentQR"]')) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.onclick = downloadPaymentQR;
+      btn.style.cssText = 'margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;';
+      btn.innerHTML = '📥 Download QR';
+      box.appendChild(btn);
+    }
+  });
+}
+
+// --- DOWNLOAD PAYMENT QR FUNCTION ---
 async function downloadPaymentQR() {
   try {
-    const activeModal = document.querySelector('.modal[style*="flex"]');
+    const activeModal = document.querySelector('.modal[style*="flex"]') || document.querySelector('.modal');
     const qrImg = activeModal ? activeModal.querySelector('.qr-box img') : document.querySelector('.qr-box img');
     if (!qrImg || !qrImg.src) {
       alert('QR code not found.');
@@ -905,7 +920,7 @@ async function downloadPaymentQR() {
     URL.revokeObjectURL(blobUrl);
   } catch (err) {
     console.error('Error downloading QR:', err);
-    const activeModal = document.querySelector('.modal[style*="flex"]');
+    const activeModal = document.querySelector('.modal[style*="flex"]') || document.querySelector('.modal');
     const qrImg = activeModal ? activeModal.querySelector('.qr-box img') : document.querySelector('.qr-box img');
     if (qrImg && qrImg.src) {
       window.open(qrImg.src, '_blank');
@@ -919,18 +934,14 @@ function syncDisplayDate(inputId, displayId, suppressAlert) {
   const display = document.getElementById(displayId);
   
   if (input && display && input.value) {
-    
-    // 1. Existing Mobile Fallback / Minimum Date Check
     const minDate = input.getAttribute('min');
     if (minDate && input.value < minDate) {
       if (!isSilent) alert('⚠️ আজ বা অতীতের তারিখ নির্বাচন করা যাবে না। অনুগ্রহ করে আগামীকালের বা ভবিষ্যতের তারিখ বেছে নিন।');
-      input.value = minDate; // Reverts to tomorrow
+      input.value = minDate;
     }
     
-    // 2. Immediately sync the visual display so the calendar selection actually works
     display.value = formatDateDDMMYYYY(input.value);
 
-    // 3. CART DATE CHANGE VALIDATION (Runs only when user manually changes date)
     if (inputId === 'delivery-date' && !isSilent) {
       const newDate = input.value;
       const invalidItems = cart.filter(cartItem => {
@@ -943,9 +954,6 @@ function syncDisplayDate(inputId, displayId, suppressAlert) {
           const mItem = window.allMenuData.find(m => Number(m.id) === Number(invalidItem.id));
           return `The menu "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please select the correct delivery date or remove this menu.`;
         });
-        
-        // Show the warning, but leave the chosen date in the input field
-        // so the user controls how to resolve it (change date or remove item).
         alert(messages.join('\n\n'));
       }
     }
@@ -1398,7 +1406,6 @@ async function checkNormalOrderNotificationBadge() {
         try { lastSeen = JSON.parse(lastSeenStr); } catch(e) {}
         if (typeof lastSeen !== 'object' || lastSeen === null) lastSeen = {};
         
-        // Trigger notification only if an existing order's status changed
         for (const [id, status] of Object.entries(currentStatuses)) {
           if (lastSeen[id] !== status && status !== 'PENDING') {
             hasUnread = true;
@@ -1555,7 +1562,6 @@ async function savePreferredMenu() {
       localStorage.setItem('aswadan_user', JSON.stringify(currentUser));
       showToast(data.message || 'প্রেফার্ড মেনু সফলভাবে সেভ হয়েছে!');
       
-      // Instantly update button state without requiring page reload
       loadPreferredMenuSelection();
     } else {
       alert(data.message || 'প্রেফার্ড মেনু সেভ করতে সমস্যা হয়েছে।');
@@ -1588,7 +1594,6 @@ function getRemainingCancelSeconds(orderDateStr) {
   return Math.max(0, Math.floor(diff / 1000));
 }
 
-// --- DYNAMIC TOMORROW DATE CALCULATOR ---
 function getTomorrowDateString() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1841,6 +1846,7 @@ function openSpecialPaymentModal(requestId) {
     syncDisplayDate('spec-delivery-date', 'spec-delivery-date-display', true);
   }
 
+  ensureQRDownloadButtons(); // Safeguard when opening special payment modal
   document.getElementById('special-payment-modal').style.display = 'flex';
 }
 
@@ -1901,6 +1907,7 @@ function addToCart(id, name, price, desc) {
 
 function openCartModal() {
   injectCartModalIfNeeded();
+  ensureQRDownloadButtons(); // Safeguard when opening cart modal from any page (including menu)
   const m = document.getElementById('cart-modal');
   if (m) {
     m.style.display = 'flex';
@@ -1986,6 +1993,8 @@ function proceedToPaymentStep() {
   }
   document.getElementById('cart-step-1').style.display = 'none';
   document.getElementById('cart-step-2').style.display = 'block';
+
+  ensureQRDownloadButtons(); // Safeguard when moving to payment step
 
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
