@@ -379,7 +379,7 @@ function injectGlobalMapPickerModalIfNeeded() {
     mapModal.innerHTML = `
       <div class="modal-content" style="max-width:480px; width:100%; text-align:center; background:#12121a; border:2px solid var(--border-gold); border-radius:16px; padding:20px; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.9);" onclick="event.stopPropagation()">
         <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h3 style="color:var(--gold-bright); margin:0; font-size:1.1rem;">🗺️ Tap & Drop Pin on Map</h3>
+          <h3 style="color:var(--gold-bright); margin:0; font-size:1.1rem;">🗺️️ Tap & Drop Pin on Map</h3>
           <button class="close-btn" onclick="closeModal('map-picker-modal')" style="background:rgba(255,255,255,0.08); border:1px solid rgba(212,175,55,0.3); width:32px; height:32px; border-radius:50%; color:#d4af37; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
         </div>
         <p style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">সঠিক স্থানে পিন বসাতে ম্যাপের যেকোনো জায়গায় ট্যাপ করুন বা পিন ড্র্যাগ করুন:</p>
@@ -865,6 +865,7 @@ function injectCartModalIfNeeded() {
               <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="Aswadan UPI QR">
               <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+              <button type="button" onclick="downloadPaymentQR()" style="margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">📥 Download QR</button>
             </div>
             <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
             <input type="file" id="payment-screenshot-input" accept="image/*" class="input-field" onchange="handlePaymentScreenshotUpload(event)" style="margin-bottom:8px;">
@@ -880,6 +881,35 @@ function injectCartModalIfNeeded() {
       </div>
     `;
     document.body.appendChild(cartModalDiv);
+  }
+}
+
+// --- NEW: DOWNLOAD PAYMENT QR FUNCTION ---
+async function downloadPaymentQR() {
+  try {
+    const activeModal = document.querySelector('.modal[style*="flex"]');
+    const qrImg = activeModal ? activeModal.querySelector('.qr-box img') : document.querySelector('.qr-box img');
+    if (!qrImg || !qrImg.src) {
+      alert('QR code not found.');
+      return;
+    }
+    const response = await fetch(qrImg.src);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = 'payment-qr.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error('Error downloading QR:', err);
+    const activeModal = document.querySelector('.modal[style*="flex"]');
+    const qrImg = activeModal ? activeModal.querySelector('.qr-box img') : document.querySelector('.qr-box img');
+    if (qrImg && qrImg.src) {
+      window.open(qrImg.src, '_blank');
+    }
   }
 }
 
@@ -998,7 +1028,7 @@ function injectUserDashboardModalIfNeeded() {
           <label class="input-label">📍 পিনকোড:</label>
           <input type="text" id="prof-pincode" class="input-field" value="" placeholder="Type your pincode here...">
           <button type="button" class="btn-primary" onclick="saveUserProfile()">প্রোফাইল আপডেট করুন</button>
-        </div> <!-- ✅ ADDED THE MISSING CLOSING DIV HERE -->
+        </div>
           
         <div id="dash-view-history" style="display:none;"><div id="user-orders-history-list"></div></div>
         <div id="dash-view-status" style="display:none;"><div id="current-orders-status-list"></div></div>
@@ -1027,8 +1057,6 @@ function injectUserDashboardModalIfNeeded() {
     `;
     document.body.appendChild(modalDiv);
   }
-
-  // ... rest of the function remains completely unchanged
 
   if (!document.getElementById('order-cancel-modal')) {
     const cancelModal = document.createElement('div');
@@ -1115,6 +1143,7 @@ function injectUserDashboardModalIfNeeded() {
             <p style="font-weight:800; color:#111 !important; margin-bottom:8px;">Scan QR to Pay</p>
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=8017969203@ybl%26pn=Aswadan%26cu=INR" alt="Aswadan UPI QR">
             <p style="margin-top:8px; font-weight:800; color:#111 !important;">UPI ID: <span style="color:#d4af37;">8017969203@ybl</span></p>
+            <button type="button" onclick="downloadPaymentQR()" style="margin-top: 10px; background: #1c1c28; color: #d4af37; border: 1px solid #d4af37; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">📥 Download QR</button>
           </div>
           <label class="input-label">🖼️ পেমেন্ট স্ক্রিনশট আপলোড করুন:</label>
           <input type="file" id="spec-payment-screenshot-input" accept="image/*" class="input-field" onchange="handleSpecScreenshotUpload(event)" style="margin-bottom:8px;">
@@ -1593,7 +1622,7 @@ async function loadUserOrderHistory() {
           ${showCancel ? `
             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(230,57,70,0.1); border:1px solid var(--red-accent); padding:8px 12px; border-radius:8px;">
               <span style="font-size:0.80rem; color:#ffb703;" id="countdown-${o.orderId}" data-seconds="${remSec}">⏳ ক্যানসেল করার সময় বাকি: গণনা হচ্ছে...</span>
-              <button onclick="promptCancelOrder('${o.orderId}', ${isPrepaid})" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">অর্ডার ক্যানসেল করুন</button>
+              <button onclick="promptCancelOrder('${o.orderId}',${isPrepaid})" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">অর্ডার ক্যানসেল করুন</button>
             </div>
           ` : ''}
         </div>
@@ -1630,10 +1659,7 @@ async function loadUserOrderStatus() {
   const data = await res.json();
   const container = document.getElementById('current-orders-status-list');
   if (container && data.success) {
-    // Determine finalized states. Orders in these states will disappear from Status and stay in History.
     const finalStates = ['DELIVERED', 'COMPLETED', 'REJECTED', 'CANCELLED'];
-    
-    // Filter the active orders dynamically
     const active = data.orders.filter(o => !finalStates.includes(String(o.status || '').toUpperCase()));
     
     container.innerHTML = active.length === 0 ? '<p style="color:#aaa;">কোনো সক্রিয় অর্ডার নেই।</p>' : active.map(o => {
@@ -1657,7 +1683,7 @@ async function loadUserOrderStatus() {
           ${showCancel ? `
             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(230,57,70,0.1); border:1px solid var(--red-accent); padding:8px 12px; border-radius:8px;">
               <span style="font-size:0.80rem; color:#ffb703;" id="countdown-status-${o.orderId}" data-seconds="${remSec}">⏳ সময় বাকি: গণনা হচ্ছে...</span>
-              <button onclick="promptCancelOrder('${o.orderId}', ${isPrepaid})" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">অর্ডার ক্যানসেল করুন</button>
+              <button onclick="promptCancelOrder('${o.orderId}',${isPrepaid})" style="background:var(--red-accent); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:0.8rem; cursor:pointer;">অর্ডার ক্যানসেল করুন</button>
             </div>
           ` : ''}
         </div>
@@ -1714,7 +1740,6 @@ async function addSavedMenuToCart() {
       }
 
       matchingItems.forEach(item => {
-        // Reuse existing cart function
         addToCart(item.id, item.name, item.price, item.desc);
       });
 
@@ -1860,8 +1885,7 @@ async function confirmSpecialPayment() {
   }
 }
 
-
-  function addToCart(id, name, price, desc) {
+function addToCart(id, name, price, desc) {
   const numericPrice = Number(price) || 0;
   
   const existing = cart.find(item => Number(item.id) === Number(id));
@@ -1891,9 +1915,9 @@ function openCartModal() {
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
     const tomorrowDate = getTomorrowDateString();
-    delDateInput.min = tomorrowDate; // ✅ Add this line to restrict past/today dates
+    delDateInput.min = tomorrowDate;
     delDateInput.value = tomorrowDate;
-   syncDisplayDate('delivery-date', 'delivery-date-display', true);
+    syncDisplayDate('delivery-date', 'delivery-date-display', true);
   }
 }
 
@@ -1966,7 +1990,7 @@ function proceedToPaymentStep() {
   const delDateInput = document.getElementById('delivery-date');
   if (delDateInput) {
     const tomorrowDate = getTomorrowDateString();
-    delDateInput.min = tomorrowDate; // ✅ Add this line to enforce minimum date
+    delDateInput.min = tomorrowDate;
     delDateInput.value = tomorrowDate;
     syncDisplayDate('delivery-date', 'delivery-date-display', true);
   }
@@ -1996,7 +2020,7 @@ async function placeOrder() {
   const deliveryDateInput = document.getElementById('delivery-date');
   const deliveryDate = deliveryDateInput ? deliveryDateInput.value : getTomorrowDateString();
   if (!deliveryDate) return alert('তারিখ সিলেক্ট করুন।');
-  // --- NEW: PLACE ORDER VALIDATION ---
+  
   const invalidItems = cart.filter(cartItem => {
     const mItem = window.allMenuData ? window.allMenuData.find(m => Number(m.id) === Number(cartItem.id)) : null;
     return mItem && !window.isMenuAvailableOnDate(mItem, deliveryDate);
@@ -2008,9 +2032,9 @@ async function placeOrder() {
       return `The menu "${mItem.name}" is ${window.formatAvailabilityNote(mItem).toLowerCase()}. Please select the correct delivery date or remove this menu.`;
     });
     alert(messages.join('\n\n'));
-    return; // Block order submission
+    return;
   }
-  // --- END VALIDATION ---
+
   const paymentMethodInput = document.querySelector('input[name="payment-method"]:checked');
   const paymentMethod = paymentMethodInput ? paymentMethodInput.value : 'online';
 
@@ -2084,7 +2108,7 @@ async function loadHomeSpotlight() {
     const data = await res.json();
     if (data.success && data.menu.length > 0) {
       const menu = data.menu;
-      window.allMenuData = data.menu; // Store for global cart validation
+      window.allMenuData = data.menu;
 
       let currentIndex = 0;
       const slidingCard = document.getElementById('hero-sliding-tile');
@@ -2122,7 +2146,6 @@ async function loadHomeSpotlight() {
         const item = menu[idx];
         const icon = getFoodIcon(item.name);
         
-        // --- NEW: Generate availability note for the sliding card ---
         const availNote = typeof window.formatAvailabilityNote === 'function' ? window.formatAvailabilityNote(item) : '';
         const availHtml = availNote ? `<p style="font-size:0.8rem; color:#ffb703; font-weight:bold; margin-top:4px;">${availNote}</p>` : '';
         
@@ -2158,7 +2181,6 @@ async function loadHomeSpotlight() {
       const gridContainer = document.getElementById('home-spotlight-container');
       if (gridContainer) {
         gridContainer.innerHTML = menu.slice(0, 4).map(item => {
-          // --- NEW: Generate availability note for the 4 grid items ---
           const availNote = typeof window.formatAvailabilityNote === 'function' ? window.formatAvailabilityNote(item) : '';
           const availHtml = availNote ? `<p style="font-size:0.8rem; color:#ffb703; font-weight:bold; margin-top:4px;">${availNote}</p>` : '';
           
@@ -2180,6 +2202,7 @@ async function loadHomeSpotlight() {
     }
   } catch (err) { console.error(err); }
 }
+
 let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
